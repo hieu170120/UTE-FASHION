@@ -91,7 +91,7 @@ public class ProductServiceImpl implements ProductService {
             Set<ProductVariant> variants = productDTO.getVariants().stream().map(varDTO -> {
                 ProductVariant variant = new ProductVariant();
                 variant.setProduct(product);
-                variant.setQuantity(varDTO.getQuantity());
+                variant.setStockQuantity(varDTO.getStockQuantity());
 
                 Size size = sizeRepository.findById(varDTO.getSize().getId()).orElseThrow(() -> new ResourceNotFoundException("Size not found with id: " + varDTO.getSize().getId()));
                 variant.setSize(size);
@@ -138,7 +138,7 @@ public class ProductServiceImpl implements ProductService {
             productDTO.getVariants().forEach(varDTO -> {
                 ProductVariant variant = new ProductVariant();
                 variant.setProduct(existingProduct);
-                variant.setQuantity(varDTO.getQuantity());
+                variant.setStockQuantity(varDTO.getStockQuantity());
 
                 Size size = sizeRepository.findById(varDTO.getSize().getId()).orElseThrow(() -> new ResourceNotFoundException("Size not found with id: " + varDTO.getSize().getId()));
                 variant.setSize(size);
