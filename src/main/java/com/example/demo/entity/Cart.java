@@ -24,7 +24,7 @@ public class Cart {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = true)
     private User user;
-
+    
     @Column(name = "session_id", length = 255)
     private String sessionId;
 

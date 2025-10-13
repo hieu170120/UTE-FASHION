@@ -44,7 +44,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderDTO createOrderFromCart(Integer userId, String sessionId, OrderDTO orderDTO) {
         Cart cart = userId != null
-                ? cartRepository.findByUserId(userId)
+                ? cartRepository.findByUser_UserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found for user: " + userId))
                 : cartRepository.findBySessionId(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found for session: " + sessionId));
@@ -113,7 +113,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<OrderDTO> getUserOrders(Integer userId) {
-        return orderRepository.findByUserId(userId).stream()
+        return orderRepository.findByUser_UserId(userId).stream()
                 .map(this::mapToOrderDTO)
                 .collect(Collectors.toList());
     }
