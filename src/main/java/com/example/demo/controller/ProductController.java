@@ -32,7 +32,7 @@ public class ProductController {
         Page<ProductDTO> productPage = productService.getAllProducts(PageRequest.of(page, size));
         model.addAttribute("pageTitle", "Tất cả sản phẩm");
         model.addAttribute("productPage", productPage);
-        return "product/list"; // View: templates/product/list.html
+        return "product/list";
     }
 
     /**
@@ -44,7 +44,7 @@ public class ProductController {
             ProductDTO product = productService.getProductBySlug(slug);
             model.addAttribute("pageTitle", product.getProductName());
             model.addAttribute("product", product);
-            return "product/detail"; // View: templates/product/detail.html
+            return "product/detail";
         } catch (Exception e) {
             return "redirect:/products";
         }
