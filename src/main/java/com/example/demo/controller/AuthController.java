@@ -5,6 +5,7 @@ import com.example.demo.dto.LoginRequest;
 import com.example.demo.dto.RegisterRequest;
 import com.example.demo.entity.User;
 import com.example.demo.service.AuthService;
+import com.example.demo.security.JwtUtil;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ import java.util.Map;
 public class AuthController {
     
     private final AuthService authService;
+    private final JwtUtil jwtUtil;
     
     /**
      * Trang chủ
@@ -42,14 +44,32 @@ public class AuthController {
      */
     @GetMapping("/dashboard")
     public String dashboard(HttpSession session, Model model) {
+        System.out.println("=== DASHBOARD CONTROLLER CALLED ===");
+        
         User currentUser = (User) session.getAttribute("currentUser");
+        System.out.println("Current user from session: " + (currentUser != null ? currentUser.getUsername() : "NULL"));
         
         // Kiểm tra đã đăng nhập chưa
         if (currentUser == null) {
+            System.out.println("No user in session, redirecting to login");
             return "redirect:/login";
         }
         
+        System.out.println("Adding user to model: " + currentUser.getUsername());
         model.addAttribute("currentUser", currentUser);
+        
+        // Hiển thị JWT token từ session
+        String jwtToken = (String) session.getAttribute("jwtToken");
+        if (jwtToken != null) {
+            System.out.println("=== JWT TOKEN FROM SESSION ===");
+            System.out.println("Token: " + jwtToken);
+            System.out.println("Token length: " + jwtToken.length());
+            model.addAttribute("jwtToken", jwtToken);
+        } else {
+            System.out.println("No JWT token found in session");
+        }
+        
+        System.out.println("Returning dashboard template");
         return "dashboard";
     }
     
@@ -82,15 +102,30 @@ public class AuthController {
         
         try {
             User user = authService.loginUser(loginRequest);
+            System.out.println("=== LOGIN SUCCESS ===");
+            System.out.println("User logged in: " + user.getUsername());
+            
+            // Tạo JWT token để test
+            String token = jwtUtil.generateToken(user.getUsername());
+            System.out.println("=== JWT TOKEN GENERATED ===");
+            System.out.println("Token: " + token);
+            System.out.println("Token length: " + token.length());
             
             // Lưu user vào session
             session.setAttribute("currentUser", user);
             session.setAttribute("username", user.getUsername());
+            session.setAttribute("jwtToken", token); // Lưu token vào session để test
+            
+            System.out.println("User saved to session: " + session.getAttribute("currentUser"));
+            System.out.println("JWT Token saved to session: " + session.getAttribute("jwtToken"));
             
             redirectAttributes.addFlashAttribute("successMessage", "Đăng nhập thành công!");
+            System.out.println("Redirecting to dashboard");
             return "redirect:/dashboard";
             
         } catch (Exception e) {
+            System.out.println("=== LOGIN ERROR ===");
+            System.out.println("Error: " + e.getMessage());
             model.addAttribute("errorMessage", e.getMessage());
             return "auth/login";
         }
@@ -175,8 +210,26 @@ public class AuthController {
      */
     @GetMapping("/logout")
     public String logout(HttpSession session, RedirectAttributes redirectAttributes) {
+        System.out.println("=== LOGOUT CALLED ===");
+        
+        // Lấy thông tin user trước khi logout
+        User currentUser = (User) session.getAttribute("currentUser");
+        String jwtToken = (String) session.getAttribute("jwtToken");
+        
+        if (currentUser != null) {
+            System.out.println("Logging out user: " + currentUser.getUsername());
+        }
+        if (jwtToken != null) {
+            System.out.println("Clearing JWT token: " + jwtToken.substring(0, 20) + "...");
+        }
+        
+        // Xóa session
         session.invalidate();
+        System.out.println("Session invalidated");
+        
         redirectAttributes.addFlashAttribute("successMessage", "Đăng xuất thành công!");
+        System.out.println("Redirecting to login");
+        
         return "redirect:/login";
     }
     

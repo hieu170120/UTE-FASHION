@@ -9,10 +9,9 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
 /**
  * Cấu hình Spring Security với JWT Authentication
@@ -23,6 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final UserDetailsService userDetailsService;
     
     // PasswordEncoder đã được định nghĩa trong PasswordConfig
     
@@ -43,12 +43,23 @@ public class SecurityConfig {
                 .requestMatchers("/", "/api/auth/**", "/login", "/register", "/logout").permitAll()
                 .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
                 .requestMatchers("/templates/**", "/*.html").permitAll()
+                // Dashboard endpoint - cho phép truy cập (sẽ được kiểm tra trong controller)
+                .requestMatchers("/dashboard").permitAll()
                 // API endpoints cần authentication
                 .requestMatchers("/api/**").authenticated()
                 // Admin endpoints
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 // Các request khác cần authentication
                 .anyRequest().authenticated()
+            )
+            .formLogin(form -> form.disable()) // Tắt Spring Security form login
+            .userDetailsService(userDetailsService)
+            .logout(logout -> logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/")
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID")
+                .permitAll()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         

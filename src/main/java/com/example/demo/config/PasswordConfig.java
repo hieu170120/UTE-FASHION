@@ -19,3 +19,5 @@ public class PasswordConfig {
         return NoOpPasswordEncoder.getInstance();
     }
 }
+
+
