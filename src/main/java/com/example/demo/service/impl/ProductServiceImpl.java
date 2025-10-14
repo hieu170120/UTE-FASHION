@@ -1,3 +1,4 @@
+
 package com.example.demo.service.impl;
 
 import com.example.demo.dto.ProductDTO;
@@ -55,17 +56,25 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ProductDTO> getProductsByCategorySlug(String slug, Pageable pageable) {
+    public Page<ProductDTO> getProductsByCategory(String slug, Pageable pageable) {
         return productRepository.findByCategorySlug(slug, pageable)
                 .map(product -> modelMapper.map(product, ProductDTO.class));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ProductDTO> getProductsByBrandSlug(String slug, Pageable pageable) {
+    public Page<ProductDTO> getProductsByBrand(String slug, Pageable pageable) {
         return productRepository.findByBrandSlug(slug, pageable)
                 .map(product -> modelMapper.map(product, ProductDTO.class));
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ProductDTO> searchProducts(String keyword, Pageable pageable) {
+        return productRepository.findByProductNameContainingIgnoreCase(keyword, pageable)
+                .map(product -> modelMapper.map(product, ProductDTO.class));
+    }
+
 
     @Override
     @Transactional
@@ -76,11 +85,8 @@ public class ProductServiceImpl implements ProductService {
         product.setDescription(productDTO.getLongDescription());
         product.setPrice(productDTO.getBasePrice());
 
-        Category category = categoryRepository.findById(productDTO.getCategory().getId()).orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + productDTO.getCategory().getId()));
-        product.setCategory(category);
-
-        Brand brand = brandRepository.findById(productDTO.getBrand().getId()).orElseThrow(() -> new ResourceNotFoundException("Brand not found with id: " + productDTO.getBrand().getId()));
-        product.setBrand(brand);
+        product.setCategory(categoryRepository.getReferenceById(productDTO.getCategory().getId()));
+        product.setBrand(brandRepository.getReferenceById(productDTO.getBrand().getId()));
 
         if (productDTO.getImages() != null) {
             Set<ProductImage> images = productDTO.getImages().stream().map(imgDTO -> {
@@ -98,11 +104,8 @@ public class ProductServiceImpl implements ProductService {
                 variant.setProduct(product);
                 variant.setStockQuantity(varDTO.getStockQuantity());
 
-                Size size = sizeRepository.findById(varDTO.getSize().getId()).orElseThrow(() -> new ResourceNotFoundException("Size not found with id: " + varDTO.getSize().getId()));
-                variant.setSize(size);
-
-                Color color = colorRepository.findById(varDTO.getColor().getId()).orElseThrow(() -> new ResourceNotFoundException("Color not found with id: " + varDTO.getColor().getId()));
-                variant.setColor(color);
+                variant.setSize(sizeRepository.getReferenceById(varDTO.getSize().getId()));
+                variant.setColor(colorRepository.getReferenceById(varDTO.getColor().getId()));
                 return variant;
             }).collect(Collectors.toSet());
             product.setVariants(variants);
@@ -122,11 +125,8 @@ public class ProductServiceImpl implements ProductService {
         existingProduct.setDescription(productDTO.getLongDescription());
         existingProduct.setPrice(productDTO.getBasePrice());
 
-        Category category = categoryRepository.findById(productDTO.getCategory().getId()).orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + productDTO.getCategory().getId()));
-        existingProduct.setCategory(category);
-
-        Brand brand = brandRepository.findById(productDTO.getBrand().getId()).orElseThrow(() -> new ResourceNotFoundException("Brand not found with id: " + productDTO.getBrand().getId()));
-        existingProduct.setBrand(brand);
+        existingProduct.setCategory(categoryRepository.getReferenceById(productDTO.getCategory().getId()));
+        existingProduct.setBrand(brandRepository.getReferenceById(productDTO.getBrand().getId()));
 
         existingProduct.getImages().clear();
         if (productDTO.getImages() != null) {
@@ -145,11 +145,8 @@ public class ProductServiceImpl implements ProductService {
                 variant.setProduct(existingProduct);
                 variant.setStockQuantity(varDTO.getStockQuantity());
 
-                Size size = sizeRepository.findById(varDTO.getSize().getId()).orElseThrow(() -> new ResourceNotFoundException("Size not found with id: " + varDTO.getSize().getId()));
-                variant.setSize(size);
-
-                Color color = colorRepository.findById(varDTO.getColor().getId()).orElseThrow(() -> new ResourceNotFoundException("Color not found with id: " + varDTO.getColor().getId()));
-                variant.setColor(color);
+                variant.setSize(sizeRepository.getReferenceById(varDTO.getSize().getId()));
+                variant.setColor(colorRepository.getReferenceById(varDTO.getColor().getId()));
                 existingProduct.getVariants().add(variant);
             });
         }
