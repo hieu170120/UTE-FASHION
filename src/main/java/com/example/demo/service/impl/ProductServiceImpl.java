@@ -5,7 +5,7 @@ import com.example.demo.entity.*;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.*;
 import com.example.demo.service.ProductService;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -33,30 +33,35 @@ public class ProductServiceImpl implements ProductService {
     private ModelMapper modelMapper;
 
     @Override
+    @Transactional(readOnly = true)
     public Page<ProductDTO> getAllProducts(Pageable pageable) {
         return productRepository.findAll(pageable)
                 .map(product -> modelMapper.map(product, ProductDTO.class));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ProductDTO getProductById(Integer id) {
         Product product = productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
         return modelMapper.map(product, ProductDTO.class);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ProductDTO getProductBySlug(String slug) {
         Product product = productRepository.findBySlug(slug).orElseThrow(() -> new ResourceNotFoundException("Product not found with slug: " + slug));
         return modelMapper.map(product, ProductDTO.class);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<ProductDTO> getProductsByCategorySlug(String slug, Pageable pageable) {
         return productRepository.findByCategorySlug(slug, pageable)
                 .map(product -> modelMapper.map(product, ProductDTO.class));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<ProductDTO> getProductsByBrandSlug(String slug, Pageable pageable) {
         return productRepository.findByBrandSlug(slug, pageable)
                 .map(product -> modelMapper.map(product, ProductDTO.class));
