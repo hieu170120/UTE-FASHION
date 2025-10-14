@@ -79,11 +79,11 @@
             <scope>runtime</scope>
         </dependency>
         
-        <!-- Sitemesh Decorator -->
+        <!-- Sitemesh -->
         <dependency>
             <groupId>org.sitemesh</groupId>
-            <artifactId>sitemesh</artifactId>
-            <version>3.0.1</version>
+            <artifactId>sitemesh-spring-boot-starter</artifactId>
+            <version>3.1.0-RELEASE</version>
         </dependency>
         
         <!-- WebSocket -->
