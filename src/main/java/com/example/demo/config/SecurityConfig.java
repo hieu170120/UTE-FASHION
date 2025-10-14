@@ -30,7 +30,7 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
-    
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -39,17 +39,7 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Cho phép session khi cần
             )
             .authorizeHttpRequests(auth -> auth
-                // Public endpoints
-                .requestMatchers("/", "/api/auth/**", "/login", "/register", "/logout").permitAll()
-                .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
-                .requestMatchers("/templates/**", "/*.html").permitAll()
-                // Dashboard endpoint - cho phép truy cập (sẽ được kiểm tra trong controller)
-                .requestMatchers("/dashboard").permitAll()
-                // API endpoints cần authentication
-                .requestMatchers("/api/**").authenticated()
-                // Admin endpoints
-                .requestMatchers("/admin/**").hasRole("ADMIN")
-                // Các request khác cần authentication
+                .requestMatchers("/", "/login", "/register", "/static/**", "/css/**", "/js/**", "/images/**", "/products").permitAll()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form.disable()) // Tắt Spring Security form login

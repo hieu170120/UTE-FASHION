@@ -3,7 +3,7 @@ package com.example.demo.dto;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.util.Set;
 
 @Data
 public class ProductDTO {
@@ -19,6 +19,6 @@ public class ProductDTO {
     private boolean isActive;
     private CategoryDTO category;
     private BrandDTO brand;
-    private List<ProductImageDTO> images;
-    private List<ProductVariantDTO> variants;
+    private Set<ProductImageDTO> images;
+    private Set<ProductVariantDTO> variants;
 }
