@@ -1,19 +1,22 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
 <head>
-    <meta charset="UTF-8">
-    <title th:text="${pageTitle} ?: 'UTE Fashion - Danh sách sản phẩm'"></title>
-    <style>
-        .card-img-top {
-            width: 100%;
-            height: 300px;
-            object-fit: cover;
-        }
-    </style>
+    <title>Danh sách sản phẩm</title>
+    <th:block layout:fragment="styles">
+        <style>
+            .card-img-top {
+                width: 100%;
+                height: 300px;
+                object-fit: cover;
+            }
+        </style>
+    </th:block>
 </head>
 <body>
 
-<div class="container mt-5">
+<div class="container mt-5" layout:fragment="content">
     <h1 class="mb-4" th:text="${pageTitle} ?: 'Danh sách sản phẩm'"></h1>
 
     <div class="row">
