@@ -1,11 +1,24 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${pageTitle} ?: 'UTE Fashion - Danh sách sản phẩm'"></title>
+    <style>
+        .card-img-top {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+
 <div class="container mt-5">
     <h1 class="mb-4" th:text="${pageTitle} ?: 'Danh sách sản phẩm'"></h1>
 
     <div class="row">
-        <!-- Lặp qua danh sách sản phẩm của trang hiện tại -->
         <div class="col-md-4 mb-4" th:each="product : ${productPage.content}">
             <div class="card h-100">
-                <!-- Lấy ảnh đầu tiên trong danh sách, nếu không có thì dùng ảnh mặc định -->
                 <img th:src="${!#lists.isEmpty(product.images)} ? ${product.images[0].imageUrl} : '/images/default-product.png'"
                      class="card-img-top"
                      th:alt="${product.productName}">
@@ -18,31 +31,21 @@
         </div>
     </div>
 
-    <!-- Thanh phân trang -->
     <nav aria-label="Page navigation" th:if="${productPage.totalPages > 1}">
         <ul class="pagination justify-content-center">
-
-            <!-- Nút Trang trước -->
             <li class="page-item" th:classappend="${productPage.first} ? 'disabled'">
-                <a class="page-link" th:href="@{/products(page=${productPage.number - 1}, size=${productPage.size})}">
-                    <span>&laquo;</span>
-                </a>
+                <a class="page-link" th:href="@{/products(page=${productPage.number - 1}, size=${productPage.size})}">&laquo;</a>
             </li>
-
-            <!-- Các nút số trang -->
             <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, productPage.totalPages - 1)}"
                 th:classappend="${pageNumber == productPage.number} ? 'active'">
                 <a class="page-link" th:href="@{/products(page=${pageNumber}, size=${productPage.size})}" th:text="${pageNumber + 1}"></a>
             </li>
-
-            <!-- Nút Trang sau -->
             <li class="page-item" th:classappend="${productPage.last} ? 'disabled'">
-                <a class="page-link" th:href="@{/products(page=${productPage.number + 1}, size=${productPage.size})}">
-                    <span>&raquo;</span>
-                </a>
+                <a class="page-link" th:href="@{/products(page=${productPage.number + 1}, size=${productPage.size})}">&raquo;</a>
             </li>
-
         </ul>
     </nav>
-
 </div>
+
+</body>
+</html>
