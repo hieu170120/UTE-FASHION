@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Thanh toán QR Code - UTE Fashion</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .qr-container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .qr-image {
+            border: 3px solid #dee2e6;
+            border-radius: 10px;
+            padding: 10px;
+            background: white;
+        }
+        #status {
+            font-size: 1.1rem;
+        }
+        #countdown {
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+        .info-row {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5 mb-5">
+        <div class="qr-container">
+            <h2 class="text-center mb-4">
+                <i class="fas fa-qrcode"></i> Quét mã QR để thanh toán
+            </h2>
+            
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <!-- QR Code Image -->
+                    <img th:src="${qrUrl}" alt="QR Code" class="img-fluid qr-image mb-4"/>
+                    
+                    <!-- Payment Info -->
+                    <h4 class="mb-3">Thông tin chuyển khoản:</h4>
+                    
+                    <div class="info-row">
+                        <strong>Ngân hàng:</strong> 
+                        <span th:text="${bankName}"></span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <strong>Số tài khoản:</strong> 
+                        <span class="text-primary" th:text="${bankAccount}"></span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <strong>Số tiền:</strong> 
+                        <span class="text-danger fw-bold" th:text="${#numbers.formatDecimal(amount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <strong>Nội dung:</strong> 
+                        <span class="text-success fw-bold" th:text="${content}"></span>
+                    </div>
+                    
+                    <!-- Status Alert -->
+                    <div id="status" class="alert alert-warning mt-4" role="alert">
+                        <i class="fas fa-spinner fa-spin"></i> Đang chờ thanh toán...
+                    </div>
+                    
+                    <!-- Countdown -->
+                    <div id="countdown" class="mt-3 text-muted">
+                        Thời gian còn lại: <span id="timer" class="text-danger">60</span>s
+                    </div>
+                    
+                    <!-- Instructions -->
+                    <div class="mt-4 text-start">
+                        <small class="text-muted">
+                            <strong>Hướng dẫn:</strong>
+                            <ol class="mt-2">
+                                <li>Mở ứng dụng ngân hàng trên điện thoại</li>
+                                <li>Quét mã QR bên trên</li>
+                                <li>Kiểm tra thông tin và xác nhận chuyển khoản</li>
+                                <li>Hệ thống sẽ tự động xác nhận trong vài giây</li>
+                            </ol>
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Back Button -->
+            <div class="text-center mt-3">
+                <a th:href="@{/payment/method-selection}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Chọn phương thức khác
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        let secondsLeft = 60;
+        let pollingInterval;
+        let countdownInterval;
+        
+        // Get context path for proper URL
+        const contextPath = /*[[@{/}]]*/ '/UTE_Fashion';
+
+        // Countdown timer (1 second intervals)
+        countdownInterval = setInterval(() => {
+            secondsLeft--;
+            document.getElementById('timer').textContent = secondsLeft;
+            
+            if (secondsLeft <= 0) {
+                clearInterval(countdownInterval);
+                clearInterval(pollingInterval);
+                document.getElementById('status').innerHTML = 
+                    '<i class="fas fa-times-circle"></i> Hết thời gian! <a href="' + contextPath + '/payment/method-selection">Thử lại</a>';
+                document.getElementById('status').className = 'alert alert-danger';
+            }
+        }, 1000);
+
+        // Polling every 3 seconds to check payment status
+        pollingInterval = setInterval(async () => {
+            try {
+                const response = await fetch(contextPath + '/payment/sepay-qr/check');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // Payment successful
+                    clearInterval(pollingInterval);
+                    clearInterval(countdownInterval);
+                    document.getElementById('status').innerHTML = 
+                        '<i class="fas fa-check-circle"></i> Thanh toán thành công! Đang chuyển hướng...';
+                    document.getElementById('status').className = 'alert alert-success';
+                    
+                    // Redirect to success page after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = contextPath + '/checkout/order-success?orderId=' + data.orderId;
+                    }, 2000);
+                    
+                } else if (data.status === 'timeout') {
+                    // Timeout - stop polling
+                    clearInterval(pollingInterval);
+                    clearInterval(countdownInterval);
+                    document.getElementById('status').innerHTML = 
+                        '<i class="fas fa-times-circle"></i> ' + data.message + ' <a href="' + contextPath + '/payment/method-selection">Thử lại</a>';
+                    document.getElementById('status').className = 'alert alert-danger';
+                    
+                } else if (data.status === 'error') {
+                    // Error - stop polling
+                    clearInterval(pollingInterval);
+                    clearInterval(countdownInterval);
+                    document.getElementById('status').innerHTML = 
+                        '<i class="fas fa-exclamation-circle"></i> Lỗi: ' + data.message;
+                    document.getElementById('status').className = 'alert alert-danger';
+                    
+                } else if (data.status === 'pending') {
+                    // Still waiting - continue polling
+                    console.log('Waiting for payment...');
+                }
+                
+            } catch (error) {
+                console.error('Polling error:', error);
+                // Continue polling even if there's a network error
+            }
+        }, 3000); // Poll every 3 seconds
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            clearInterval(countdownInterval);
+            clearInterval(pollingInterval);
+        });
+        /*]]>*/
+    </script>
+</body>
+</html>
