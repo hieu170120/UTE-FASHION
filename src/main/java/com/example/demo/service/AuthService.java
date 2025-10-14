@@ -1,10 +1,15 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.AuthResponse;
 import com.example.demo.dto.LoginRequest;
 import com.example.demo.dto.RegisterRequest;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +18,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
- * Service xử lý Authentication
+ * Service xử lý Authentication với JWT
  */
 @Service
 @RequiredArgsConstructor
@@ -21,6 +26,8 @@ public class AuthService {
     
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
     
     /**
      * Đăng ký user mới
@@ -46,7 +53,7 @@ public class AuthService {
         User user = new User();
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setPasswordHash(request.getPassword()); // Plain text password
         user.setFullName(request.getFullName());
         user.setPhoneNumber(request.getPhoneNumber());
         user.setIsActive(true);
@@ -56,9 +63,49 @@ public class AuthService {
     }
     
     /**
-     * Đăng nhập
+     * Đăng nhập và tạo JWT token
      */
-    public User login(LoginRequest request) {
+    @Transactional
+    public AuthResponse login(LoginRequest request) {
+        // Xác thực username và password
+        Authentication authentication = authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(
+                request.getUsername(),
+                request.getPassword()
+            )
+        );
+        
+        // Tìm user
+        User user = userRepository.findByUsername(request.getUsername())
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        // Kiểm tra account active
+        if (!user.getIsActive()) {
+            throw new RuntimeException("Tài khoản đã bị khóa");
+        }
+        
+        // Cập nhật last login
+        user.setLastLogin(LocalDateTime.now());
+        userRepository.save(user);
+        
+        // Tạo JWT token
+        String token = jwtUtil.generateToken(user.getUsername());
+        
+        // Trả về response với token
+        return new AuthResponse(
+            token,
+            user.getUserId(),
+            user.getUsername(),
+            user.getEmail(),
+            user.getFullName()
+        );
+    }
+    
+    /**
+     * Đăng nhập (phiên bản cũ, trả về User)
+     */
+    @Transactional
+    public User loginUser(LoginRequest request) {
         // Tìm user theo username
         Optional<User> userOpt = userRepository.findByUsername(request.getUsername());
         
@@ -73,8 +120,8 @@ public class AuthService {
             throw new RuntimeException("Tài khoản đã bị khóa");
         }
         
-        // Kiểm tra password
-        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+        // Kiểm tra password (tạm thời dùng plain text)
+        if (!request.getPassword().equals(user.getPasswordHash())) {
             throw new RuntimeException("Tên đăng nhập hoặc mật khẩu không đúng");
         }
         
@@ -92,3 +139,4 @@ public class AuthService {
         return userRepository.findByUsername(username);
     }
 }
+
