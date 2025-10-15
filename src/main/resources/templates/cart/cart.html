@@ -38,9 +38,18 @@
                          style="width: 80px;">
                     <div>
                         <h6 th:text="${item.productName}"></h6>
-                        <!-- Nếu có variant -->
-                        <small th:if="${item.variantId != null}">
-                            Kích cỡ: ... | Màu: ...
+                        <!-- Variant info -->
+                        <small class="text-muted">
+                            <span th:if="${item.variantSize != null}">
+                                Phiên bản: Size <strong th:text="${item.variantSize}"></strong>
+                            </span>
+                            <span th:if="${item.variantColor != null}">
+                                / <strong th:text="${item.variantColor}"></strong>
+                            </span>
+                        </small>
+                        <br th:if="${item.variantSize != null or item.variantColor != null}" />
+                        <small class="text-muted" th:if="${item.brandName != null}">
+                            Thương hiệu: <strong th:text="${item.brandName}"></strong>
                         </small>
                     </div>
                 </div>
