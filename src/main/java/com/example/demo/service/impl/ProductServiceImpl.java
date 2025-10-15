@@ -1,6 +1,7 @@
 
 package com.example.demo.service.impl;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -86,6 +87,13 @@ public class ProductServiceImpl implements ProductService {
 	public Page<ProductDTO> searchProducts(String keyword, Pageable pageable) {
 		return productRepository.findByProductNameContainingIgnoreCase(keyword, pageable)
 				.map(product -> modelMapper.map(product, ProductDTO.class));
+	}
+
+	@Override
+	public List<ProductDTO> getBestsellerProducts() {
+		return productRepository.findTop8ByIsActiveTrueOrderBySoldCountDesc().stream()
+				.map(product -> modelMapper.map(product, ProductDTO.class))
+				.collect(Collectors.toList());
 	}
 
 	@Override

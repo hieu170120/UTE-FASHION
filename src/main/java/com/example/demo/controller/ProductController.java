@@ -20,6 +20,8 @@ import com.example.demo.service.CategoryService;
 import com.example.demo.service.ProductService;
 import com.example.demo.service.ShopService;
 
+import java.util.List;
+
 @Controller
 @RequestMapping("/products")
 public class ProductController {
@@ -40,6 +42,8 @@ public class ProductController {
 		model.addAttribute("categories", categoryService.getAllCategories());
 		model.addAttribute("brands", brandService.getAllBrands());
 		model.addAttribute("shops", shopService.getAllShops());
+		List<ProductDTO> bestsellerProducts = productService.getBestsellerProducts();
+		model.addAttribute("bestsellerProducts", bestsellerProducts);
 	}
 
 	@GetMapping
