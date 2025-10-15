@@ -7,7 +7,7 @@ import java.util.List;
 
 @Data
 public class CartDTO {
-    private Integer id;
+    private Integer cartId;
     private Integer userId;
     private String sessionId;
     private List<CartItemDTO> cartItems;
