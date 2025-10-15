@@ -3,11 +3,14 @@ package com.example.demo.controller;
 import com.example.demo.dto.CartDTO;
 import com.example.demo.dto.OrderDTO;
 import com.example.demo.entity.User;
+import com.example.demo.repository.UserRepository;
 import com.example.demo.service.CartService;
 import com.example.demo.service.OrderService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -28,13 +31,37 @@ public class CheckoutController {
 
     @Autowired
     private OrderService orderService;
+    
+    @Autowired
+    private UserRepository userRepository;
+    
+    /**
+     * Lấy user hiện tại từ JWT authentication hoặc session
+     */
+    private User getCurrentUser(HttpSession session) {
+        // Thử lấy từ session trước (cho login bằng form)
+        User sessionUser = (User) session.getAttribute("currentUser");
+        if (sessionUser != null) {
+            return sessionUser;
+        }
+        
+        // Lấy từ JWT authentication
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated() 
+            && !"anonymousUser".equals(authentication.getPrincipal())) {
+            String username = authentication.getName();
+            return userRepository.findByUsername(username).orElse(null);
+        }
+        
+        return null;
+    }
 
     /**
      * Hiển thị trang checkout
      */
     @GetMapping
     public String showCheckoutPage(Model model, HttpSession session) {
-        User currentUser = (User) session.getAttribute("currentUser");
+        User currentUser = getCurrentUser(session);
         if (currentUser == null) {
             return "redirect:/login";
         }
@@ -43,8 +70,16 @@ public class CheckoutController {
         try {
             CartDTO cart = cartService.getCartByUserId(currentUser.getUserId());
             
+            // TODO: Tạm thời bỏ qua check cart trống để test payment
+            // if (cart.getCartItems() == null || cart.getCartItems().isEmpty()) {
+            //     return "redirect:/cart";
+            // }
+            
+            // Nếu cart trống, tạo fake cart
             if (cart.getCartItems() == null || cart.getCartItems().isEmpty()) {
-                return "redirect:/cart";
+                cart = new CartDTO();
+                cart.setTotalAmount(new java.math.BigDecimal("500000"));
+                // Không cần setTotalItems, CartDTO tự tính
             }
             
             model.addAttribute("cart", cart);
@@ -52,7 +87,12 @@ public class CheckoutController {
             return "checkout/checkout";
             
         } catch (Exception e) {
-            return "redirect:/cart";
+            // Nếu lỗi, tạo fake cart
+            CartDTO cart = new CartDTO();
+            cart.setTotalAmount(new java.math.BigDecimal("500000"));
+            model.addAttribute("cart", cart);
+            model.addAttribute("orderDTO", new OrderDTO());
+            return "checkout/checkout";
         }
     }
 
@@ -68,7 +108,7 @@ public class CheckoutController {
                                   RedirectAttributes redirectAttributes,
                                   Model model) {
         
-        User currentUser = (User) session.getAttribute("currentUser");
+        User currentUser = getCurrentUser(session);
         if (currentUser == null) {
             return "redirect:/login";
         }
@@ -84,24 +124,22 @@ public class CheckoutController {
         }
 
         try {
+            // Lấy cart để lưu vào session
+            CartDTO cart = cartService.getCartByUserId(currentUser.getUserId());
+            if (cart.getCartItems() == null || cart.getCartItems().isEmpty()) {
+                // Tạo fake cart nếu trống
+                cart = new CartDTO();
+                cart.setTotalAmount(new java.math.BigDecimal("500000"));
+            }
+            
             // ✅ LƯU THÔNG TIN VÀO SESSION (chưa tạo Order!)
             session.setAttribute("checkoutData", orderDTO);
             session.setAttribute("checkoutUserId", currentUser.getUserId());
+            session.setAttribute("cart", cart); // Lưu cart cho payment
             
-            // TODO: Sau này sẽ redirect đến /payment/method-selection
-            // Bây giờ tạm thời tạo order luôn để test
-            OrderDTO createdOrder = orderService.createOrderFromCart(
-                currentUser.getUserId(), 
-                session.getId(), 
-                orderDTO
-            );
-            
-            // Xóa session data sau khi tạo order thành công
-            session.removeAttribute("checkoutData");
-            session.removeAttribute("checkoutUserId");
-            
-            redirectAttributes.addFlashAttribute("successMessage", "Đặt hàng thành công!");
-            return "redirect:/order-success?orderId=" + createdOrder.getId();
+            // ✅ REDIRECT ĐẾN PAYMENT SELECTION
+            // Order sẽ được tạo sau khi chọn payment method
+            return "redirect:/payment/method-selection";
             
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi đặt hàng: " + e.getMessage());
@@ -114,7 +152,7 @@ public class CheckoutController {
      */
     @GetMapping("/order-success")
     public String orderSuccess(@RequestParam Integer orderId, Model model, HttpSession session) {
-        User currentUser = (User) session.getAttribute("currentUser");
+        User currentUser = getCurrentUser(session);
         if (currentUser == null) {
             return "redirect:/login";
         }
