@@ -19,9 +19,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Controller xử lý Authentication với JWT
- */
 @Controller
 @RequiredArgsConstructor
 public class AuthController {
@@ -30,20 +27,7 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final org.springframework.security.web.context.SecurityContextRepository securityContextRepository =
             new org.springframework.security.web.context.HttpSessionSecurityContextRepository();
-    
-    /**
-     * Trang chủ
-     */
-    @GetMapping("/")
-    public String home(HttpSession session, Model model) {
-        User currentUser = (User) session.getAttribute("currentUser");
-        model.addAttribute("currentUser", currentUser);
-        return "index";
-    }
-    
-    /**
-     * Dashboard - trang sau khi đăng nhập
-     */
+
     @GetMapping("/dashboard")
     public String dashboard(HttpSession session, Model model) {
         System.out.println("=== DASHBOARD CONTROLLER CALLED ===");
@@ -74,24 +58,16 @@ public class AuthController {
         System.out.println("Returning dashboard template");
         return "dashboard";
     }
-    
-    /**
-     * Hiển thị trang login
-     */
     @GetMapping("/login")
     public String showLoginPage(Model model, HttpSession session) {
-        // Nếu đã login rồi thì redirect về home
         if (session.getAttribute("currentUser") != null) {
             return "redirect:/";
         }
         model.addAttribute("loginRequest", new LoginRequest());
         return "auth/login";
     }
-    
-    /**
-     * Xử lý login (cho web form - sử dụng session)
-     */
-@PostMapping("/login")
+
+    @PostMapping("/login")
     public String login(@Valid @ModelAttribute LoginRequest loginRequest,
                        BindingResult result,
                        HttpSession session,
@@ -106,21 +82,11 @@ public class AuthController {
         
         try {
             User user = authService.loginUser(loginRequest);
-            System.out.println("=== LOGIN SUCCESS ===");
-            System.out.println("User logged in: " + user.getUsername());
-            
-            // Tạo JWT token để test
             String token = jwtUtil.generateToken(user.getUsername());
-            System.out.println("=== JWT TOKEN GENERATED ===");
-            System.out.println("Token: " + token);
-            System.out.println("Token length: " + token.length());
-            
-            // Lưu user vào session
             session.setAttribute("currentUser", user);
             session.setAttribute("username", user.getUsername());
-            session.setAttribute("jwtToken", token); // Lưu token vào session để test
+            session.setAttribute("jwtToken", token);
             
-            // SET SECURITY CONTEXT - QUAN TRỌNG!
             org.springframework.security.core.userdetails.UserDetails userDetails = 
                 org.springframework.security.core.userdetails.User.builder()
                     .username(user.getUsername())
@@ -137,28 +103,17 @@ public class AuthController {
             var securityContext = org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
             securityContext.setAuthentication(authentication);
             org.springframework.security.core.context.SecurityContextHolder.setContext(securityContext);
-            // Persist SecurityContext to session so it survives redirects/new requests
             securityContextRepository.saveContext(securityContext, request, response);
             
-            System.out.println("User saved to session: " + session.getAttribute("currentUser"));
-            System.out.println("JWT Token saved to session: " + session.getAttribute("jwtToken"));
-            System.out.println("SecurityContext set with authentication");
-            
             redirectAttributes.addFlashAttribute("successMessage", "Đăng nhập thành công!");
-            System.out.println("Redirecting to dashboard");
-            return "redirect:/dashboard";
+            return "redirect:/"; // Chuyển hướng về trang chủ mới
             
         } catch (Exception e) {
-            System.out.println("=== LOGIN ERROR ===");
-            System.out.println("Error: " + e.getMessage());
             model.addAttribute("errorMessage", e.getMessage());
             return "auth/login";
         }
     }
     
-    /**
-     * API đăng nhập - trả về JWT token
-     */
     @PostMapping("/api/auth/login")
     @ResponseBody
     public ResponseEntity<?> loginApi(@Valid @RequestBody LoginRequest loginRequest) {
@@ -172,12 +127,8 @@ public class AuthController {
         }
     }
     
-    /**
-     * Hiển thị trang đăng ký
-     */
     @GetMapping("/register")
     public String showRegisterPage(Model model, HttpSession session) {
-        // Nếu đã login rồi thì redirect về home
         if (session.getAttribute("currentUser") != null) {
             return "redirect:/";
         }
@@ -185,9 +136,6 @@ public class AuthController {
         return "auth/register";
     }
     
-    /**
-     * Xử lý đăng ký (cho web form)
-     */
     @PostMapping("/register")
     public String register(@Valid @ModelAttribute RegisterRequest registerRequest,
                           BindingResult result,
@@ -200,19 +148,14 @@ public class AuthController {
         
         try {
             authService.register(registerRequest);
-            redirectAttributes.addFlashAttribute("successMessage", 
-                "Đăng ký thành công! Vui lòng đăng nhập.");
+            redirectAttributes.addFlashAttribute("successMessage", "Đăng ký thành công! Vui lòng đăng nhập.");
             return "redirect:/login";
-            
         } catch (Exception e) {
             model.addAttribute("errorMessage", e.getMessage());
             return "auth/register";
         }
     }
     
-    /**
-     * API đăng ký
-     */
     @PostMapping("/api/auth/register")
     @ResponseBody
     public ResponseEntity<?> registerApi(@Valid @RequestBody RegisterRequest registerRequest) {
@@ -230,38 +173,13 @@ public class AuthController {
         }
     }
     
-    /**
-     * Đăng xuất (cho web form)
-     */
     @GetMapping("/logout")
     public String logout(HttpSession session, RedirectAttributes redirectAttributes) {
-        System.out.println("=== LOGOUT CALLED ===");
-        
-        // Lấy thông tin user trước khi logout
-        User currentUser = (User) session.getAttribute("currentUser");
-        String jwtToken = (String) session.getAttribute("jwtToken");
-        
-        if (currentUser != null) {
-            System.out.println("Logging out user: " + currentUser.getUsername());
-        }
-        if (jwtToken != null) {
-            System.out.println("Clearing JWT token: " + jwtToken.substring(0, 20) + "...");
-        }
-        
-        // Xóa session
         session.invalidate();
-        System.out.println("Session invalidated");
-        
         redirectAttributes.addFlashAttribute("successMessage", "Đăng xuất thành công!");
-        System.out.println("Redirecting to login");
-        
         return "redirect:/login";
     }
     
-    /**
-     * API đăng xuất
-     * Note: Với JWT stateless, client chỉ cần xóa token ở phía client
-     */
     @PostMapping("/api/auth/logout")
     @ResponseBody
     public ResponseEntity<?> logoutApi() {
