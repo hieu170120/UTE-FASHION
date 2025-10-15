@@ -85,25 +85,7 @@
                 text-decoration: none;
                 color: #333;
             }
-            .new-arrivals-section .product-image-container {
-                position: relative;
-                background-color: #f0f0f0;
-            }
-            .new-arrivals-section .sale-badge {
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                background-color: #fff;
-                color: #000;
-                padding: 2px 8px;
-                font-size: 0.8rem;
-                border: 1px solid #ccc;
-            }
-            .new-arrivals-section .new-product-card img {
-                width: 100%;
-                height: 320px; 
-                object-fit: cover;
-            }
+            
             .new-arrivals-section .new-product-card h6 {
                 margin-top: 0.5rem;
                 font-size: 0.9rem;
@@ -132,6 +114,87 @@
             .new-arrivals-section .carousel-control-next {
                 right: -20px;
             }
+
+            /* -- Hover Overlay Styles -- */
+            .product-image-container {
+                position: relative; 
+                overflow: hidden;
+                background-color: #f0f0f0;
+            }
+            .product-image-container img {
+                width: 100%;
+                display: block;
+                transition: transform 0.4s ease;
+            }
+
+            .product-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.4);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                /* Animation from left */
+                transform: translateX(-101%);
+                opacity: 1;
+                transition: transform 0.4s ease;
+            }
+
+            .view-more-btn {
+                /* Default state */
+                background-color: transparent;
+                color: white;
+                border: 1px solid white;
+
+                padding: 10px 25px;
+                text-decoration: none;
+                font-size: 0.9rem;
+                font-weight: 500;
+                border-radius: 2px;
+                transform: translateY(20px);
+                opacity: 0;
+                transition: all 0.4s ease;
+            }
+            
+            /* Button hover state */
+            .view-more-btn:hover {
+                background-color: white;
+                color: #333;
+            }
+
+            /* Container hover effects */
+            .product-image-container:hover .product-overlay {
+                transform: translateX(0); /* Slide in */
+            }
+
+            .product-image-container:hover .view-more-btn {
+                transform: translateY(0);
+                opacity: 1;
+            }
+             .product-image-container:hover img {
+                transform: scale(1.05);
+            }
+            /* -- End Hover Overlay Styles -- */
+
+            .new-arrivals-section .product-image-container .sale-badge {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background-color: #fff;
+                color: #000;
+                padding: 2px 8px;
+                font-size: 0.8rem;
+                border: 1px solid #ccc;
+                z-index: 5; /* Ensure badge is above overlay */
+            }
+            .new-arrivals-section .new-product-card .new-product-img {
+                height: 320px; 
+                object-fit: cover;
+            }
+
             /* Responsive adjustments for carousel */
             @media (max-width: 992px) {
                 .new-arrivals-section .new-product-card {
@@ -162,10 +225,10 @@
     <div id="header-carousel" class="carousel slide mb-4" data-bs-ride="carousel">
         <div class="carousel-inner">
             <div class="carousel-item active">
-                <img class="w-100" src="https://cdn.hstatic.net/files/200000182297/file/bw2_8221706ff2814feea3f50caa7a9a4dd4.jpg" alt="Banner Image">
+                <img class="w-100" src="https://theme.hstatic.net/200000182297/1000887316/14/ms_banner_img1_master.jpg?v=2782" alt="Banner Image">
             </div>
             <div class="carousel-item">
-                <img class="w-100" src="https://cdn.hstatic.net/files/200000182297/file/bw2_8221706ff2814feea3f50caa7a9a4dd4.jpg" alt="Banner Image">
+                <img class="w-100" src="https://theme.hstatic.net/200000182297/1000887316/14/ms_banner_img1_master.jpg?v=2782" alt="Another Banner">
             </div>
         </div>
         <button class="carousel-control-prev" type="button" data-bs-target="#header-carousel" data-bs-slide="prev">
@@ -183,11 +246,15 @@
         <div class="product-carousel-container">
             <div class="product-carousel" id="newArrivalsCarousel">
                 <a th:href="@{/products/{slug}(slug=${product.slug})}" class="new-product-card" th:each="product, iterStat : ${productPage.content}" th:if="${iterStat.index < 8}">
-                    <div class="product-image-container">
-                         <img th:src="${!#lists.isEmpty(product.images)} ? ${product.images[0].imageUrl} : 'https://cdn.hstatic.net/products/200000182297/1.5_b632ccb9b3c54008860181b7c3f4e250_master.jpg'" 
-                             class="img-fluid" 
+                    <div class="product-image-container" 
+                         th:data-hover-src="${(product.images != null and #lists.size(product.images) > 1) ? #lists.toList(product.images)[1].imageUrl : ''}">
+                         <img th:src="${!#lists.isEmpty(product.images)} ? ${product.images[0].imageUrl} : 'https://ih1.redbubble.net/image.4905811472.8675/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg'" 
+                             class="img-fluid new-product-img" 
                              th:alt="${product.productName}">
                         <div class="sale-badge" th:if="${product.salePrice != null and product.salePrice < product.price}">-20%</div>
+                         <div class="product-overlay">
+                            <span class="view-more-btn">XEM THÊM</span>
+                        </div>
                     </div>
                     <div class="product-info">
                         <h6 th:text="${product.productName}">Product Name</h6>
@@ -247,9 +314,15 @@
                 </div>
                 <div class="product-grid" th:if="${productPage.totalElements > 0}">
                     <a th:href="@{/products/{slug}(slug=${product.slug})}" class="product-card" th:each="product : ${productPage.content}">
-                        <img th:src="${!#lists.isEmpty(product.images)} ? ${product.images[0].imageUrl} : 'https://cdn.hstatic.net/products/200000182297/1.5_b632ccb9b3c54008860181b7c3f4e250_master.jpg'"
-                             class="product-card-img-top"
-                             th:alt="${product.productName}">
+                        <div class="product-image-container"
+                             th:data-hover-src="${(product.images != null and #lists.size(product.images) > 1) ? #lists.toList(product.images)[1].imageUrl : ''}">
+                            <img th:src="${!#lists.isEmpty(product.images)} ? ${product.images[0].imageUrl} : 'https://ih1.redbubble.net/image.4905811472.8675/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg'"
+                                 class="product-card-img-top"
+                                 th:alt="${product.productName}">
+                            <div class="product-overlay">
+                                <span class="view-more-btn">XEM THÊM</span>
+                            </div>
+                        </div>
                         <div class="product-card-body">
                             <h5 class="product-card-title" th:text="${product.productName}">Product Name</h5>
                             <div class="product-price">
@@ -307,35 +380,62 @@
 
             // New Arrivals Carousel
             const newArrivalsContainer = document.querySelector('.new-arrivals-section');
-            if (!newArrivalsContainer) return;
+            if (newArrivalsContainer) {
+                const carousel = document.getElementById('newArrivalsCarousel');
+                const nextBtn = document.getElementById('nextBtn');
+                const prevBtn = document.getElementById('prevBtn');
 
-            const carousel = document.getElementById('newArrivalsCarousel');
-            const nextBtn = document.getElementById('nextBtn');
-            const prevBtn = document.getElementById('prevBtn');
+                function updateCarouselScroll() {
+                    if (!carousel || !carousel.querySelector('.new-product-card')) return;
+                    
+                    const card = carousel.querySelector('.new-product-card');
+                    const cardWidth = card.offsetWidth;
+                    const gap = parseInt(window.getComputedStyle(carousel).gap) || 0;
+                    const scrollAmount = cardWidth + gap;
 
-            function updateCarouselScroll() {
-                if (!carousel || !carousel.querySelector('.new-product-card')) return;
-                
-                const card = carousel.querySelector('.new-product-card');
-                const cardWidth = card.offsetWidth;
-                const gap = parseInt(window.getComputedStyle(carousel).gap) || 0;
-                const scrollAmount = cardWidth + gap;
+                    nextBtn.onclick = () => {
+                        carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                    };
 
-                nextBtn.onclick = () => {
-                    carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-                };
+                    prevBtn.onclick = () => {
+                        carousel.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+                    };
+                }
 
-                prevBtn.onclick = () => {
-                    carousel.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-                };
+                setTimeout(() => { updateCarouselScroll(); }, 200);
+                window.addEventListener('resize', updateCarouselScroll);
             }
+            
+            // --- NEW: Hover Image Swap and Overlay ---
+            const productContainers = document.querySelectorAll('.product-image-container');
 
-            // Use a slight delay to ensure all images are loaded and widths are calculated correctly
-            setTimeout(() => {
-                updateCarouselScroll();
-            }, 200);
+            productContainers.forEach(container => {
+                const img = container.querySelector('img');
+                const hoverSrc = container.dataset.hoverSrc;
+                
+                // Ensure we have an image and its src before proceeding
+                if (!img || !img.src) return;
 
-            window.addEventListener('resize', updateCarouselScroll);
+                const originalSrc = img.src; 
+
+                // Preload the hover image to prevent flickering on first hover
+                if (hoverSrc) {
+                    const hoverImage = new Image();
+                    hoverImage.src = hoverSrc;
+                }
+
+                container.addEventListener('mouseenter', () => {
+                    if (hoverSrc) {
+                        img.src = hoverSrc;
+                    }
+                });
+
+                container.addEventListener('mouseleave', () => {
+                    if (hoverSrc) {
+                        img.src = originalSrc;
+                    }
+                });
+            });
         });
     </script>
 </th:block>
