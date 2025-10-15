@@ -74,6 +74,19 @@
         .cart-item:hover .btn-close {
             opacity: 1;
         }
+        .btn-white {
+            background-color: #fff;
+            color: #111;
+            border: 1px solid #ddd !important;
+            transition: all 0.2s ease;
+        }
+
+        .btn-white:hover {
+            background-color: #f8f9fa;
+            color: #000;
+            border-color: #111 !important;
+        }
+
     </style>
 </head>
 <body>
@@ -161,7 +174,7 @@
                                 <a th:href="@{/cart}" class="btn btn-dark w-100 mb-2">
                                     <i class="fas fa-shopping-cart me-2"></i>XEM GIỎ HÀNG
                                 </a>
-                                <a th:href="@{/checkout}" class="btn btn-primary w-100">
+                                <a th:href="@{/checkout}" class="btn btn-white w-100">
                                     <i class="fas fa-credit-card me-2"></i>THANH TOÁN
                                 </a>
                             </div>
@@ -230,7 +243,7 @@
                     
                     let itemsHTML = '';
                     cartData.cartItems.forEach(item => {
-                        const imageUrl = item.productImage || 'https://via.placeholder.com/80x100';
+                        const imageUrl = item.productImage || 'https://cdn.hstatic.net/products/200000182297/1.10_b8c81da853bd47bcb8dfe0addedfdd69_master.jpg';
                         const formattedTotal = new Intl.NumberFormat('vi-VN').format(item.totalPrice) + '₫';
                         
                         // Build variant info string
