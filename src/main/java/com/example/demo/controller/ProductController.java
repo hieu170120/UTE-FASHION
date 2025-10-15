@@ -3,6 +3,8 @@ package com.example.demo.controller;
 
 import java.util.List;
 
+import com.example.demo.dto.ShopDTO;
+import com.example.demo.service.ShopService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,9 +22,6 @@ import com.example.demo.service.BrandService;
 import com.example.demo.service.CategoryService;
 import com.example.demo.service.ProductService;
 
-/**
- * Controller cho các trang sản phẩm phía người dùng
- */
 @Controller
 @RequestMapping("/products")
 public class ProductController {
@@ -36,9 +35,9 @@ public class ProductController {
 	@Autowired
 	private BrandService brandService;
 
-	/**
-	 * Hiển thị trang danh sách tất cả sản phẩm có phân trang và tìm kiếm
-	 */
+    @Autowired
+    private ShopService shopService;
+
 	@GetMapping
 	public String listAllProducts(Model model, @RequestParam(name = "page", defaultValue = "0") int page,
 			@RequestParam(name = "size", defaultValue = "9") int size,
@@ -55,10 +54,12 @@ public class ProductController {
 
 		List<CategoryDTO> categories = categoryService.getAllCategories();
 		List<BrandDTO> brands = brandService.getAllBrands();
+        List<ShopDTO> shops = shopService.getAllShops();
 
 		model.addAttribute("productPage", productPage);
 		model.addAttribute("categories", categories);
 		model.addAttribute("brands", brands);
+        model.addAttribute("shops", shops);
 		model.addAttribute("keyword", keyword);
 
 		return "product/list";
@@ -73,11 +74,13 @@ public class ProductController {
 		CategoryDTO category = categoryService.getCategoryBySlug(categorySlug);
 		List<CategoryDTO> categories = categoryService.getAllCategories();
 		List<BrandDTO> brands = brandService.getAllBrands();
+        List<ShopDTO> shops = shopService.getAllShops();
 
 		model.addAttribute("productPage", productPage);
 		model.addAttribute("pageTitle", "Sản phẩm thuộc danh mục '" + category.getCategoryName() + "'");
 		model.addAttribute("categories", categories);
 		model.addAttribute("brands", brands);
+        model.addAttribute("shops", shops);
 		return "product/list";
 	}
 
@@ -90,18 +93,37 @@ public class ProductController {
 		BrandDTO brand = brandService.getBrandBySlug(brandSlug);
 		List<CategoryDTO> categories = categoryService.getAllCategories();
 		List<BrandDTO> brands = brandService.getAllBrands();
+        List<ShopDTO> shops = shopService.getAllShops();
 
 		model.addAttribute("productPage", productPage);
 		model.addAttribute("pageTitle", "Sản phẩm thuộc thương hiệu '" + brand.getBrandName() + "'");
 		model.addAttribute("categories", categories);
 		model.addAttribute("brands", brands);
+        model.addAttribute("shops", shops);
 
 		return "product/list";
 	}
 
-	/**
-	 * Hiển thị trang chi tiết sản phẩm bằng slug
-	 */
+    @GetMapping("/shop/{shopId}")
+    public String listProductsByShop(Model model, @PathVariable Integer shopId,
+                                     @RequestParam(name = "page", defaultValue = "0") int page,
+                                     @RequestParam(name = "size", defaultValue = "9") int size) {
+
+        Page<ProductDTO> productPage = productService.getProductsByShop(shopId, PageRequest.of(page, size));
+        ShopDTO shop = shopService.getShopById(shopId);
+        List<CategoryDTO> categories = categoryService.getAllCategories();
+        List<BrandDTO> brands = brandService.getAllBrands();
+        List<ShopDTO> shops = shopService.getAllShops();
+
+        model.addAttribute("productPage", productPage);
+        model.addAttribute("pageTitle", "Sản phẩm của shop '" + shop.getShopName() + "'");
+        model.addAttribute("categories", categories);
+        model.addAttribute("brands", brands);
+        model.addAttribute("shops", shops);
+
+        return "product/list";
+    }
+
 	@GetMapping("/{slug}")
 	public String viewProduct(@PathVariable String slug, Model model) {
 		try {

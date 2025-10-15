@@ -39,12 +39,14 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Cho phép session khi cần
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/login", "/register", "/static/**", "/css/**", "/js/**", "/images/**",
-                                "/products", "/products/**",
-                                "/cart", "/cart/**",
-                                "/checkout", "/checkout/**",
-                                "/payment", "/payment/**",
-                                "/payment-test", "/payment-test/**")
+//                        .requestMatchers("/", "/login", "/register", "/static/**", "/css/**", "/js/**", "/images/**",
+//                                "/products", "/products/**",
+//                                "/cart", "/cart/**",
+//                                "/checkout", "/checkout/**",
+//                                "/payment", "/payment/**",
+//                                "/payment-test", "/payment-test/**")
+//                        .permitAll()
+                        .requestMatchers("/**")
                         .permitAll()
                         .anyRequest().authenticated())
                 .formLogin(form -> form.disable()) // Tắt Spring Security form login
