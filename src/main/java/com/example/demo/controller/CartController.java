@@ -30,10 +30,14 @@ public class CartController {
             } else {
                 cart = cartService.getCartBySessionId(sessionId);
             }
-            model.addAttribute("cart", cart);
         } catch (Exception e) {
-            model.addAttribute("cart", new CartDTO());
+            // Nếu có lỗi, tạo cart rỗng
+            cart = new CartDTO();
+            cart.setCartItems(new java.util.ArrayList<>());
+            cart.setTotalAmount(java.math.BigDecimal.ZERO);
         }
+        
+        model.addAttribute("cart", cart);
         return "cart/cart";
     }
 
@@ -79,5 +83,23 @@ public class CartController {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi xóa giỏ hàng!");
         }
         return "redirect:/cart";
+    }
+
+    // API endpoint để lấy mini cart data (cho dropdown)
+    @GetMapping("/api/mini-cart")
+    @ResponseBody
+    public CartDTO getMiniCart(HttpSession session) {
+        User currentUser = (User) session.getAttribute("currentUser");
+        String sessionId = session.getId();
+        
+        try {
+            if (currentUser != null) {
+                return cartService.getCartByUserId(currentUser.getUserId());
+            } else {
+                return cartService.getCartBySessionId(sessionId);
+            }
+        } catch (Exception e) {
+            return new CartDTO(); // Trả về cart rỗng nếu có lỗi
+        }
     }
 }

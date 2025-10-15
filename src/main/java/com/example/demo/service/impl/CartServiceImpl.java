@@ -35,14 +35,14 @@ public class CartServiceImpl implements CartService {
     @Override
     public CartDTO getCartByUserId(Integer userId) {
         Cart cart = cartRepository.findByUserUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cart not found for user: " + userId));
+                .orElseGet(() -> createNewCart(userId, null));
         return mapToCartDTO(cart);
     }
 
     @Override
     public CartDTO getCartBySessionId(String sessionId) {
         Cart cart = cartRepository.findBySessionId(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cart not found for session: " + sessionId));
+                .orElseGet(() -> createNewCart(null, sessionId));
         return mapToCartDTO(cart);
     }
 

@@ -28,6 +28,8 @@ public class AuthController {
     
     private final AuthService authService;
     private final JwtUtil jwtUtil;
+    private final org.springframework.security.web.context.SecurityContextRepository securityContextRepository =
+            new org.springframework.security.web.context.HttpSessionSecurityContextRepository();
     
     /**
      * Trang chủ
@@ -89,10 +91,12 @@ public class AuthController {
     /**
      * Xử lý login (cho web form - sử dụng session)
      */
-    @PostMapping("/login")
+@PostMapping("/login")
     public String login(@Valid @ModelAttribute LoginRequest loginRequest,
                        BindingResult result,
                        HttpSession session,
+                       jakarta.servlet.http.HttpServletRequest request,
+                       jakarta.servlet.http.HttpServletResponse response,
                        RedirectAttributes redirectAttributes,
                        Model model) {
         
@@ -116,8 +120,29 @@ public class AuthController {
             session.setAttribute("username", user.getUsername());
             session.setAttribute("jwtToken", token); // Lưu token vào session để test
             
+            // SET SECURITY CONTEXT - QUAN TRỌNG!
+            org.springframework.security.core.userdetails.UserDetails userDetails = 
+                org.springframework.security.core.userdetails.User.builder()
+                    .username(user.getUsername())
+                    .password(user.getPasswordHash())
+                    .authorities(user.getRoles().stream()
+                        .map(role -> new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + role.getRoleName()))
+                        .toArray(org.springframework.security.core.GrantedAuthority[]::new))
+                    .build();
+            
+            org.springframework.security.authentication.UsernamePasswordAuthenticationToken authentication =
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                    userDetails, null, userDetails.getAuthorities());
+            
+            var securityContext = org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
+            securityContext.setAuthentication(authentication);
+            org.springframework.security.core.context.SecurityContextHolder.setContext(securityContext);
+            // Persist SecurityContext to session so it survives redirects/new requests
+            securityContextRepository.saveContext(securityContext, request, response);
+            
             System.out.println("User saved to session: " + session.getAttribute("currentUser"));
             System.out.println("JWT Token saved to session: " + session.getAttribute("jwtToken"));
+            System.out.println("SecurityContext set with authentication");
             
             redirectAttributes.addFlashAttribute("successMessage", "Đăng nhập thành công!");
             System.out.println("Redirecting to dashboard");
