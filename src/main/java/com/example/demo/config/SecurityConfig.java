@@ -15,29 +15,21 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable()) // Tạm disable CSRF cho demo
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/login", "/register", "/static/**", "/css/**", "/js/**", "/images/**", "/products").permitAll()
-                .anyRequest().authenticated()
-            )
-            .formLogin(form -> form
-                .loginPage("/login")
-                .permitAll()
-            )
-            .logout(logout -> logout
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/login?logout")
-                .permitAll()
-            );
+	@Bean
+	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+		http.csrf(csrf -> csrf.disable()) // Tạm disable CSRF cho demo
+				.authorizeHttpRequests(auth -> auth
+//                .requestMatchers("/", "/login", "/register", "/static/**", "/css/**", "/js/**", "/images/**").permitAll()
+						.requestMatchers("/**", "/static/**", "/css/**", "/js/**", "/images/**").permitAll()
+						.anyRequest().authenticated())
+				.formLogin(form -> form.loginPage("/login").permitAll())
+				.logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/login?logout").permitAll());
 
-        return http.build();
-    }
+		return http.build();
+	}
 }
