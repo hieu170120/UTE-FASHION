@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>Đăng nhập để thanh toán</title>
+    <style>
+        .login-required-card {
+            max-width: 600px;
+            margin: 80px auto;
+            padding: 50px;
+            text-align: center;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .login-required-icon {
+            font-size: 80px;
+            color: #6c757d;
+            margin-bottom: 30px;
+        }
+        .btn-custom {
+            min-width: 200px;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 25px;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" layout:fragment="content">
+    <div class="login-required-card">
+        <i class="fas fa-lock login-required-icon"></i>
+        
+        <h2 class="mb-4">Bạn cần đăng nhập để tiếp tục thanh toán</h2>
+        
+        <p class="text-muted mb-5">
+            Vui lòng đăng nhập vào tài khoản của bạn để tiếp tục quá trình thanh toán. 
+            Nếu chưa có tài khoản, bạn có thể đăng ký ngay.
+        </p>
+        
+        <div class="d-flex flex-column flex-md-row justify-content-center align-items-center">
+            <a th:href="@{/login}" class="btn btn-primary btn-custom">
+                <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
+            </a>
+            <a th:href="@{/register}" class="btn btn-outline-primary btn-custom">
+                <i class="fas fa-user-plus me-2"></i>Đăng ký tài khoản
+            </a>
+        </div>
+        
+        <div class="mt-4">
+            <a th:href="@{/cart}" class="text-muted">
+                <i class="fas fa-arrow-left me-2"></i>Quay lại giỏ hàng
+            </a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

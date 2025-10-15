@@ -58,41 +58,43 @@ public class CheckoutController {
 
     /**
      * Hiển thị trang checkout
+     * - Nếu chưa đăng nhập: hiển thị giao diện yêu cầu đăng nhập/đăng ký
+     * - Nếu đã đăng nhập: hiển thị form checkout với thông tin user và cart
      */
     @GetMapping
-    public String showCheckoutPage(Model model, HttpSession session) {
+    public String showCheckoutPage(Model model, HttpSession session, RedirectAttributes redirectAttributes) {
         User currentUser = getCurrentUser(session);
+        
+        // Nếu chưa đăng nhập -> hiển thị giao diện yêu cầu login
         if (currentUser == null) {
-            return "redirect:/login";
+            return "checkout/login-required";
         }
 
-        // Lấy cart để hiển thị summary
+        // Đã đăng nhập -> lấy cart từ database
         try {
             CartDTO cart = cartService.getCartByUserId(currentUser.getUserId());
             
-            // TODO: Tạm thời bỏ qua check cart trống để test payment
-            // if (cart.getCartItems() == null || cart.getCartItems().isEmpty()) {
-            //     return "redirect:/cart";
-            // }
-            
-            // Nếu cart trống, tạo fake cart
+            // Kiểm tra cart có sản phẩm không
             if (cart.getCartItems() == null || cart.getCartItems().isEmpty()) {
-                cart = new CartDTO();
-                cart.setTotalAmount(new java.math.BigDecimal("500000"));
-                // Không cần setTotalItems, CartDTO tự tính
+                redirectAttributes.addFlashAttribute("errorMessage", "Giỏ hàng của bạn đang trống");
+                return "redirect:/cart";
             }
             
+            // Tạo OrderDTO với thông tin mặc định từ user
+            OrderDTO orderDTO = new OrderDTO();
+            orderDTO.setRecipientName(currentUser.getFullName());
+            orderDTO.setPhoneNumber(currentUser.getPhoneNumber());
+            orderDTO.setEmail(currentUser.getEmail());
+            
             model.addAttribute("cart", cart);
-            model.addAttribute("orderDTO", new OrderDTO());
+            model.addAttribute("currentUser", currentUser);
+            model.addAttribute("orderDTO", orderDTO);
+            
             return "checkout/checkout";
             
         } catch (Exception e) {
-            // Nếu lỗi, tạo fake cart
-            CartDTO cart = new CartDTO();
-            cart.setTotalAmount(new java.math.BigDecimal("500000"));
-            model.addAttribute("cart", cart);
-            model.addAttribute("orderDTO", new OrderDTO());
-            return "checkout/checkout";
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi tải giỏ hàng: " + e.getMessage());
+            return "redirect:/cart";
         }
     }
 
@@ -124,12 +126,13 @@ public class CheckoutController {
         }
 
         try {
-            // Lấy cart để lưu vào session
+            // Lấy cart từ database
             CartDTO cart = cartService.getCartByUserId(currentUser.getUserId());
+            
+            // Kiểm tra cart có sản phẩm không
             if (cart.getCartItems() == null || cart.getCartItems().isEmpty()) {
-                // Tạo fake cart nếu trống
-                cart = new CartDTO();
-                cart.setTotalAmount(new java.math.BigDecimal("500000"));
+                redirectAttributes.addFlashAttribute("errorMessage", "Giỏ hàng của bạn đang trống");
+                return "redirect:/cart";
             }
             
             // ✅ LƯU THÔNG TIN VÀO SESSION (chưa tạo Order!)
