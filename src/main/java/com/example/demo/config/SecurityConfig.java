@@ -20,12 +20,12 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-    
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserDetailsService userDetailsService;
-    
+
     // PasswordEncoder đã được định nghĩa trong PasswordConfig
-    
+
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
@@ -34,25 +34,25 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // Disable CSRF cho REST API với JWT
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Cho phép session khi cần
-            )
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/login", "/register", "/static/**", "/css/**", "/js/**", "/images/**", "/products").permitAll()
-                .anyRequest().authenticated()
-            )
-            .formLogin(form -> form.disable()) // Tắt Spring Security form login
-            .userDetailsService(userDetailsService)
-            .logout(logout -> logout
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/")
-                .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID")
-                .permitAll()
-            )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        
+                .csrf(csrf -> csrf.disable()) // Disable CSRF cho REST API với JWT
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Cho phép session khi cần
+                )
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/", "/login", "/register", "/static/**", "/css/**", "/js/**", "/images/**",
+                                "/products")
+                        .permitAll()
+                        .anyRequest().authenticated())
+                .formLogin(form -> form.disable()) // Tắt Spring Security form login
+                .userDetailsService(userDetailsService)
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
+                        .permitAll())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 }
