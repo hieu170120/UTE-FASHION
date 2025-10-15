@@ -6,6 +6,8 @@ import org.springframework.data.domain.Pageable;
 
 import com.example.demo.dto.ProductDTO;
 
+import java.util.List;
+
 public interface ProductService {
 	Page<ProductDTO> getAllProducts(Pageable pageable);
 
@@ -20,6 +22,8 @@ public interface ProductService {
 	Page<ProductDTO> getProductsByShop(Integer shopId, Pageable pageable);
 
 	Page<ProductDTO> searchProducts(String keyword, Pageable pageable);
+
+	List<ProductDTO> getBestsellerProducts();
 
 	ProductDTO createProduct(ProductDTO productDTO, Integer shopId);
 

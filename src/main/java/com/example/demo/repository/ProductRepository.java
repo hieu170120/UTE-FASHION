@@ -1,5 +1,6 @@
 package com.example.demo.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -25,6 +26,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 	Page<Product> findByCategorySlug(@Param("categorySlug") String categorySlug, Pageable pageable);
 
 	@EntityGraph(attributePaths = { "images", "category", "brand" })
+
 	@Query(value = "SELECT p FROM Product p WHERE p.brand.slug = :brandSlug", countQuery = "SELECT count(p) FROM Product p WHERE p.brand.slug = :brandSlug")
 	Page<Product> findByBrandSlug(@Param("brandSlug") String brandSlug, Pageable pageable);
 
@@ -39,5 +41,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 	@EntityGraph(attributePaths = { "images", "shop" })
 	@Query(value = "SELECT p FROM Product p WHERE p.shop.id = :shopId", countQuery = "SELECT count(p) FROM Product p WHERE p.shop.id = :shopId")
 	Page<Product> findByShopId(@Param("shopId") Integer shopId, Pageable pageable);
+
+	List<Product> findTop8ByIsActiveTrueOrderBySoldCountDesc();
 
 }
