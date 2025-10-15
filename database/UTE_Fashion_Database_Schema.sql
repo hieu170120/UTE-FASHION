@@ -335,7 +335,7 @@ CREATE TABLE Orders (
     user_id INT NOT NULL, -- Liên kết người mua
     carrier_id INT, -- Liên kết nhà vận chuyển
     shipper_id INT, -- Liên kết shipper
-    shipping_time INT, -- Thời gian giao hàng dự kiến
+    shipping_time INT, -- Thời gian giao hàng dự kiến (phút)
     recipient_name NVARCHAR(100) NOT NULL, -- Tên người nhận
     phone_number NVARCHAR(20) NOT NULL, -- Số điện thoại người nhận
     email NVARCHAR(100), -- Email người nhận
@@ -349,15 +349,17 @@ CREATE TABLE Orders (
     discount_amount DECIMAL(18,2) DEFAULT 0, -- Số tiền giảm giá
     tax_amount DECIMAL(18,2) DEFAULT 0, -- Thuế
     total_amount DECIMAL(18,2) NOT NULL, -- Tổng tiền đơn hàng
-    order_status NVARCHAR(50) NOT NULL DEFAULT 'Pending', -- Trạng thái đơn hàng (Pending, Confirmed, Shipping, Delivered, Cancelled)
+    order_status NVARCHAR(50) NOT NULL DEFAULT 'Pending', -- Trạng thái đơn hàng (Pending, Confirmed, Accepted, Shipping, Delivered, Cancelled)
     payment_status NVARCHAR(50) NOT NULL DEFAULT 'Unpaid', -- Trạng thái thanh toán
     customer_notes NVARCHAR(MAX), -- Ghi chú khách hàng
     admin_notes NVARCHAR(MAX), -- Ghi chú admin
     order_date DATETIME DEFAULT GETDATE(), -- Ngày đặt hàng
-    confirmed_at DATETIME, -- Thời gian xác nhận
-    shipped_at DATETIME, -- Thời gian bắt đầu giao
-    delivered_at DATETIME, -- Thời gian giao hàng
-    cancelled_at DATETIME, -- Thời gian hủy
+    confirmed_at DATETIME, -- Thời gian Admin xác nhận đơn hàng
+    accepted_at DATETIME, -- ⭐ MỚI: Thời gian Shipper xác nhận nhận đơn (sau khi Admin phân công)
+    shipped_at DATETIME, -- Thời gian Shipper bắt đầu giao hàng
+    estimated_delivery_time DATETIME, -- ⭐ MỚI: Thời gian dự kiến giao xong (tính từ shipped_at + random 2-5 phút)
+    delivered_at DATETIME, -- Thời gian giao hàng thành công
+    cancelled_at DATETIME, -- Thời gian hủy đơn
     created_at DATETIME DEFAULT GETDATE(),
     updated_at DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
@@ -642,7 +644,7 @@ CREATE INDEX idx_users_username ON Users(username);
 CREATE INDEX idx_users_is_active ON Users(is_active);
 CREATE INDEX idx_products_category ON Products(category_id);
 CREATE INDEX idx_products_brand ON Products(brand_id);
-CREATE INDEX idx_products_vendor ON Products(vendor_id);
+CREATE INDEX idx_products_shop ON Products(shop_id);
 CREATE INDEX idx_products_slug ON Products(slug);
 CREATE INDEX idx_products_is_active ON Products(is_active);
 CREATE INDEX idx_products_created_at ON Products(created_at);
