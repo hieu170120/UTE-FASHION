@@ -34,7 +34,7 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public CartDTO getCartByUserId(Integer userId) {
-        Cart cart = cartRepository.findByUser_UserId(userId)
+        Cart cart = cartRepository.findByUserUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found for user: " + userId));
         return mapToCartDTO(cart);
     }
@@ -51,7 +51,7 @@ public class CartServiceImpl implements CartService {
     public CartDTO addToCart(CartItemDTO cartItemDTO, Integer userId, String sessionId) {
         Cart cart;
         if (userId != null) {
-            cart = cartRepository.findByUser_UserId(userId)
+            cart = cartRepository.findByUserUserId(userId)
                     .orElseGet(() -> createNewCart(userId, null));
         } else {
             cart = cartRepository.findBySessionId(sessionId)
@@ -102,7 +102,7 @@ public class CartServiceImpl implements CartService {
     public void clearCart(Integer userId, String sessionId) {
         Cart cart;
         if (userId != null) {
-            cart = cartRepository.findByUser_UserId(userId)
+            cart = cartRepository.findByUserUserId(userId)
                     .orElseThrow(() -> new ResourceNotFoundException("Cart not found for user: " + userId));
         } else {
             cart = cartRepository.findBySessionId(sessionId)
@@ -149,4 +149,10 @@ public class CartServiceImpl implements CartService {
                 .collect(Collectors.toList()));
         return calculateCartTotals(cartDTO);
     }
+
+	@Override
+	public Integer getCartItemCount(Integer userId, String sessionId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
