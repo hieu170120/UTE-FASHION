@@ -1,6 +1,8 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.*;
+import com.example.demo.entity.Carrier;
+import com.example.demo.entity.Coupon;
 import com.example.demo.entity.PaymentMethod;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
@@ -46,6 +48,12 @@ public class PaymentController {
     
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private CarrierService carrierService;
+    
+    @Autowired
+    private CouponService couponService;
 
     @Value("${sepay.bank.account}")
     private String bankAccount;
@@ -93,11 +101,107 @@ public class PaymentController {
         // Lấy payment methods
         List<PaymentMethod> paymentMethods = paymentService.getAllPaymentMethods();
         
+        // Lấy danh sách carriers
+        List<Carrier> carriers = carrierService.getAllActiveCarriers();
+        
+        // Lấy thông tin coupon và carrier đã chọn từ session (nếu có)
+        String appliedCouponCode = (String) session.getAttribute("appliedCouponCode");
+        BigDecimal discountAmount = (BigDecimal) session.getAttribute("discountAmount");
+        Integer selectedCarrierId = (Integer) session.getAttribute("selectedCarrierId");
+        BigDecimal shippingFee = (BigDecimal) session.getAttribute("shippingFee");
+        
+        // Tính tổng tiền
+        BigDecimal subtotal = cart.getTotalAmount();
+        BigDecimal total = subtotal;
+        
+        if (shippingFee != null) {
+            total = total.add(shippingFee);
+        }
+        if (discountAmount != null) {
+            total = total.subtract(discountAmount);
+        }
+        
         model.addAttribute("cart", cart);
         model.addAttribute("checkoutData", checkoutData);
         model.addAttribute("paymentMethods", paymentMethods);
+        model.addAttribute("carriers", carriers);
+        model.addAttribute("appliedCouponCode", appliedCouponCode);
+        model.addAttribute("discountAmount", discountAmount);
+        model.addAttribute("selectedCarrierId", selectedCarrierId);
+        model.addAttribute("shippingFee", shippingFee);
+        model.addAttribute("subtotal", subtotal);
+        model.addAttribute("finalTotal", total);
         
         return "payment/method-selection";
+    }
+    
+    /**
+     * Áp dụng mã giảm giá
+     * POST /payment/apply-coupon
+     */
+    @PostMapping("/apply-coupon")
+    public String applyCoupon(@RequestParam String couponCode,
+                             HttpSession session,
+                             RedirectAttributes redirectAttributes) {
+        try {
+            Integer userId = (Integer) session.getAttribute("checkoutUserId");
+            CartDTO cart = cartService.getCartByUserId(userId);
+            
+            // Validate coupon
+            Coupon coupon = couponService.validateCoupon(couponCode, cart.getTotalAmount());
+            
+            // Tính discount
+            BigDecimal discount = couponService.calculateDiscount(coupon, cart.getTotalAmount());
+            
+            // Lưu vào session
+            session.setAttribute("appliedCouponCode", couponCode);
+            session.setAttribute("discountAmount", discount);
+            
+            redirectAttributes.addFlashAttribute("successMessage", 
+                "Áp dụng mã giảm giá thành công!");
+            
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        
+        return "redirect:/payment/method-selection";
+    }
+    
+    /**
+     * Xóa mã giảm giá
+     * POST /payment/remove-coupon
+     */
+    @PostMapping("/remove-coupon")
+    public String removeCoupon(HttpSession session, RedirectAttributes redirectAttributes) {
+        session.removeAttribute("appliedCouponCode");
+        session.removeAttribute("discountAmount");
+        redirectAttributes.addFlashAttribute("successMessage", "Xóa mã giảm giá thành công");
+        return "redirect:/payment/method-selection";
+    }
+    
+    /**
+     * Chọn carrier (nhà vận chuyển)
+     * POST /payment/select-carrier
+     */
+    @PostMapping("/select-carrier")
+    public String selectCarrier(@RequestParam Integer carrierId,
+                               HttpSession session,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            Carrier carrier = carrierService.getCarrierById(carrierId);
+            
+            // Lưu vào session
+            session.setAttribute("selectedCarrierId", carrierId);
+            session.setAttribute("shippingFee", carrier.getDefaultShippingFee());
+            
+            redirectAttributes.addFlashAttribute("successMessage", 
+                "Chọn nhà vận chuyển thành công");
+            
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        
+        return "redirect:/payment/method-selection";
     }
 
     /**
