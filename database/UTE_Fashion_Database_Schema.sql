@@ -423,34 +423,36 @@ CREATE TABLE Return_Requests (
 -- Bảng Payment_Methods: Lưu phương thức thanh toán
 -- Chức năng: Hỗ trợ thanh toán (COD, VNPAY, MOMO).
 CREATE TABLE Payment_Methods (
-    payment_method_id INT PRIMARY KEY IDENTITY(1,1),
-    method_name NVARCHAR(100) NOT NULL UNIQUE, -- Tên phương thức (COD, VNPAY, MOMO)
-    method_code NVARCHAR(50) NOT NULL UNIQUE, -- Mã phương thức
-    description NVARCHAR(500), -- Mô tả
-    icon_url NVARCHAR(500), -- Icon phương thức
-    is_active BIT DEFAULT 1, -- Trạng thái
-    display_order INT DEFAULT 0, -- Thứ tự hiển thị
-    created_at DATETIME DEFAULT GETDATE()
-);
+        payment_method_id INT PRIMARY KEY IDENTITY(1,1),
+        method_name NVARCHAR(100) NOT NULL UNIQUE,
+        method_code NVARCHAR(50) NOT NULL UNIQUE, -- 'COD', 'SEPAY_QR', 'VNPAY', 'MOMO'
+        description NVARCHAR(500),
+        icon_url NVARCHAR(500),
+        is_active BIT DEFAULT 1,
+        display_order INT DEFAULT 0,
+        created_at DATETIME DEFAULT GETDATE(),
+        updated_at DATETIME DEFAULT GETDATE()
+    );
 
 -- Bảng Payments: Lưu thông tin thanh toán
 -- Chức năng: Quản lý thanh toán và hoàn tiền cho đơn hàng.
 CREATE TABLE Payments (
-    payment_id INT PRIMARY KEY IDENTITY(1,1),
-    order_id INT NOT NULL, -- Liên kết đơn hàng
-    payment_method_id INT NOT NULL, -- Liên kết phương thức thanh toán
-    transaction_id NVARCHAR(255), -- Mã giao dịch (VNPAY, MOMO)
-    amount DECIMAL(18,2) NOT NULL, -- Số tiền thanh toán
-    payment_status NVARCHAR(50) NOT NULL DEFAULT 'Pending', -- Trạng thái thanh toán
-    payment_gateway_response NVARCHAR(MAX), -- Phản hồi từ cổng thanh toán
-    paid_at DATETIME, -- Thời gian thanh toán
-    refunded_at DATETIME, -- Thời gian hoàn tiền
-    refund_amount DECIMAL(18,2), -- Số tiền hoàn
-    created_at DATETIME DEFAULT GETDATE(),
-    updated_at DATETIME DEFAULT GETDATE(),
-    FOREIGN KEY (order_id) REFERENCES Orders(order_id),
-    FOREIGN KEY (payment_method_id) REFERENCES Payment_Methods(payment_method_id)
-);
+        payment_id INT PRIMARY KEY IDENTITY(1,1),
+        order_id INT NOT NULL,
+        payment_method_id INT NOT NULL,
+        transaction_id NVARCHAR(255), -- ID từ payment gateway
+        amount DECIMAL(18,2) NOT NULL,
+        payment_status NVARCHAR(50) NOT NULL DEFAULT 'Pending', 
+        -- 'Pending', 'Success', 'Failed', 'Refunded'
+        payment_gateway_response NVARCHAR(MAX), -- JSON response từ SePay
+        paid_at DATETIME,
+        refunded_at DATETIME,
+        refund_amount DECIMAL(18,2),
+        created_at DATETIME DEFAULT GETDATE(),
+        updated_at DATETIME DEFAULT GETDATE(),
+        FOREIGN KEY (order_id) REFERENCES Orders(order_id),
+        FOREIGN KEY (payment_method_id) REFERENCES Payment_Methods(payment_method_id)
+    );
 
 -- Bảng Coupons: Lưu mã giảm giá
 -- Chức năng: Hỗ trợ áp dụng mã giảm giá (Vendor, Admin), bao gồm giảm giá sản phẩm và phí vận chuyển.
