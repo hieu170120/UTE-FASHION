@@ -1,0 +1,110 @@
+
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/admin_default}">
+<head>
+    <title>Quản lý Sản phẩm</title>
+</head>
+<body>
+
+<div layout:fragment="content">
+    <div class="container-fluid">
+        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+            <h1 class="h3 mb-0 text-gray-800">Quản lý Sản phẩm</h1>
+            <a href="/admin/products/new" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+                <i class="fas fa-plus fa-sm text-white-50"></i> Thêm mới sản phẩm
+            </a>
+        </div>
+
+        <!-- Search Form -->
+        <div class="card shadow mb-4">
+            <div class="card-body">
+                <form th:action="@{/admin/products}" method="get" class="form-inline">
+                    <div class="form-group mr-3 mb-2">
+                        <input type="text" name="keyword" class="form-control" placeholder="Tìm theo tên sản phẩm..." th:value="${keyword}">
+                    </div>
+                    <button type="submit" class="btn btn-primary mb-2">Tìm kiếm</button>
+                     <a th:href="@{/admin/products}" class="btn btn-secondary mb-2 ml-2">Làm mới</a>
+                </form>
+            </div>
+        </div>
+
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Danh sách sản phẩm</h6>
+            </div>
+            <div class="card-body">
+                <div th:if="${successMessage}" class="alert alert-success" role="alert" th:text="${successMessage}"></div>
+                <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Ảnh</th>
+                            <th>Tên sản phẩm</th>
+                            <th>Danh mục</th>
+                            <th>Thương hiệu</th>
+                            <th>Giá (VNĐ)</th>
+                            <th>Trạng thái</th>
+                            <th style="width: 150px;">Hành động</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="product : ${productPage.content}">
+                            <td th:text="${product.id}">1</td>
+                            <td>
+                                <img th:src="${!#lists.isEmpty(product.images)} ? ${product.images[0].imageUrl} : '/img/default-product.png'"
+                                     alt="Product Image" style="width: 60px; height: 60px; object-fit: cover;">
+                            </td>
+                            <td th:text="${product.productName}">Tên sản phẩm</td>
+                            <td th:text="${product.category != null} ? ${product.category.name} : 'N/A'">Danh mục</td>
+                            <td th:text="${product.brand != null} ? ${product.brand.name} : 'N/A'">Thương hiệu</td>
+                            <td th:text="${#numbers.formatDecimal(product.basePrice, 0, 'COMMA', 0, 'POINT')}">1,000,000</td>
+                            <td>
+                                <span th:text="${product.active} ? 'Đang bán' : 'Ngừng bán'"
+                                      th:class="${product.active} ? 'badge badge-success' : 'badge badge-danger'"></span>
+                            </td>
+                            <td>
+                                <a th:href="@{/admin/products/edit/{id}(id=${product.id})}" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a th:href="@{/admin/products/delete/{id}(id=${product.id})}"
+                                   class="btn btn-danger btn-sm"
+                                   onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này không?');">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr th:if="${productPage.empty}">
+                            <td colspan="8" class="text-center">Không có sản phẩm nào.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <nav aria-label="Page navigation" th:if="${productPage.totalPages > 1}">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item" th:classappend="${productPage.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/products(page=${productPage.number - 1}, size=${productPage.size}, keyword=${keyword})}">&laquo;</a>
+                        </li>
+                        <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, productPage.totalPages - 1)}"
+                            th:classappend="${pageNumber == productPage.number} ? 'active'">
+                            <a class="page-link" th:href="@{/admin/products(page=${pageNumber}, size=${productPage.size}, keyword=${keyword})}" th:text="${pageNumber + 1}"></a>
+                        </li>
+                        <li class="page-item" th:classappend="${productPage.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/products(page=${productPage.number + 1}, size=${productPage.size}, keyword=${keyword})}">&raquo;</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
