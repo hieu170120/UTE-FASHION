@@ -140,6 +140,33 @@ INSERT INTO Viewed_Products (user_id, product_id) VALUES (4, 1), (4, 3), (5, 2);
 -- =====================================================
 -- SEED BANNERS, SETTINGS, CONTACTS
 -- =====================================================
+INSERT INTO Payment_Methods (
+    method_name, 
+    method_code, 
+    description, 
+    is_active, 
+    display_order
+) VALUES (
+    N'Thanh toán khi nhận hàng (COD)',
+    'COD',
+    N'Thanh toán bằng tiền mặt khi nhận hàng. Bạn sẽ trả tiền trực tiếp cho nhân viên giao hàng.',
+    1,
+    1
+);
+INSERT INTO Payment_Methods (
+    method_name, 
+    method_code, 
+    description, 
+    is_active, 
+    display_order
+) VALUES (
+    N'Chuyển khoản QR Code',
+    'SEPAY_QR',
+    N'Quét mã QR để thanh toán qua ngân hàng BIDV. Đơn hàng sẽ được tự động xác nhận trong vòng 60 giây.',
+    1,
+    2
+);
+
 INSERT INTO Banners (title, image_url, link_url, description, position, is_active)
 VALUES
 (N'Giảm giá mùa thu', 'https://example.com/banner1.jpg', '/collections/ao', N'Ưu đãi đến 50% cho áo thun', 'home_top', 1),
