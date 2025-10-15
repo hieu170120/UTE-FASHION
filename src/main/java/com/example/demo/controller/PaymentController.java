@@ -2,11 +2,15 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.*;
 import com.example.demo.entity.PaymentMethod;
+import com.example.demo.entity.User;
+import com.example.demo.repository.UserRepository;
 import com.example.demo.service.*;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -39,12 +43,36 @@ public class PaymentController {
     
     @Autowired
     private CartService cartService;
+    
+    @Autowired
+    private UserRepository userRepository;
 
     @Value("${sepay.bank.account}")
     private String bankAccount;
 
     @Value("${sepay.bank.name}")
     private String bankName;
+    
+    /**
+     * Lấy user hiện tại từ JWT authentication hoặc session
+     */
+    private User getCurrentUser(HttpSession session) {
+        // Thử lấy từ session trước
+        User sessionUser = (User) session.getAttribute("currentUser");
+        if (sessionUser != null) {
+            return sessionUser;
+        }
+        
+        // Lấy từ JWT authentication
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated() 
+            && !"anonymousUser".equals(authentication.getPrincipal())) {
+            String username = authentication.getName();
+            return userRepository.findByUsername(username).orElse(null);
+        }
+        
+        return null;
+    }
 
     /**
      * Trang chọn phương thức thanh toán

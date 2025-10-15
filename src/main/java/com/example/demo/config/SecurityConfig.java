@@ -40,7 +40,11 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/login", "/register", "/static/**", "/css/**", "/js/**", "/images/**",
-                                "/products")
+                                "/products", "/products/**",
+                                "/cart", "/cart/**",
+                                "/checkout", "/checkout/**",
+                                "/payment", "/payment/**",
+                                "/payment-test", "/payment-test/**")
                         .permitAll()
                         .anyRequest().authenticated())
                 .formLogin(form -> form.disable()) // Tắt Spring Security form login
