@@ -15,4 +15,9 @@ public class CartItemDTO {
     private Integer quantity;
     private BigDecimal price;
     private BigDecimal totalPrice;
+    
+    // Variant info
+    private String variantSize;  // Size name (e.g., "10", "S", "M")
+    private String variantColor; // Color name (e.g., "Xanh", "Hồng")
+    private String brandName;    // Brand name (e.g., "NEM")
 }

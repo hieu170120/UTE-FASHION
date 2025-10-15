@@ -28,6 +28,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+    private final PasswordTestService passwordTestService;
     
     /**
      * Đăng ký user mới
@@ -53,7 +54,7 @@ public class AuthService {
         User user = new User();
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-        user.setPasswordHash(request.getPassword()); // Plain text password
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword())); // Mã hóa password bằng BCrypt
         user.setFullName(request.getFullName());
         user.setPhoneNumber(request.getPhoneNumber());
         user.setIsActive(true);
@@ -106,6 +107,9 @@ public class AuthService {
      */
     @Transactional
     public User loginUser(LoginRequest request) {
+        // Test password hash
+        passwordTestService.testPasswordHash();
+        
         // Tìm user theo username
         Optional<User> userOpt = userRepository.findByUsername(request.getUsername());
         
@@ -120,8 +124,8 @@ public class AuthService {
             throw new RuntimeException("Tài khoản đã bị khóa");
         }
         
-        // Kiểm tra password (tạm thời dùng plain text)
-        if (!request.getPassword().equals(user.getPasswordHash())) {
+        // Kiểm tra password bằng BCrypt
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new RuntimeException("Tên đăng nhập hoặc mật khẩu không đúng");
         }
         
