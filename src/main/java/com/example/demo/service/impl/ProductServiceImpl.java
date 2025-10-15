@@ -2,10 +2,8 @@
 package com.example.demo.service.impl;
 
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.example.demo.repository.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -15,9 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.dto.ProductDTO;
 import com.example.demo.entity.Product;
-import com.example.demo.entity.ProductImage;
-import com.example.demo.entity.ProductVariant;
 import com.example.demo.exception.ResourceNotFoundException;
+import com.example.demo.repository.BrandRepository;
+import com.example.demo.repository.CategoryRepository;
+import com.example.demo.repository.ColorRepository;
+import com.example.demo.repository.ProductRepository;
+import com.example.demo.repository.ShopRepository;
+import com.example.demo.repository.SizeRepository;
 import com.example.demo.service.ProductService;
 
 @Service
@@ -33,8 +35,8 @@ public class ProductServiceImpl implements ProductService {
 	private SizeRepository sizeRepository;
 	@Autowired
 	private ColorRepository colorRepository;
-    @Autowired
-    private ShopRepository shopRepository;
+	@Autowired
+	private ShopRepository shopRepository;
 
 	@Autowired
 	private ModelMapper modelMapper;
@@ -75,12 +77,12 @@ public class ProductServiceImpl implements ProductService {
 				.map(product -> modelMapper.map(product, ProductDTO.class));
 	}
 
-    @Override
-    @Transactional(readOnly = true)
-    public Page<ProductDTO> getProductsByShop(Integer shopId, Pageable pageable) {
-        return productRepository.findByShopId(shopId, pageable)
-                .map(product -> modelMapper.map(product, ProductDTO.class));
-    }
+	@Override
+	@Transactional(readOnly = true)
+	public Page<ProductDTO> getProductsByShop(Integer shopId, Pageable pageable) {
+		return productRepository.findByShopId(shopId, pageable)
+				.map(product -> modelMapper.map(product, ProductDTO.class));
+	}
 
 	@Override
 	@Transactional(readOnly = true)
@@ -92,15 +94,15 @@ public class ProductServiceImpl implements ProductService {
 	@Override
 	public List<ProductDTO> getBestsellerProducts() {
 		return productRepository.findTop8ByIsActiveTrueOrderBySoldCountDesc().stream()
-				.map(product -> modelMapper.map(product, ProductDTO.class))
-				.collect(Collectors.toList());
+				.map(product -> modelMapper.map(product, ProductDTO.class)).collect(Collectors.toList());
 	}
 
 	@Override
 	@Transactional
 	public ProductDTO createProduct(ProductDTO productDTO, Integer shopId) {
 		Product product = modelMapper.map(productDTO, Product.class);
-        product.setShop(shopRepository.findById(shopId).orElseThrow(() -> new ResourceNotFoundException("Shop not found")));
+		product.setShop(
+				shopRepository.findById(shopId).orElseThrow(() -> new ResourceNotFoundException("Shop not found")));
 		Product savedProduct = productRepository.save(product);
 		return modelMapper.map(savedProduct, ProductDTO.class);
 	}
@@ -111,8 +113,9 @@ public class ProductServiceImpl implements ProductService {
 		Product existingProduct = productRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
 
-        modelMapper.map(productDTO, existingProduct);
-        existingProduct.setShop(shopRepository.findById(shopId).orElseThrow(() -> new ResourceNotFoundException("Shop not found")));
+		modelMapper.map(productDTO, existingProduct);
+		existingProduct.setShop(
+				shopRepository.findById(shopId).orElseThrow(() -> new ResourceNotFoundException("Shop not found")));
 
 		Product updatedProduct = productRepository.save(existingProduct);
 		return modelMapper.map(updatedProduct, ProductDTO.class);

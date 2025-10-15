@@ -1,9 +1,13 @@
 package com.example.demo.repository;
 
-import com.example.demo.entity.ProductVariant;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.example.demo.entity.ProductVariant;
+
 @Repository
 public interface ProductVariantRepository extends JpaRepository<ProductVariant, Integer> {
+	List<ProductVariant> findByProductId(Integer productId);
 }
