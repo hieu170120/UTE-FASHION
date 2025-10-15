@@ -89,7 +89,8 @@
                 </div>
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item" th:each="category : ${categories}">
-                        <a th:href="@{/products/category/{slug}(slug=${category.slug})}" th:text="${category.name}">Category Name</a>
+                        <a th:href="@{/products/category/{slug}(slug=${category.slug})}" th:text="${category.categoryName}">Category Name</a>
+
                     </li>
                 </ul>
             </div>
@@ -99,7 +100,7 @@
                 </div>
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item" th:each="brand : ${brands}">
-                        <a th:href="@{/products/brand/{slug}(slug=${brand.slug})}" th:text="${brand.name}">Brand Name</a>
+                        <a th:href="@{/products/brand/{slug}(slug=${brand.slug})}" th:text="${brand.brandName}">Brand Name</a>
                     </li>
                 </ul>
             </div>
@@ -109,7 +110,7 @@
         <div class="col-lg-9">
             <div class="product-grid">
                 <a th:href="@{/products/{slug}(slug=${product.slug})}" class="product-card" th:each="product : ${productPage.content}">
-                    <img th:src="${!#lists.isEmpty(product.images)} ? ${product.images[0].imageUrl} : '/images/default-product.png'"
+                    <img th:src="${!#lists.isEmpty(product.images)} ? ${product.images[0].imageUrl} : 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=688'"
                          class="product-card-img-top"
                          th:alt="${product.productName}">
                     <div class="product-card-body">
