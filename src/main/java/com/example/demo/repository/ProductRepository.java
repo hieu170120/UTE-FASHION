@@ -29,4 +29,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 	@Query(value = "SELECT p FROM Product p LEFT JOIN FETCH p.category c LEFT JOIN FETCH p.brand b WHERE lower(p.productName) LIKE lower(concat('%', :keyword, '%'))", countQuery = "SELECT count(p) FROM Product p WHERE lower(p.productName) LIKE lower(concat('%', :keyword, '%'))")
 	Page<Product> findByProductNameContainingIgnoreCase(@Param("keyword") String keyword, Pageable pageable);
 
+    @Query(value = "SELECT p FROM Product p LEFT JOIN FETCH p.shop s WHERE s.id = :shopId", countQuery = "SELECT count(p) FROM Product p WHERE p.shop.id = :shopId")
+    Page<Product> findByShopId(@Param("shopId") Integer shopId, Pageable pageable);
+
 }

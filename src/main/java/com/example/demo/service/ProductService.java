@@ -16,12 +16,14 @@ public interface ProductService {
 	Page<ProductDTO> getProductsByCategory(String slug, Pageable pageable);
 
 	Page<ProductDTO> getProductsByBrand(String slug, Pageable pageable);
+    
+	Page<ProductDTO> getProductsByShop(Integer shopId, Pageable pageable);
 
 	Page<ProductDTO> searchProducts(String keyword, Pageable pageable);
 
-	ProductDTO createProduct(ProductDTO productDTO);
+	ProductDTO createProduct(ProductDTO productDTO, Integer shopId);
 
-	ProductDTO updateProduct(Integer id, ProductDTO productDTO);
+	ProductDTO updateProduct(Integer id, ProductDTO productDTO, Integer shopId);
 
 	void deleteProduct(Integer id);
 

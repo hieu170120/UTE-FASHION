@@ -38,6 +38,10 @@ public class Product {
     @JoinColumn(name = "brand_id")
     private Brand brand;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shop_id")
+    private Shop shop;
+
     @Lob
     @Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
     private String description;
