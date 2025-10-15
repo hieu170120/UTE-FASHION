@@ -71,7 +71,33 @@
 </head>
 <body>
 
-<div class="container mt-5" layout:fragment="content">
+<div class="container-fluid mt-5" layout:fragment="content">
+
+    <!-- Carousel Start -->
+    <div id="header-carousel" class="carousel slide mb-4" data-bs-ride="carousel">
+        <div class="carousel-indicators">
+            <button type="button" data-bs-target="#header-carousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+            <button type="button" data-bs-target="#header-carousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+        </div>
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <img class="w-100" src="https://theme.hstatic.net/200000182297/1000887316/14/ms_banner_img1_master.jpg?v=2776" alt="Another Banner">
+            </div>
+            <div class="carousel-item">
+                <img class="w-100" src="https://theme.hstatic.net/200000182297/1000887316/14/ms_banner_img1_master.jpg?v=2776" alt="Another Banner">
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#header-carousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#header-carousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+        </button>
+    </div>
+    <!-- Carousel End -->
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 th:text="${pageTitle} ?: 'Sản phẩm'"></h1>
         <form class="d-flex" th:action="@{/products}" method="get">
