@@ -48,24 +48,9 @@ public class OrderController {
         }
     }
 
-    @PostMapping
-    public String createOrder(@Valid @ModelAttribute OrderDTO orderDTO, BindingResult result, HttpSession session, RedirectAttributes redirectAttributes, Model model) {
-        User currentUser = (User) session.getAttribute("currentUser");
-        if (currentUser == null) {
-            return "redirect:/login";
-        }
-        if (result.hasErrors()) {
-            return "checkout/checkout";
-        }
-        try {
-            OrderDTO createdOrder = orderService.createOrderFromCart(currentUser.getUserId(), session.getId(), orderDTO);
-            redirectAttributes.addFlashAttribute("successMessage", "Đặt hàng thành công!");
-            return "redirect:/order-success?orderId=" + createdOrder.getId();
-        } catch (Exception e) {
-            model.addAttribute("errorMessage", "Lỗi khi đặt hàng: " + e.getMessage());
-            return "checkout/checkout";
-        }
-    }
+    // ❌ REMOVED: createOrder() method
+    // Checkout flow is now handled by CheckoutController
+    // POST /checkout → CheckoutController.processCheckout()
 
     @GetMapping("/{id}/cancel")
     public String cancelOrder(@PathVariable Integer id, HttpSession session, RedirectAttributes redirectAttributes) {

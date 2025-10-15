@@ -1,0 +1,228 @@
+package com.example.demo.controller;
+
+import com.example.demo.dto.*;
+import com.example.demo.entity.PaymentMethod;
+import com.example.demo.service.*;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * PaymentController
+ * Xử lý payment flow cho COD và SePay QR
+ * 
+ * Flow COD: method-selection → confirm-cod → order created → payment pending
+ * Flow SePay: method-selection → create QR → polling → order created → payment success
+ */
+@Controller
+@RequestMapping("/payment")
+public class PaymentController {
+
+    @Autowired
+    private PaymentService paymentService;
+    
+    @Autowired
+    private SePayService sePayService;
+    
+    @Autowired
+    private OrderService orderService;
+    
+    @Autowired
+    private CartService cartService;
+
+    @Value("${sepay.bank.account}")
+    private String bankAccount;
+
+    @Value("${sepay.bank.name}")
+    private String bankName;
+
+    /**
+     * Trang chọn phương thức thanh toán
+     * GET /payment/method-selection
+     */
+    @GetMapping("/method-selection")
+    public String showPaymentMethods(Model model, HttpSession session) {
+        OrderDTO checkoutData = (OrderDTO) session.getAttribute("checkoutData");
+        Integer userId = (Integer) session.getAttribute("checkoutUserId");
+        
+        if (checkoutData == null) {
+            return "redirect:/cart";
+        }
+        
+        // Lấy cart để hiển thị
+        CartDTO cart = cartService.getCartByUserId(userId);
+        
+        // Lấy payment methods
+        List<PaymentMethod> paymentMethods = paymentService.getAllPaymentMethods();
+        
+        model.addAttribute("cart", cart);
+        model.addAttribute("checkoutData", checkoutData);
+        model.addAttribute("paymentMethods", paymentMethods);
+        
+        return "payment/method-selection";
+    }
+
+    /**
+     * COD - Tạo order ngay
+     * POST /payment/confirm-cod
+     */
+    @PostMapping("/confirm-cod")
+    public String confirmCOD(HttpSession session, RedirectAttributes redirectAttributes) {
+        try {
+            OrderDTO checkoutData = (OrderDTO) session.getAttribute("checkoutData");
+            Integer userId = (Integer) session.getAttribute("checkoutUserId");
+            
+            if (checkoutData == null) {
+                return "redirect:/cart";
+            }
+            
+            // ✅ TẠO ORDER
+            OrderDTO createdOrder = orderService.createOrderFromCart(userId, session.getId(), checkoutData);
+            
+            // ✅ TẠO PAYMENT (COD - Pending)
+            paymentService.createCODPayment(createdOrder.getId());
+            
+            // Xóa session
+            session.removeAttribute("checkoutData");
+            session.removeAttribute("checkoutUserId");
+            
+            redirectAttributes.addFlashAttribute("successMessage", "Đặt hàng thành công! Thanh toán khi nhận hàng.");
+            return "redirect:/checkout/order-success?orderId=" + createdOrder.getId();
+            
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/payment/method-selection";
+        }
+    }
+
+    /**
+     * SePay QR - Hiển thị QR Code
+     * POST /payment/sepay-qr/create
+     */
+    @PostMapping("/sepay-qr/create")
+    public String createSePayQR(HttpSession session, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            OrderDTO checkoutData = (OrderDTO) session.getAttribute("checkoutData");
+            Integer userId = (Integer) session.getAttribute("checkoutUserId");
+            
+            if (checkoutData == null) {
+                return "redirect:/cart";
+            }
+            
+            // Lấy cart để tính tổng tiền
+            CartDTO cart = cartService.getCartByUserId(userId);
+            
+            // ⭐ GENERATE ORDER NUMBER (chưa lưu DB)
+            String orderNumber = "ORD-" + System.currentTimeMillis();
+            BigDecimal amount = cart.getTotalAmount();
+            
+            // Lưu vào session
+            session.setAttribute("pendingOrderNumber", orderNumber);
+            session.setAttribute("pendingOrderAmount", amount);
+            session.setAttribute("qrGeneratedAt", System.currentTimeMillis());
+            
+            // Generate QR URL
+            String qrUrl = sePayService.generateQRCodeUrl(orderNumber, amount);
+            
+            model.addAttribute("orderNumber", orderNumber);
+            model.addAttribute("amount", amount);
+            model.addAttribute("qrUrl", qrUrl);
+            model.addAttribute("bankAccount", bankAccount);
+            model.addAttribute("bankName", bankName);
+            model.addAttribute("content", "UTEFASHION " + orderNumber.replace("-", ""));
+            
+            return "payment/qr-payment";
+            
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/payment/method-selection";
+        }
+    }
+
+    /**
+     * API Polling - Check transaction
+     * GET /payment/sepay-qr/check
+     * Called by JavaScript every 3 seconds
+     */
+    @GetMapping("/sepay-qr/check")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> checkSePayTransaction(HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            String orderNumber = (String) session.getAttribute("pendingOrderNumber");
+            BigDecimal amount = (BigDecimal) session.getAttribute("pendingOrderAmount");
+            Long startTime = (Long) session.getAttribute("qrGeneratedAt");
+            
+            if (orderNumber == null || startTime == null) {
+                response.put("status", "error");
+                response.put("message", "Session expired");
+                return ResponseEntity.ok(response);
+            }
+            
+            // Check timeout (60s)
+            long elapsed = System.currentTimeMillis() - startTime;
+            if (elapsed > 60000) {
+                response.put("status", "timeout");
+                response.put("message", "QR code expired");
+                return ResponseEntity.ok(response);
+            }
+            
+            // ⭐ POLLING: Check SePay API
+            SePayTransactionDTO.Transaction transaction = sePayService.findMatchingTransaction(
+                orderNumber, 
+                amount, 
+                startTime
+            );
+            
+            if (transaction != null) {
+                // ✅ FOUND! Tạo order
+                OrderDTO checkoutData = (OrderDTO) session.getAttribute("checkoutData");
+                Integer userId = (Integer) session.getAttribute("checkoutUserId");
+                
+                // TẠO ORDER
+                OrderDTO createdOrder = orderService.createOrderFromCart(userId, session.getId(), checkoutData);
+                
+                // TẠO PAYMENT (Success)
+                paymentService.createSePayPayment(
+                    createdOrder.getId(), 
+                    transaction.getId().toString(),
+                    transaction.toString()
+                );
+                
+                // Xóa session
+                session.removeAttribute("checkoutData");
+                session.removeAttribute("checkoutUserId");
+                session.removeAttribute("pendingOrderNumber");
+                session.removeAttribute("pendingOrderAmount");
+                session.removeAttribute("qrGeneratedAt");
+                
+                response.put("status", "success");
+                response.put("orderId", createdOrder.getId());
+                response.put("transactionId", transaction.getId());
+                
+            } else {
+                // Chưa tìm thấy
+                response.put("status", "pending");
+                response.put("message", "Waiting for payment...");
+            }
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+            return ResponseEntity.ok(response);
+        }
+    }
+}
