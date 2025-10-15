@@ -29,6 +29,17 @@ public class Order {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "carrier_id")
+    private Carrier carrier;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shipper_id")
+    private Shipper shipper;
+
+    @Column(name = "shipping_time")
+    private Integer shippingTime; // Thời gian giao hàng dự kiến (phút)
+
     @Column(name = "recipient_name", nullable = false, length = 100)
     private String recipientName;
 
@@ -86,8 +97,14 @@ public class Order {
     @Column(name = "confirmed_at")
     private LocalDateTime confirmedAt;
 
+    @Column(name = "accepted_at")
+    private LocalDateTime acceptedAt; // Thời gian Shipper xác nhận nhận đơn
+
     @Column(name = "shipped_at")
     private LocalDateTime shippedAt;
+
+    @Column(name = "estimated_delivery_time")
+    private LocalDateTime estimatedDeliveryTime; // Thời gian dự kiến giao xong
 
     @Column(name = "delivered_at")
     private LocalDateTime deliveredAt;
