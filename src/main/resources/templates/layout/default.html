@@ -1,3 +1,4 @@
+<!-- resources/templates/layout/default.html -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" 
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
@@ -38,15 +39,25 @@
                     <li class="nav-item">
                         <a class="nav-link" href="#">Liên hệ</a>
                     </li>
-                    <li class="nav-item ms-3" th:if="${currentUser == null}">
+                    <!-- Nút giỏ hàng ở kế bên nút tài khoản -->
+                    <li class="nav-item ms-3">
+                        <a class="nav-link position-relative" th:href="@{/cart}">
+                            <i class="fas fa-shopping-cart me-1"></i>
+                            Giỏ hàng
+                            <span th:if="${session.cartItemCount > 0}" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" th:text="${session.cartItemCount}">
+                                <span class="visually-hidden">số lượng trong giỏ</span>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="nav-item ms-3" th:if="${session.currentUser == null}">
                         <a class="btn btn-outline-primary btn-sm" th:href="@{/login}">
                             <i class="fas fa-sign-in-alt me-1"></i> Đăng nhập
                         </a>
                     </li>
-                    <li class="nav-item dropdown ms-3" th:if="${currentUser != null}">
+                    <li class="nav-item dropdown ms-3" th:if="${session.currentUser != null}">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-user-circle me-1"></i>
-                            <span th:text="${currentUser.fullName}"></span>
+                            <span th:text="${session.currentUser.fullName}"></span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Tài khoản</a></li>
