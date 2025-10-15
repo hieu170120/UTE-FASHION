@@ -144,6 +144,23 @@ public class CartServiceImpl implements CartService {
                             .findFirst()
                             .orElse("/images/default-product.png"));
                     itemDTO.setTotalPrice(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+                    
+                    // Add variant info if exists
+                    if (item.getVariant() != null) {
+                        ProductVariant variant = item.getVariant();
+                        if (variant.getSize() != null) {
+                            itemDTO.setVariantSize(variant.getSize().getSizeName());
+                        }
+                        if (variant.getColor() != null) {
+                            itemDTO.setVariantColor(variant.getColor().getColorName());
+                        }
+                    }
+                    
+                    // Add brand info
+                    if (item.getProduct().getBrand() != null) {
+                        itemDTO.setBrandName(item.getProduct().getBrand().getBrandName());
+                    }
+                    
                     return itemDTO;
                 })
                 .collect(Collectors.toList()));

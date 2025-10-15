@@ -132,6 +132,17 @@
         
         .cart-item:hover .btn-close {
             opacity: 1;
+        }.btn-white {
+             background-color: #fff;
+             color: #111;
+             border: 1px solid #ddd !important;
+             transition: all 0.2s ease;
+         }
+
+        .btn-white:hover {
+            background-color: #f8f9fa;
+            color: #000;
+            border-color: #111 !important;
         }
     </style>
 </head>
@@ -220,7 +231,7 @@
                                 <a th:href="@{/cart}" class="btn btn-dark w-100 mb-2">
                                     <i class="fas fa-shopping-cart me-2"></i>XEM GIỎ HÀNG
                                 </a>
-                                <a th:href="@{/checkout}" class="btn btn-primary w-100">
+                                <a th:href="@{/checkout}" class="btn btn-white w-100">
                                     <i class="fas fa-credit-card me-2"></i>THANH TOÁN
                                 </a>
                             </div>
