@@ -154,7 +154,7 @@ CREATE TABLE Products (
     sku NVARCHAR(100) UNIQUE, -- Mã sản phẩm
     category_id INT NOT NULL, -- Liên kết danh mục
     brand_id INT, -- Liên kết thương hiệu
-    vendor_id INT, -- Liên kết với Vendor
+    shop_id INT, -- Liên kết với Vendor
     description NVARCHAR(MAX), -- Mô tả chi tiết
     short_description NVARCHAR(500), -- Mô tả ngắn
     price DECIMAL(18,2) NOT NULL, -- Giá gốc
@@ -177,7 +177,7 @@ CREATE TABLE Products (
     updated_at DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (category_id) REFERENCES Categories(category_id),
     FOREIGN KEY (brand_id) REFERENCES Brands(brand_id),
-    FOREIGN KEY (vendor_id) REFERENCES Users(user_id)
+	FOREIGN KEY (shop_id) REFERENCES Shops(shop_id) 
 );
 
 -- Bảng Product_Images: Lưu hình ảnh sản phẩm
