@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/admin_default}">
+<head>
+    <title th:text="${productDTO.id == null} ? 'Thêm mới sản phẩm' : 'Chỉnh sửa sản phẩm'"></title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="container-fluid">
+
+        <h1 class="h3 mb-4 text-gray-800" th:text="${productDTO.id == null} ? 'Thêm mới sản phẩm' : 'Chỉnh sửa sản phẩm'"></h1>
+
+        <div class="card shadow mb-4">
+            <div class="card-body">
+                <form th:action="${productDTO.id == null} ? @{/admin/products} : @{/admin/products/edit/{id}(id=${productDTO.id})}" 
+                      th:object="${productDTO}" 
+                      method="post">
+
+                    <!-- Main Product Details -->
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label for="productName">Tên sản phẩm</label>
+                                <input type="text" class="form-control" id="productName" th:field="*{productName}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="slug">Slug (URL thân thiện)</label>
+                                <input type="text" class="form-control" id="slug" th:field="*{slug}">
+                                <small class="form-text text-muted">Để trống để tự động tạo từ tên sản phẩm.</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="longDescription">Mô tả chi tiết</label>
+                                <textarea class="form-control" id="longDescription" rows="5" th:field="*{longDescription}"></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="basePrice">Giá cơ bản (VNĐ)</label>
+                                <input type="number" class="form-control" id="basePrice" th:field="*{basePrice}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="category">Danh mục</label>
+                                <select class="form-control" id="category" th:field="*{category.id}" required>
+                                    <option value="">-- Chọn danh mục --</option>
+                                    <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}"></option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="brand">Thương hiệu</label>
+                                <select class="form-control" id="brand" th:field="*{brand.id}" required>
+                                     <option value="">-- Chọn thương hiệu --</option>
+                                    <option th:each="br : ${brands}" th:value="${br.id}" th:text="${br.name}"></option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="active">Trạng thái</label>
+                                <select class="form-control" id="active" th:field="*{active}">
+                                    <option th:value="true">Đang bán</option>
+                                    <option th:value="false">Ngừng bán</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Product Images -->
+                    <div class="mb-4">
+                        <h5>Hình ảnh sản phẩm</h5>
+                        <div id="image-list">
+                            <div class="row align-items-center mb-2 image-item" th:each="image, iterStat : *{images}">
+                                <div class="col-10">
+                                    <input type="hidden" th:field="*{images[__${iterStat.index}__].id}" />
+                                    <input type="text" class="form-control" placeholder="Nhập URL hình ảnh..." th:field="*{images[__${iterStat.index}__].imageUrl}" required>
+                                </div>
+                                <div class="col-2">
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="removeImage(this)">Xóa</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" id="add-image" class="btn btn-secondary btn-sm mt-2">Thêm ảnh</button>
+                    </div>
+
+                    <hr>
+
+                    <!-- Product Variants -->
+                    <div class="mb-4">
+                        <h5>Các phiên bản sản phẩm (Size, Màu sắc, Số lượng)</h5>
+                        <div id="variant-list">
+                             <div class="row align-items-center mb-2 variant-item" th:each="variant, iterStat : *{variants}">
+                                <input type="hidden" th:field="*{variants[__${iterStat.index}__].id}" />
+                                <div class="col-md-3">
+                                     <input type="text" class="form-control" placeholder="Size" th:field="*{variants[__${iterStat.index}__].size.name}">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" class="form-control" placeholder="Tên màu" th:field="*{variants[__${iterStat.index}__].color.name}">
+                                </div>
+                                 <div class="col-md-3">
+                                    <input type="text" class="form-control" placeholder="Mã màu (hex)" th:field="*{variants[__${iterStat.index}__].color.hexCode}">
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="number" class="form-control" placeholder="Số lượng" th:field="*{variants[__${iterStat.index}__].stockQuantity}" min="0" required>
+                                </div>
+                                <div class="col-md-1">
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="removeVariant(this)">Xóa</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" id="add-variant" class="btn btn-secondary btn-sm mt-2">Thêm phiên bản</button>
+                    </div>
+
+
+                    <hr>
+
+                    <button type="submit" class="btn btn-primary">Lưu sản phẩm</button>
+                    <a th:href="@{/admin/products}" class="btn btn-secondary">Hủy bỏ</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+<script>
+// Script for automatically generating slug from product name
+document.addEventListener('DOMContentLoaded', function() {
+    const productNameInput = document.getElementById('productName');
+    const slugInput = document.getElementById('slug');
+
+    productNameInput.addEventListener('keyup', function() {
+        slugInput.value = generateSlug(this.value);
+    });
+
+    function generateSlug(text) {
+        return text.toString().toLowerCase()
+            .replace(/\s+/g, '-')       // Replace spaces with -
+            .replace(/[àáạảãâầấậẩẫăằắặẳẵ]/g, 'a')
+            .replace(/[èéẹẻẽêềếệểễ]/g, 'e')
+            .replace(/[ìíịỉĩ]/g, 'i')
+            .replace(/[òóọỏõôồốộổỗơờớợởỡ]/g, 'o')
+            .replace(/[ùúụủũưừứựửữ]/g, 'u')
+            .replace(/ỳýỵỷỹ/g, 'y')
+            .replace(/đ/g, 'd')
+            .replace(/[^\w\-]+/g, '')   // Remove all non-word chars
+            .replace(/\-\-+/g, '-')   // Replace multiple - with single -
+            .replace(/^-+/, '')          // Trim - from start of text
+            .replace(/-+$/, '');         // Trim - from end of text
+    }
+});
+
+// --- Image Management ---
+let imageIndex = document.querySelectorAll('#image-list .image-item').length;
+document.getElementById('add-image').addEventListener('click', function() {
+    const imageList = document.getElementById('image-list');
+    const newImage = document.createElement('div');
+    newImage.classList.add('row', 'align-items-center', 'mb-2', 'image-item');
+    newImage.innerHTML = `
+        <div class="col-10">
+            <input type="text" name="images[${imageIndex}].imageUrl" class="form-control" placeholder="Nhập URL hình ảnh..." required>
+        </div>
+        <div class="col-2">
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeImage(this)">Xóa</button>
+        </div>
+    `;
+    imageList.appendChild(newImage);
+    imageIndex++;
+});
+
+function removeImage(button) {
+    button.closest('.image-item').remove();
+}
+
+
+// --- Variant Management ---
+let variantIndex = document.querySelectorAll('#variant-list .variant-item').length;
+document.getElementById('add-variant').addEventListener('click', function() {
+    const variantList = document.getElementById('variant-list');
+    const newVariant = document.createElement('div');
+    newVariant.classList.add('row', 'align-items-center', 'mb-2', 'variant-item');
+    newVariant.innerHTML = `
+        <div class="col-md-3">
+            <input type="text" name="variants[${variantIndex}].size.name" class="form-control" placeholder="Size (S, M, L...)">
+        </div>
+        <div class="col-md-3">
+            <input type="text" name="variants[${variantIndex}].color.name" class="form-control" placeholder="Tên màu (Xanh, Đỏ...)">
+        </div>
+        <div class="col-md-3">
+            <input type="text" name="variants[${variantIndex}].color.hexCode" class="form-control" placeholder="Mã màu (#FFFFFF)">
+        </div>
+        <div class="col-md-2">
+            <input type="number" name="variants[${variantIndex}].stockQuantity" class="form-control" placeholder="Số lượng" min="0" required>
+        </div>
+        <div class="col-md-1">
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeVariant(this)">Xóa</button>
+        </div>
+    `;
+    variantList.appendChild(newVariant);
+    variantIndex++;
+});
+
+function removeVariant(button) {
+    button.closest('.variant-item').remove();
+}
+
+</script>
+
+</div>
+</body>
+</html>
