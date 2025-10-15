@@ -97,7 +97,7 @@
                 <a th:href="@{/products/{slug}(slug=${product.slug})}" class="new-product-card" th:each="product : ${newestProducts}">
                     <div class="product-image-container" th:data-hover-src="${(product.images != null and #lists.size(product.images) > 1) ? #lists.toList(product.images)[1].imageUrl : ''}">
                         <img th:src="${!#lists.isEmpty(product.images)} ? ${product.images[0].imageUrl} : 'https://ih1.redbubble.net/image.4905811472.8675/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg'" class="img-fluid new-product-img" th:alt="${product.productName}">
-                        <div class="sale-badge" th:if="${product.salePrice != null and product.salePrice < product.price}">-20%</div>
+                        <div class="sale-badge" th:if="${product.salePrice != null and product.salePrice < product.price and product.price > 0}" th:text="|-${#numbers.formatInteger(((product.price - product.salePrice) * 100.0) / product.price, 0)}%|"></div>
                         <div class="product-overlay">
                             <span class="view-more-btn">XEM THÊM</span>
                         </div>
@@ -126,7 +126,7 @@
                 <a th:href="@{/products/{slug}(slug=${product.slug})}" class="new-product-card" th:each="product : ${bestsellerProducts}">
                     <div class="product-image-container" th:data-hover-src="${(product.images != null and #lists.size(product.images) > 1) ? #lists.toList(product.images)[1].imageUrl : ''}">
                         <img th:src="${!#lists.isEmpty(product.images)} ? ${product.images[0].imageUrl} : 'https://ih1.redbubble.net/image.4905811472.8675/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg'" class="img-fluid new-product-img" th:alt="${product.productName}">
-                        <div class="sale-badge" th:if="${product.salePrice != null and product.salePrice < product.price}">-20%</div>
+                        <div class="sale-badge" th:if="${product.salePrice != null and product.salePrice < product.price and product.price > 0}" th:text="|-${#numbers.formatInteger(((product.price - product.salePrice) * 100.0) / product.price, 0)}%|"></div>
                         <div class="product-overlay">
                             <span class="view-more-btn">XEM THÊM</span>
                         </div>
