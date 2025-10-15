@@ -11,4 +11,5 @@ public interface CartService {
     void removeCartItem(Integer cartItemId);
     void clearCart(Integer userId, String sessionId);
     CartDTO calculateCartTotals(CartDTO cartDTO);
+	Integer getCartItemCount(Integer userId, String sessionId);
 }

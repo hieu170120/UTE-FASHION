@@ -1,79 +1,91 @@
+<!-- resources/templates/cart/cart.html -->
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
 <head>
-    <meta charset="UTF-8">
-    <title>Giỏ hàng - UTE Fashion</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link th:href="@{/static/css/cart.css}" rel="stylesheet">
+    <title>Giỏ hàng</title>
 </head>
 <body>
-    <div class="container mt-5">
-        <h1 class="mb-4">Giỏ hàng</h1>
 
-        <!-- Success Message -->
-        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>
-            <span th:text="${successMessage}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+<div class="container mt-5" layout:fragment="content">
+    <h1 class="mb-4">Giỏ hàng của bạn</h1>
 
-        <!-- Error Message -->
-        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-circle me-2"></i>
-            <span th:text="${errorMessage}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+    <!-- Thông báo -->
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-        <!-- Empty Cart -->
-        <div th:if="${cart.cartItems == null or cart.cartItems.isEmpty()}" class="text-center">
-            <h4>Giỏ hàng của bạn đang trống!</h4>
-            <a th:href="@{/products}" class="btn btn-primary mt-3">Tiếp tục mua sắm</a>
-        </div>
+    <!-- Bảng giỏ hàng -->
+    <table class="table table-hover table-bordered"
+           th:if="${cart.cartItems != null and not #lists.isEmpty(cart.cartItems)}">
+        <thead class="table-dark">
+        <tr>
+            <th>Sản phẩm</th>
+            <th>Giá</th>
+            <th>Số lượng</th>
+            <th>Tổng</th>
+            <th>Hành động</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="item : ${cart.cartItems}">
+            <td>
+                <div class="d-flex align-items-center">
+                    <img th:src="${item.productImage != null ? item.productImage : '/images/default-product.png'}"
+                         alt="Hình ảnh sản phẩm"
+                         class="img-thumbnail me-3"
+                         style="width: 80px;">
+                    <div>
+                        <h6 th:text="${item.productName}"></h6>
+                        <!-- Nếu có variant -->
+                        <small th:if="${item.variantId != null}">
+                            Kích cỡ: ... | Màu: ...
+                        </small>
+                    </div>
+                </div>
+            </td>
+            <td th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+            <td>
+                <form th:action="@{/cart/items/{id}/update(id=${item.cartItemId})}" method="post" class="d-flex">
+                    <input type="number" name="quantity" th:value="${item.quantity}" min="1"
+                           class="form-control me-2" style="width: 80px;">
+                    <button type="submit" class="btn btn-sm btn-primary">Cập nhật</button>
+                </form>
+            </td>
+            <td th:text="${#numbers.formatDecimal(item.totalPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+            <td>
+                <a th:href="@{/cart/items/{id}/delete(id=${item.cartItemId})}"
+                   class="btn btn-sm btn-danger">Xóa</a>
+            </td>
+        </tr>
+        </tbody>
+        <tfoot>
+        <tr>
+            <td colspan="3" class="text-end fw-bold">Tổng cộng:</td>
+            <td class="fw-bold"
+                th:text="${#numbers.formatDecimal(cart.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+            <td></td>
+        </tr>
+        </tfoot>
+    </table>
 
-        <!-- Cart Items -->
-        <div th:if="${cart.cartItems != null and !cart.cartItems.isEmpty()}">
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Hình ảnh</th>
-                        <th>Sản phẩm</th>
-                        <th>Giá</th>
-                        <th>Số lượng</th>
-                        <th>Tổng</th>
-                        <th>Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr th:each="item : ${cart.cartItems}">
-                        <td><img th:src="${item.productImage}" alt="Product Image" style="width: 100px;"></td>
-                        <td th:text="${item.productName}"></td>
-                        <td th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
-                        <td>
-                            <form th:action="@{/cart/items/{id}/update(id=${item.id})}" method="post">
-                                <input type="number" name="quantity" th:value="${item.quantity}" min="1" style="width: 60px;">
-                                <button type="submit" class="btn btn-sm btn-primary">Cập nhật</button>
-                            </form>
-                        </td>
-                        <td th:text="${#numbers.formatDecimal(item.totalPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
-                        <td>
-                            <a th:href="@{/cart/items/{id}/delete(id=${item.id})}" class="btn btn-sm btn-danger">Xóa</a>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <div class="text-end">
-                <h4>Tổng cộng: <span th:text="${#numbers.formatDecimal(cart.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></h4>
-                <a th:href="@{/checkout}" class="btn btn-success mt-3">Thanh toán</a>
-                <a th:href="@{/cart/clear}" class="btn btn-danger mt-3">Xóa giỏ hàng</a>
-            </div>
-        </div>
-
-        <a th:href="@{/products}" class="btn btn-secondary mt-3">Quay lại danh sách sản phẩm</a>
+    <!-- Giỏ hàng trống -->
+    <div th:if="${cart.cartItems == null or #lists.isEmpty(cart.cartItems)}"
+         class="alert alert-info text-center">
+        <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+        <h4>Giỏ hàng đang trống</h4>
+        <p>Hãy thêm sản phẩm vào giỏ hàng để tiếp tục mua sắm.</p>
+        <a th:href="@{/products}" class="btn btn-primary">Tiếp tục mua sắm</a>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script th:src="@{/static/js/cart.js}"></script>
+    <!-- Nút điều hướng -->
+    <div class="d-flex justify-content-between mt-4"
+         th:if="${cart.cartItems != null and not #lists.isEmpty(cart.cartItems)}">
+        <a th:href="@{/products}" class="btn btn-outline-secondary">Tiếp tục mua sắm</a>
+        <a th:href="@{/checkout}" class="btn btn-success">Thanh toán</a>
+    </div>
+</div>
+
 </body>
 </html>
