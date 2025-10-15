@@ -2,22 +2,22 @@ package com.example.demo.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
- * Configuration tạm thời để disable password encoding
- * CHỈ DÙNG CHO TESTING - KHÔNG DÙNG TRONG PRODUCTION!
+ * Configuration cho Password Encoding
+ * Sử dụng BCrypt để mã hóa password an toàn
  */
 @Configuration
 public class PasswordConfig {
     
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // Tạm thời sử dụng NoOpPasswordEncoder (không encode)
-        // CHỈ DÙNG CHO TESTING!
-        return NoOpPasswordEncoder.getInstance();
+        // Sử dụng BCrypt với strength = 10 (mặc định)
+        return new BCryptPasswordEncoder();
     }
 }
+
 
 
