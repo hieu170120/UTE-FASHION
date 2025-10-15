@@ -1,4 +1,3 @@
-
 package com.example.demo.repository;
 
 import java.util.Optional;
@@ -29,4 +28,5 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 
 	@Query(value = "SELECT p FROM Product p LEFT JOIN FETCH p.category c LEFT JOIN FETCH p.brand b WHERE lower(p.productName) LIKE lower(concat('%', :keyword, '%'))", countQuery = "SELECT count(p) FROM Product p WHERE lower(p.productName) LIKE lower(concat('%', :keyword, '%'))")
 	Page<Product> findByProductNameContainingIgnoreCase(@Param("keyword") String keyword, Pageable pageable);
+
 }

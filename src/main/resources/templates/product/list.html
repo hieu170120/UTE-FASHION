@@ -90,6 +90,7 @@
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item" th:each="category : ${categories}">
                         <a th:href="@{/products/category/{slug}(slug=${category.slug})}" th:text="${category.categoryName}">Category Name</a>
+
                     </li>
                 </ul>
             </div>

@@ -110,7 +110,6 @@ public class ProductServiceImpl implements ProductService {
 				ProductVariant variant = new ProductVariant();
 				variant.setProduct(product);
 				variant.setStockQuantity(varDTO.getStockQuantity());
-
 				variant.setSize(sizeRepository.getReferenceById(varDTO.getSize().getId()));
 				variant.setColor(colorRepository.getReferenceById(varDTO.getColor().getId()));
 				return variant;
@@ -170,4 +169,5 @@ public class ProductServiceImpl implements ProductService {
 		}
 		productRepository.deleteById(id);
 	}
+
 }
