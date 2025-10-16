@@ -35,16 +35,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // Disable CSRF cho REST API với JWT
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.ALWAYS) // Luôn tạo session
-                        .maximumSessions(1) // Chỉ cho phép 1 session cùng lúc
-                )
-                .securityContext(security -> security
-                        .securityContextRepository(new HttpSessionSecurityContextRepository())
-                )
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/login", "/register", "/logout",
+                                "/forgot-password", "/reset-password",
                                 "/static/**", "/css/**", "/js/**", "/images/**",
                                 "/products", "/products/**",
                                 "/cart", "/cart/**",
@@ -54,17 +48,13 @@ public class SecurityConfig {
                                 "/api/auth/**")
                         .permitAll()
                         .anyRequest().authenticated())
-                .formLogin(form -> form.disable()) // Tắt Spring Security form login
-                .exceptionHandling(exception -> exception
-                        .accessDeniedPage("/")) // Redirect về trang chủ nếu bị 403
-                .userDetailsService(userDetailsService)
+                .formLogin(form -> form.disable())
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/")
                         .invalidateHttpSession(true)
                         .deleteCookies("UTE_FASHION_SESSION")
-                        .permitAll())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                        .permitAll());
 
         return http.build();
     }

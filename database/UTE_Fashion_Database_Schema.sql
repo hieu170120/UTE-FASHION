@@ -69,6 +69,21 @@ CREATE TABLE User_Roles (
     FOREIGN KEY (role_id) REFERENCES Roles(role_id) ON DELETE CASCADE
 );
 
+-- Bảng PasswordResetTokens: Lưu trữ token và OTP để reset mật khẩu
+-- Chức năng: Hỗ trợ chức năng quên mật khẩu với OTP qua email.
+CREATE TABLE PasswordResetTokens (
+    token_id INT PRIMARY KEY IDENTITY(1,1),
+    token NVARCHAR(255) NOT NULL UNIQUE, -- Token UUID để xác thực
+    otp_code NVARCHAR(6) NOT NULL, -- Mã OTP 6 chữ số
+    email NVARCHAR(100) NOT NULL, -- Email của user
+    expires_at DATETIME NOT NULL, -- Thời gian hết hạn
+    is_used BIT DEFAULT 0, -- Đã sử dụng hay chưa
+    created_at DATETIME DEFAULT GETDATE(), -- Thời gian tạo
+    used_at DATETIME, -- Thời gian sử dụng
+    user_id INT NOT NULL, -- Liên kết với user
+    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
+);
+
 -- Bảng Addresses: Lưu địa chỉ nhận hàng của người dùng
 -- Chức năng: Quản lý địa chỉ trong hồ sơ người dùng, sử dụng khi thanh toán.
 CREATE TABLE Addresses (
