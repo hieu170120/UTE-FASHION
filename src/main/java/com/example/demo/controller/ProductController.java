@@ -1,7 +1,13 @@
 package com.example.demo.controller;
 
-import java.util.List;
-
+import com.example.demo.dto.*;
+import com.example.demo.entity.ProductVariant;
+import com.example.demo.repository.ProductRepository;
+import com.example.demo.repository.ProductVariantRepository;
+import com.example.demo.service.BrandService;
+import com.example.demo.service.CategoryService;
+import com.example.demo.service.ProductService;
+import com.example.demo.service.ShopService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -12,17 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.example.demo.dto.BrandDTO;
-import com.example.demo.dto.CategoryDTO;
-import com.example.demo.dto.ProductDTO;
-import com.example.demo.dto.ShopDTO;
-import com.example.demo.entity.ProductVariant;
-import com.example.demo.repository.ProductRepository;
-import com.example.demo.repository.ProductVariantRepository;
-import com.example.demo.service.BrandService;
-import com.example.demo.service.CategoryService;
-import com.example.demo.service.ProductService;
-import com.example.demo.service.ShopService;
+import java.util.List;
 
 @Controller
 @RequestMapping("/products")
@@ -58,7 +54,7 @@ public class ProductController {
             @RequestParam(name = "keyword", required = false) String keyword,
             @RequestParam(name = "sort", defaultValue = "newest") String sort) {
 
-        Page<ProductDTO> productPage;
+        Page<ProductSummaryDTO> productPage;
         if (keyword != null && !keyword.isEmpty()) {
             productPage = productService.searchProducts(keyword, PageRequest.of(page, size));
             model.addAttribute("pageTitle", "Kết quả tìm kiếm cho '" + keyword + "'");
@@ -83,7 +79,7 @@ public class ProductController {
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size) {
 
-        Page<ProductDTO> productPage = productService.getProductsByCategory(categorySlug, PageRequest.of(page, size));
+        Page<ProductSummaryDTO> productPage = productService.getProductsByCategory(categorySlug, PageRequest.of(page, size));
         CategoryDTO category = categoryService.getCategoryBySlug(categorySlug);
 
         addCommonAttributes(model);
@@ -101,7 +97,7 @@ public class ProductController {
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size) {
 
-        Page<ProductDTO> productPage = productService.getProductsByBrand(brandSlug, PageRequest.of(page, size));
+        Page<ProductSummaryDTO> productPage = productService.getProductsByBrand(brandSlug, PageRequest.of(page, size));
         BrandDTO brand = brandService.getBrandBySlug(brandSlug);
 
         addCommonAttributes(model);
@@ -119,7 +115,7 @@ public class ProductController {
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size) {
 
-        Page<ProductDTO> productPage = productService.getProductsByShop(shopId, PageRequest.of(page, size));
+        Page<ProductSummaryDTO> productPage = productService.getProductsByShop(shopId, PageRequest.of(page, size));
         ShopDTO shop = shopService.getShopById(shopId);
 
         addCommonAttributes(model);

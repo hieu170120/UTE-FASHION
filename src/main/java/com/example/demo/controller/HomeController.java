@@ -1,15 +1,13 @@
 package com.example.demo.controller;
 
-import java.util.List;
-
+import com.example.demo.dto.ProductSummaryDTO;
+import com.example.demo.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import com.example.demo.dto.ProductDTO;
-import com.example.demo.service.ProductService;
+import java.util.List;
 
 @Controller
 public class HomeController {
@@ -19,10 +17,10 @@ public class HomeController {
 
 	@GetMapping("/")
 	public String home(Model model) {
-        List<ProductDTO> newestProducts = productService.getNewestProducts();
+        List<ProductSummaryDTO> newestProducts = productService.getNewestProducts();
         model.addAttribute("newestProducts", newestProducts);
 
-		List<ProductDTO> bestsellerProducts = productService.getBestsellerProducts();
+		List<ProductSummaryDTO> bestsellerProducts = productService.getBestsellerProducts();
 		model.addAttribute("bestsellerProducts", bestsellerProducts);
 
 		return "home";
