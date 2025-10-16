@@ -1,47 +1,60 @@
 package com.example.demo.repository;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.example.demo.dto.ProductSummaryDTO;
+import com.example.demo.entity.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.example.demo.entity.Product;
+import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Integer> {
 
-	@Override
-	@EntityGraph(attributePaths = { "images", "category", "brand" })
-	@Query(value = "SELECT p FROM Product p", countQuery = "SELECT count(p) FROM Product p")
-	Page<Product> findAll(Pageable pageable);
+    // --- Methods for Detailed Product View (Keep full entity) ---
 
-	@EntityGraph(attributePaths = { "images", "category", "brand" })
-	@Query(value = "SELECT p FROM Product p WHERE p.category.slug = :categorySlug", countQuery = "SELECT count(p) FROM Product p WHERE p.category.slug = :categorySlug")
-	Page<Product> findByCategorySlug(@Param("categorySlug") String categorySlug, Pageable pageable);
+    @Override
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.images WHERE p.id = :id")
+    Optional<Product> findById(@Param("id") Integer id);
 
-	@EntityGraph(attributePaths = { "images", "category", "brand" })
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.images WHERE p.slug = :slug")
+    Optional<Product> findBySlug(@Param("slug") String slug);
 
-	@Query(value = "SELECT p FROM Product p WHERE p.brand.slug = :brandSlug", countQuery = "SELECT count(p) FROM Product p WHERE p.brand.slug = :brandSlug")
-	Page<Product> findByBrandSlug(@Param("brandSlug") String brandSlug, Pageable pageable);
 
-	@EntityGraph(attributePaths = { "images", "category", "brand" })
-	@Query("SELECT p FROM Product p WHERE p.slug = :slug")
-	Optional<Product> findBySlug(@Param("slug") String slug);
+    // --- Methods for Summary/List Views (Optimized with DTO Projections) ---
 
-	@EntityGraph(attributePaths = { "images", "category", "brand" })
-	@Query(value = "SELECT p FROM Product p WHERE lower(p.productName) LIKE lower(concat('%', :keyword, '%'))", countQuery = "SELECT count(p) FROM Product p WHERE lower(p.productName) LIKE lower(concat('%', :keyword, '%'))")
-	Page<Product> findByProductNameContainingIgnoreCase(@Param("keyword") String keyword, Pageable pageable);
+    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p")
+    Page<ProductSummaryDTO> findSummaryAll(Pageable pageable);
 
-	@EntityGraph(attributePaths = { "images", "shop" })
-	@Query(value = "SELECT p FROM Product p WHERE p.shop.id = :shopId", countQuery = "SELECT count(p) FROM Product p WHERE p.shop.id = :shopId")
-	Page<Product> findByShopId(@Param("shopId") Integer shopId, Pageable pageable);
+    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p WHERE p.category.slug = :categorySlug")
+    Page<ProductSummaryDTO> findSummaryByCategorySlug(@Param("categorySlug") String categorySlug, Pageable pageable);
 
-	List<Product> findTop8ByIsActiveTrueOrderBySoldCountDesc();
+    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p WHERE p.brand.slug = :brandSlug")
+    Page<ProductSummaryDTO> findSummaryByBrandSlug(@Param("brandSlug") String brandSlug, Pageable pageable);
+
+    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p WHERE lower(p.productName) LIKE lower(concat('%', :keyword, '%'))")
+    Page<ProductSummaryDTO> findSummaryByProductNameContainingIgnoreCase(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p WHERE p.shop.id = :shopId")
+    Page<ProductSummaryDTO> findSummaryByShopId(@Param("shopId") Integer shopId, Pageable pageable);
+
+    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p WHERE p.isActive = true ORDER BY p.soldCount DESC")
+    List<ProductSummaryDTO> findSummaryBestsellers(Pageable pageable);
+
+    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p ORDER BY p.soldCount DESC")
+    Page<ProductSummaryDTO> findSummaryByOrderBySoldCountDesc(Pageable pageable);
+
+    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p ORDER BY p.averageRating DESC")
+    Page<ProductSummaryDTO> findSummaryByOrderByAverageRatingDesc(Pageable pageable);
+
+    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p ORDER BY p.wishlistCount DESC")
+    Page<ProductSummaryDTO> findSummaryByOrderByWishlistCountDesc(Pageable pageable);
+
+    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p WHERE p.isActive = true ORDER BY p.createdAt DESC")
+    List<ProductSummaryDTO> findSummaryNewest(Pageable pageable);
 
 }

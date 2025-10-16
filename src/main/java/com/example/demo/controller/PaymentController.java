@@ -1,7 +1,6 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.*;
-import com.example.demo.entity.Carrier;
 import com.example.demo.entity.Coupon;
 import com.example.demo.entity.PaymentMethod;
 import com.example.demo.entity.User;
@@ -102,7 +101,7 @@ public class PaymentController {
         List<PaymentMethod> paymentMethods = paymentService.getAllPaymentMethods();
         
         // Lấy danh sách carriers
-        List<Carrier> carriers = carrierService.getAllActiveCarriers();
+        List<CarrierDTO> carriers = carrierService.getActiveCarriers();
         
         // Lấy thông tin coupon và carrier đã chọn từ session (nếu có)
         String appliedCouponCode = (String) session.getAttribute("appliedCouponCode");
@@ -188,7 +187,7 @@ public class PaymentController {
                                HttpSession session,
                                RedirectAttributes redirectAttributes) {
         try {
-            Carrier carrier = carrierService.getCarrierById(carrierId);
+            CarrierDTO carrier = carrierService.getCarrierById(carrierId);
             
             // Lưu vào session
             session.setAttribute("selectedCarrierId", carrierId);

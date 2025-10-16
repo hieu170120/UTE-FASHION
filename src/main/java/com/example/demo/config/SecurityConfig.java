@@ -48,6 +48,8 @@ public class SecurityConfig {
                                 "/payment-test", "/payment-test/**",
                                 "/api/auth/**")
                         .permitAll()
+                        .requestMatchers("/profile", "/profile/**")
+                        .authenticated()
                         .anyRequest().authenticated())
                 .formLogin(form -> form.disable())
                 .logout(logout -> logout
