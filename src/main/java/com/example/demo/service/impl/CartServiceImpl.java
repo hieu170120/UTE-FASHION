@@ -86,7 +86,8 @@ public class CartServiceImpl implements CartService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cart item not found: " + cartItemId));
         cartItem.setQuantity(quantity);
         cartItemRepository.save(cartItem);
-        return mapToCartDTO(cartItem.getCart());
+        // Chỉ trả CartDTO rỗng (batch update không cần dữ liệu chi tiết)
+        return new CartDTO();
     }
 
     @Override
@@ -135,36 +136,45 @@ public class CartServiceImpl implements CartService {
     private CartDTO mapToCartDTO(Cart cart) {
         CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
         cartDTO.setCartItems(cart.getCartItems().stream()
-                .map(item -> {
-                    CartItemDTO itemDTO = modelMapper.map(item, CartItemDTO.class);
-                    itemDTO.setProductName(item.getProduct().getProductName());
-                    itemDTO.setProductImage(item.getProduct().getImages().stream()
-                            .filter(ProductImage::isPrimary)
-                            .map(ProductImage::getImageUrl)
-                            .findFirst()
-                            .orElse("/images/default-product.png"));
-                    itemDTO.setTotalPrice(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
-                    
-                    // Add variant info if exists
-                    if (item.getVariant() != null) {
-                        ProductVariant variant = item.getVariant();
-                        if (variant.getSize() != null) {
-                            itemDTO.setVariantSize(variant.getSize().getSizeName());
-                        }
-                        if (variant.getColor() != null) {
-                            itemDTO.setVariantColor(variant.getColor().getColorName());
-                        }
-                    }
-                    
-                    // Add brand info
-                    if (item.getProduct().getBrand() != null) {
-                        itemDTO.setBrandName(item.getProduct().getBrand().getBrandName());
-                    }
-                    
-                    return itemDTO;
-                })
+                .map(item -> mapToCartItemDTO(item))
                 .collect(Collectors.toList()));
         return calculateCartTotals(cartDTO);
+    }
+    
+    private CartItemDTO mapToCartItemDTO(CartItem item) {
+        CartItemDTO itemDTO = modelMapper.map(item, CartItemDTO.class);
+        itemDTO.setProductName(item.getProduct().getProductName());
+        itemDTO.setProductImage(getPrimaryImageUrl(item.getProduct()));
+        itemDTO.setTotalPrice(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+        
+        // Add variant info if exists
+        if (item.getVariant() != null) {
+            ProductVariant variant = item.getVariant();
+            if (variant.getSize() != null) {
+                itemDTO.setVariantSize(variant.getSize().getSizeName());
+            }
+            if (variant.getColor() != null) {
+                itemDTO.setVariantColor(variant.getColor().getColorName());
+            }
+        }
+        
+        // Add brand info
+        if (item.getProduct().getBrand() != null) {
+            itemDTO.setBrandName(item.getProduct().getBrand().getBrandName());
+        }
+        
+        return itemDTO;
+    }
+    
+    private String getPrimaryImageUrl(Product product) {
+        if (product.getImages() == null || product.getImages().isEmpty()) {
+            return "/images/default-product.png";
+        }
+        return product.getImages().stream()
+                .filter(ProductImage::isPrimary)
+                .map(ProductImage::getImageUrl)
+                .findFirst()
+                .orElse("/images/default-product.png");
     }
 
 	@Override

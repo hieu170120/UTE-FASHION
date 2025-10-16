@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UTE Fashion - Trang chủ</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 100px 0;
+            text-align: center;
+        }
+        
+        .hero-section h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        
+        .hero-section p {
+            font-size: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .navbar {
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 24px;
+            color: #667eea !important;
+        }
+        
+        .btn-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 10px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+        }
+        
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .feature-card {
+            padding: 30px;
+            text-align: center;
+            border-radius: 15px;
+            transition: transform 0.3s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+        
+        .feature-icon {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        /* Cart Dropdown Animation */
+        .cart-dropdown {
+            animation: slideDown 0.3s ease-out;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            border: none;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .cart-item {
+            transition: background-color 0.2s;
+        }
+        
+        .cart-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .cart-items::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .cart-items::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        .cart-items::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+        
+        .cart-items::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* Hover effect for cart icon */
+        #cartDropdown:hover i {
+            transform: scale(1.1);
+            transition: transform 0.2s;
+        }
+        
+        .cart-item .btn-close {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .cart-item:hover .btn-close {
+            opacity: 1;
+        }.btn-white {
+             background-color: #fff;
+             color: #111;
+             border: 1px solid #ddd !important;
+             transition: all 0.2s ease;
+         }
+
+        .btn-white:hover {
+            background-color: #f8f9fa;
+            color: #000;
+            border-color: #111 !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-shopping-bag me-2"></i>UTE Fashion
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Trang chủ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Sản phẩm</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Giới thiệu</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Liên hệ</a>
+                    </li>
+                    <li class="nav-item ms-3" th:if="${currentUser == null}">
+                        <a class="btn btn-outline-primary btn-sm" th:href="@{/login}">
+                            <i class="fas fa-sign-in-alt me-1"></i> Đăng nhập
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown ms-3" th:if="${currentUser != null}">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-1"></i>
+                            <span th:text="${currentUser.fullName}"></span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Tài khoản</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-shopping-cart me-2"></i>Đơn hàng</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" th:href="@{/logout}"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
+                        </ul>
+                    </li>
+                    <!-- Nút giỏ hàng với dropdown (cuối cùng) -->
+                    <li class="nav-item dropdown ms-3">
+                        <a class="nav-link position-relative" href="#" id="cartDropdown" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            <i class="fas fa-shopping-cart fa-lg"></i>
+                            <span th:if="${session.cartItemCount != null && session.cartItemCount > 0}" 
+                                  class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
+                                  th:text="${session.cartItemCount}">
+                                <span class="visually-hidden">số lượng trong giỏ</span>
+                            </span>
+                        </a>
+                        <!-- Cart Dropdown Menu -->
+                        <div class="dropdown-menu dropdown-menu-end cart-dropdown p-0" aria-labelledby="cartDropdown" style="width: 380px; max-height: 500px;">
+                            <div class="dropdown-header bg-dark text-white d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0" id="cartHeaderTitle"><i class="fas fa-shopping-cart me-2"></i>GIỎ HÀNG CỦA TÔI (0 SẢN PHẨM)</h6>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="dropdown"></button>
+                            </div>
+                            
+                            <!-- Loading State -->
+                            <div id="cartLoading" class="text-center p-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Empty Cart -->
+                            <div id="cartEmpty" class="text-center p-4" style="display: none;">
+                                <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Giỏ hàng của bạn đang trống</p>
+                            </div>
+                            
+                            <!-- Cart Items -->
+                            <div id="cartItemsContainer" class="cart-items" style="max-height: 300px; overflow-y: auto; display: none;">
+                                <!-- Cart items sẽ được load bằng JavaScript -->
+                            </div>
+                            
+                            <!-- Cart Summary -->
+                            <div id="cartSummary" class="p-3 bg-light" style="display: none;">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="fw-bold">TẠM TÍNH:</span>
+                                    <span id="cartTotalAmount" class="text-danger fw-bold fs-5">0₫</span>
+                                </div>
+                                <a th:href="@{/cart}" class="btn btn-dark w-100 mb-2">
+                                    <i class="fas fa-shopping-cart me-2"></i>XEM GIỎ HÀNG
+                                </a>
+                                <a th:href="@{/checkout}" class="btn btn-white w-100">
+                                    <i class="fas fa-credit-card me-2"></i>THANH TOÁN
+                                </a>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mx-auto" style="max-width: 600px;" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            
+            <i class="fas fa-shopping-bag fa-5x mb-4"></i>
+            <h1>Chào mừng đến UTE Fashion</h1>
+            <p>Website Shop Thời Trang Online</p>
+            <p class="lead">Spring Boot + Thymeleaf + Bootstrap + JPA + WebSocket + SQL Server</p>
+            
+            <div class="mt-4" th:if="${currentUser != null}">
+                <h3>Xin chào, <span th:text="${currentUser.fullName}"></span>! 👋</h3>
+                <p>Email: <span th:text="${currentUser.email}"></span></p>
+            </div>
+            
+            <div class="mt-4" th:if="${currentUser == null}">
+                <a th:href="@{/login}" class="btn btn-light btn-lg me-2">
+                    <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
+                </a>
+                <a th:href="@{/register}" class="btn btn-outline-light btn-lg">
+                    <i class="fas fa-user-plus me-2"></i>Đăng ký
+                </a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Features Section -->
+    <section class="py-5">
+        <div class="container">
+            <h2 class="text-center mb-5">Tính năng dự án</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <h4>Authentication & JWT</h4>
+                        <p>Đăng nhập, đăng ký an toàn với JWT Token</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <h4>Shopping Cart</h4>
+                        <p>Giỏ hàng thông minh, thanh toán nhanh chóng</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <h4>WebSocket</h4>
+                        <p>Thông báo real-time cho đơn hàng</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <h4>SQL Server</h4>
+                        <p>Database mạnh mẽ, bảo mật cao</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <h4>Responsive Design</h4>
+                        <p>Giao diện đẹp trên mọi thiết bị</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h4>Admin Dashboard</h4>
+                        <p>Quản lý toàn diện với báo cáo chi tiết</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0">
+                <i class="fas fa-heart text-danger"></i> 
+                UTE Fashion &copy; 2024 - Dự án Spring Boot
+            </p>
+            <p class="mb-0 mt-2">
+                <small>Spring Boot + Thymeleaf + Bootstrap + JPA + WebSocket + SQL Server + Decorator Sitemesh + JWT</small>
+            </p>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Cart Dropdown Hover Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const cartDropdown = document.getElementById('cartDropdown');
+            const cartDropdownElement = cartDropdown.parentElement;
+            let timeoutId;
+            let isDropdownShown = false;
+            
+            // Function để load cart data từ API
+            function loadCartData() {
+                fetch('/cart/api/mini-cart')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateCartUI(data);
+                    })
+                    .catch(error => {
+                        console.error('Error loading cart:', error);
+                        showEmptyCart();
+                    });
+            }
+            
+            // Function để cập nhật UI
+            function updateCartUI(cartData) {
+                const cartLoading = document.getElementById('cartLoading');
+                const cartEmpty = document.getElementById('cartEmpty');
+                const cartItemsContainer = document.getElementById('cartItemsContainer');
+                const cartSummary = document.getElementById('cartSummary');
+                const cartHeaderTitle = document.getElementById('cartHeaderTitle');
+                const cartTotalAmount = document.getElementById('cartTotalAmount');
+                
+                // Ẩn loading
+                cartLoading.style.display = 'none';
+                
+                // Kiểm tra giỏ hàng có item không
+                if (!cartData.cartItems || cartData.cartItems.length === 0) {
+                    showEmptyCart();
+                    return;
+                }
+                
+                // Cập nhật header
+                const itemCount = cartData.cartItems.length;
+                cartHeaderTitle.innerHTML = `<i class="fas fa-shopping-cart me-2"></i>GIỎ HÀNG CỦA TÔI (${itemCount} SẢN PHẨM)`;
+                
+                // Hiển thị cart items
+                cartEmpty.style.display = 'none';
+                cartItemsContainer.style.display = 'block';
+                cartSummary.style.display = 'block';
+                
+                // Tạo HTML cho cart items
+                let itemsHTML = '';
+                cartData.cartItems.forEach(item => {
+                    const imageUrl = item.productImage || 'https://via.placeholder.com/80x100';
+                    const formattedPrice = new Intl.NumberFormat('vi-VN').format(item.price) + '₫';
+                    const formattedTotal = new Intl.NumberFormat('vi-VN').format(item.totalPrice) + '₫';
+                    
+                    itemsHTML += `
+                        <div class="cart-item d-flex p-3 border-bottom">
+                            <img src="${imageUrl}" alt="${item.productName}" class="rounded" style="width: 80px; height: 100px; object-fit: cover;">
+                            <div class="ms-3 flex-grow-1">
+                                <button type="button" class="btn-close float-end" style="font-size: 10px;" onclick="removeCartItem(${item.cartItemId})"></button>
+                                <h6 class="mb-1" style="font-size: 14px;">${item.productName}</h6>
+                                <p class="mb-0" style="font-size: 12px;">Số lượng: <strong>${item.quantity}</strong></p>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <span class="text-danger fw-bold">${formattedTotal}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                cartItemsContainer.innerHTML = itemsHTML;
+                
+                // Cập nhật tổng tiền
+                const formattedTotal = new Intl.NumberFormat('vi-VN').format(cartData.totalAmount) + '₫';
+                cartTotalAmount.textContent = formattedTotal;
+            }
+            
+            function showEmptyCart() {
+                document.getElementById('cartLoading').style.display = 'none';
+                document.getElementById('cartEmpty').style.display = 'block';
+                document.getElementById('cartItemsContainer').style.display = 'none';
+                document.getElementById('cartSummary').style.display = 'none';
+                document.getElementById('cartHeaderTitle').innerHTML = '<i class="fas fa-shopping-cart me-2"></i>GIỎ HÀNG CỦA TÔI (0 SẢN PHẨM)';
+            }
+            
+            // Khi HOVER vào icon giỏ hàng (không cần click)
+            cartDropdownElement.addEventListener('mouseenter', function(e) {
+                e.preventDefault();
+                clearTimeout(timeoutId);
+                
+                if (!isDropdownShown) {
+                    // Hiển dropdown
+                    const dropdown = new bootstrap.Dropdown(cartDropdown, {
+                        autoClose: false
+                    });
+                    dropdown.show();
+                    isDropdownShown = true;
+                    
+                    // Load cart data
+                    loadCartData();
+                }
+            });
+            
+            // Khi rời chuột khỏi dropdown
+            cartDropdownElement.addEventListener('mouseleave', function() {
+                timeoutId = setTimeout(function() {
+                    const dropdown = bootstrap.Dropdown.getInstance(cartDropdown);
+                    if (dropdown) {
+                        dropdown.hide();
+                        isDropdownShown = false;
+                    }
+                }, 300);
+            });
+            
+            // Ngăn chặn click vào dropdown từ việc đóng dropdown
+            const dropdownMenu = cartDropdown.nextElementSibling;
+            dropdownMenu.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
+        
+        // Function xóa item khỏi cart
+        function removeCartItem(cartItemId) {
+            if (confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
+                window.location.href = `/cart/items/${cartItemId}/delete`;
+            }
+        }
+    </script>
+</body>
+</html>
