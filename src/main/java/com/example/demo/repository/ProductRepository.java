@@ -3,7 +3,6 @@ package com.example.demo.repository;
 import com.example.demo.entity.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,43 +15,41 @@ import java.util.Optional;
 public interface ProductRepository extends JpaRepository<Product, Integer> {
 
     @Override
-    @EntityGraph(attributePaths = {"images", "category", "brand"})
-    @Query(value = "SELECT p FROM Product p", countQuery = "SELECT count(p) FROM Product p")
+    @Query(value = "SELECT p FROM Product p JOIN FETCH p.category c JOIN FETCH p.brand b",
+           countQuery = "SELECT count(p) FROM Product p")
     Page<Product> findAll(Pageable pageable);
 
-    @EntityGraph(attributePaths = {"images", "category", "brand"})
-    @Query(value = "SELECT p FROM Product p WHERE p.category.slug = :categorySlug", countQuery = "SELECT count(p) FROM Product p WHERE p.category.slug = :categorySlug")
+    @Query(value = "SELECT p FROM Product p JOIN FETCH p.category c JOIN FETCH p.brand b WHERE c.slug = :categorySlug",
+           countQuery = "SELECT count(p) FROM Product p WHERE p.category.slug = :categorySlug")
     Page<Product> findByCategorySlug(@Param("categorySlug") String categorySlug, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"images", "category", "brand"})
-
-    @Query(value = "SELECT p FROM Product p WHERE p.brand.slug = :brandSlug", countQuery = "SELECT count(p) FROM Product p WHERE p.brand.slug = :brandSlug")
+    @Query(value = "SELECT p FROM Product p JOIN FETCH p.category c JOIN FETCH p.brand b WHERE b.slug = :brandSlug",
+           countQuery = "SELECT count(p) FROM Product p WHERE p.brand.slug = :brandSlug")
     Page<Product> findByBrandSlug(@Param("brandSlug") String brandSlug, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"images", "category", "brand"})
-    @Query("SELECT p FROM Product p WHERE p.slug = :slug")
+    @Query("SELECT p FROM Product p JOIN FETCH p.category c JOIN FETCH p.brand b WHERE p.slug = :slug")
     Optional<Product> findBySlug(@Param("slug") String slug);
 
-    @EntityGraph(attributePaths = {"images", "category", "brand"})
-    @Query(value = "SELECT p FROM Product p WHERE lower(p.productName) LIKE lower(concat('%', :keyword, '%'))", countQuery = "SELECT count(p) FROM Product p WHERE lower(p.productName) LIKE lower(concat('%', :keyword, '%'))")
+    @Query(value = "SELECT p FROM Product p JOIN FETCH p.category c JOIN FETCH p.brand b WHERE lower(p.productName) LIKE lower(concat('%', :keyword, '%'))",
+           countQuery = "SELECT count(p) FROM Product p WHERE lower(p.productName) LIKE lower(concat('%', :keyword, '%'))")
     Page<Product> findByProductNameContainingIgnoreCase(@Param("keyword") String keyword, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"images", "shop"})
-    @Query(value = "SELECT p FROM Product p WHERE p.shop.id = :shopId", countQuery = "SELECT count(p) FROM Product p WHERE p.shop.id = :shopId")
+    @Query(value = "SELECT p FROM Product p JOIN FETCH p.shop s WHERE s.id = :shopId",
+           countQuery = "SELECT count(p) FROM Product p WHERE p.shop.id = :shopId")
     Page<Product> findByShopId(@Param("shopId") Integer shopId, Pageable pageable);
 
     List<Product> findTop8ByIsActiveTrueOrderBySoldCountDesc();
 
-    @EntityGraph(attributePaths = {"images", "category", "brand"})
-    @Query(value = "SELECT p FROM Product p ORDER BY p.soldCount DESC", countQuery = "SELECT count(p) FROM Product p")
+    @Query(value = "SELECT p FROM Product p JOIN FETCH p.category c JOIN FETCH p.brand b ORDER BY p.soldCount DESC",
+           countQuery = "SELECT count(p) FROM Product p")
     Page<Product> findByOrderBySoldCountDesc(Pageable pageable);
 
-    @EntityGraph(attributePaths = {"images", "category", "brand"})
-    @Query(value = "SELECT p FROM Product p ORDER BY p.averageRating DESC", countQuery = "SELECT count(p) FROM Product p")
+    @Query(value = "SELECT p FROM Product p JOIN FETCH p.category c JOIN FETCH p.brand b ORDER BY p.averageRating DESC",
+           countQuery = "SELECT count(p) FROM Product p")
     Page<Product> findByOrderByAverageRatingDesc(Pageable pageable);
 
-    @EntityGraph(attributePaths = {"images", "category", "brand"})
-    @Query(value = "SELECT p FROM Product p JOIN Wishlist w ON p.id = w.product.id GROUP BY p.id ORDER BY COUNT(w.product.id) DESC", countQuery = "SELECT count(p) FROM Product p JOIN Wishlist w ON p.id = w.product.id")
+    @Query(value = "SELECT p FROM Product p JOIN FETCH p.category c JOIN FETCH p.brand b LEFT JOIN p.wishlists w GROUP BY p.id ORDER BY COUNT(w) DESC",
+           countQuery = "SELECT count(p) FROM Product p")
     Page<Product> findByOrderByWishlistCountDesc(Pageable pageable);
 
     List<Product> findTop8ByIsActiveTrueOrderByCreatedAtDesc();
