@@ -45,7 +45,9 @@ public class SecurityConfig {
                                 "/checkout", "/checkout/**",
                                 "/payment", "/payment/**",
                                 "/payment-test", "/payment-test/**",
-                                "/api/auth/**")
+                                "/api/auth/**",
+                                "/verify-email", "/verify-email/**",
+                                "/resend-otp") // <-- Added resend-otp endpoint
                         .permitAll()
                         .requestMatchers("/profile", "/profile/**")
                         .authenticated()
