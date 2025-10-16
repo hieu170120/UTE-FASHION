@@ -8,5 +8,7 @@ import java.util.List;
 
 @Repository
 public interface CarrierRepository extends JpaRepository<Carrier, Integer> {
-    List<Carrier> findByIsActiveTrue();
+    
+	List<Carrier> findByIsActiveTrue();
+
 }

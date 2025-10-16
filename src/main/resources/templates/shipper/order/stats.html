@@ -1,0 +1,29 @@
+<!-- resources/templates/shipper/order/stats.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Thống kê đơn hàng</title>
+    
+</head>
+<body>
+    <div class="container">
+        <h1>Thống kê đơn hàng</h1>
+        <table class="table table-bordered">
+            <tr>
+                <th>Tổng đơn hàng</th>
+                <td th:text="${stats.total}"></td>
+            </tr>
+            <tr>
+                <th>Đã giao</th>
+                <td th:text="${stats.delivered}"></td>
+            </tr>
+            <tr>
+                <th>Đã hủy</th>
+                <td th:text="${stats.cancelled}"></td>
+            </tr>
+            <!-- Thêm các stats khác nếu cần -->
+        </table>
+        <a href="/shipper/orders" class="btn btn-secondary">Quay lại danh sách đơn</a>
+    </div>
+</body>
+</html>

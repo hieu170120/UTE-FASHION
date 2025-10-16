@@ -1,0 +1,72 @@
+<!-- resources/templates/shipper/order/list.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Quản lý đơn hàng được giao</title>
+    
+    <script>
+        function startTimer(orderId, duration) {
+            var timer = duration * 60, minutes, seconds;
+            var interval = setInterval(function () {
+                minutes = parseInt(timer / 60, 10);
+                seconds = parseInt(timer % 60, 10);
+                document.getElementById('timer-' + orderId).textContent = minutes + ":" + seconds;
+                if (--timer < 0) {
+                    clearInterval(interval);
+                    // AJAX to complete
+                    fetch('/shipper/orders/' + orderId + '/complete', {method: 'POST'}).then(() => {
+                        document.getElementById('status-' + orderId).textContent = 'Đã giao';
+                    });
+                }
+            }, 1000);
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Quản lý đơn hàng được giao</h1>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID đơn</th>
+                    <th>Trạng thái</th>
+                    <th>Thời gian</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="order : ${orders}">
+                    <td th:text="${order.id}"></td>
+                    <td id="status-${order.id}" th:text="${order.orderStatus}"></td>
+                    <td>
+                        <th:if test="${order.orderStatus == 'Shipping'}">
+                            <span id="timer-${order.id}"></span>
+                            <script th:inline="javascript">
+                                /*<![CDATA[*/
+                                startTimer(/*[[${order.id}]]*/ Math.floor(Math.random() * 4) + 2);
+                                /*]]>*/
+                            </script>
+                        </th:if>
+                    </td>
+                    <td>
+                        <th:if test="${order.orderStatus == 'Confirmed'}">
+                            <form th:action="@{/shipper/orders/{id}/confirm(id=${order.id})}" method="post">
+                                <button type="submit" class="btn btn-success">Xác nhận giao</button>
+                            </form>
+                            <form th:action="@{/shipper/orders/{id}/cancel(id=${order.id})}" method="post">
+                                <button type="submit" class="btn btn-warning">Hủy</button>
+                            </form>
+                        </th:if>
+                        <th:if test="${order.orderStatus == 'Cancelled'}">
+                            <span class="text-danger">X</span>
+                        </th:if>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <!-- Flash messages -->
+        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+    </div>
+</body>
+</html>

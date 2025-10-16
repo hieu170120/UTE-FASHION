@@ -49,4 +49,14 @@ public class Shipper {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    // New field for cancel count
+    @Column(name = "cancel_count")
+    private int cancelCount = 0;
+
+    // Remove this manual stub, as Lombok will now generate getCancelCount() and setCancelCount() automatically
+    // public int getCancelCount() {
+    //     // TODO Auto-generated method stub
+    //     return 0;
+    // }
 }
