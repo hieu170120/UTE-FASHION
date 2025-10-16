@@ -50,8 +50,10 @@ public class ProductServiceImpl implements ProductService {
                 pageable.getPageSize(),
                 getSortOrder(criteria.getSort())
         );
-        Page<Product> productPage = productRepository.findAll(spec, adjustedPageable);
-        return productPage.map(product -> modelMapper.map(product, ProductSummaryDTO.class));
+
+        // OPTIMIZED: Call the custom repository method that uses DTO projection.
+        // This is much more efficient than findAll() and mapping afterwards.
+        return productRepository.findSummaries(spec, adjustedPageable);
     }
 
     private Sort getSortOrder(String sort) {
@@ -60,7 +62,6 @@ public class ProductServiceImpl implements ProductService {
                 return Sort.by("soldCount").descending();
             case "toprated":
                 return Sort.by("averageRating").descending();
-            // "mostwished" is removed as it's no longer supported after removing the expensive @Formula
             case "newest":
             default:
                 return Sort.by("createdAt").descending();
@@ -69,7 +70,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductSummaryDTO> getBestsellerProducts() {
+    public List<ProductSummaryDTO> getB bestsellerProducts() {
         return productRepository.findSummaryBestsellers(PageRequest.of(0, 8));
     }
 
