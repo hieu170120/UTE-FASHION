@@ -9,6 +9,15 @@
 <body>
 
 <div class="container mt-5" layout:fragment="content">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none">Giỏ hàng</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Thông tin vận chuyển</li>
+            <li class="breadcrumb-item text-muted">Phương thức thanh toán</li>
+        </ol>
+    </nav>
+    
     <h2 class="mb-4 fw-bold">THANH TOÁN</h2>
 
     <!-- Error Message -->
@@ -47,18 +56,27 @@
                         <div class="text-danger small mt-1" th:if="${#fields.hasErrors('shippingAddress')}" th:errors="*{shippingAddress}"></div>
                     </div>
                     <div class="mb-3">
-                        <label for="ward" class="form-label">Phường/Xã</label>
-                        <input type="text" class="form-control" id="ward" th:field="*{ward}">
+                        <label for="city" class="form-label">Tỉnh/Thành phố <span class="text-danger">*</span></label>
+                        <select class="form-select" id="city" name="city" required>
+                            <option value="">-- Chọn tỉnh/thành phố --</option>
+                        </select>
+                        <input type="hidden" th:field="*{city}" id="cityHidden">
+                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('city')}" th:errors="*{city}"></div>
                     </div>
                     <div class="mb-3">
-                        <label for="district" class="form-label">Quận/Huyện</label>
-                        <input type="text" class="form-control" id="district" th:field="*{district}" required>
+                        <label for="district" class="form-label">Quận/Huyện <span class="text-danger">*</span></label>
+                        <select class="form-select" id="district" name="district" required disabled>
+                            <option value="">-- Chọn quận/huyện --</option>
+                        </select>
+                        <input type="hidden" th:field="*{district}" id="districtHidden">
                         <div class="text-danger small mt-1" th:if="${#fields.hasErrors('district')}" th:errors="*{district}"></div>
                     </div>
                     <div class="mb-3">
-                        <label for="city" class="form-label">Thành phố</label>
-                        <input type="text" class="form-control" id="city" th:field="*{city}" required>
-                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('city')}" th:errors="*{city}"></div>
+                        <label for="ward" class="form-label">Phường/Xã</label>
+                        <select class="form-select" id="ward" name="ward" disabled>
+                            <option value="">-- Chọn phường/xã --</option>
+                        </select>
+                        <input type="hidden" th:field="*{ward}" id="wardHidden">
                     </div>
                     <div class="mb-3">
                         <label for="postalCode" class="form-label">Mã bưu điện</label>
@@ -127,6 +145,121 @@
         </div>
     </div>
 </div>
+
+<th:block layout:fragment="scripts">
+    <script>
+        // API Địa chỉ Việt Nam (Public API)
+        const BASE_API = 'https://provinces.open-api.vn/api';
+        
+        // Load danh sách tỉnh/thành phố khi trang load
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadProvinces();
+        });
+        
+        // Load danh sách tỉnh/thành phố
+        async function loadProvinces() {
+            try {
+                const response = await fetch(`${BASE_API}/p/`);
+                const provinces = await response.json();
+                
+                const citySelect = document.getElementById('city');
+                citySelect.innerHTML = '<option value="">-- Chọn tỉnh/thành phố --</option>';
+                
+                provinces.forEach(province => {
+                    const option = document.createElement('option');
+                    option.value = province.code;
+                    option.textContent = province.name;
+                    option.setAttribute('data-name', province.name);
+                    citySelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Lỗi khi load tỉnh/thành phố:', error);
+            }
+        }
+        
+        // Khi chọn tỉnh/thành phố
+        document.getElementById('city').addEventListener('change', async function() {
+            const provinceCode = this.value;
+            const provinceName = this.options[this.selectedIndex]?.getAttribute('data-name');
+            
+            // Cập nhật hidden input
+            document.getElementById('cityHidden').value = provinceName || '';
+            
+            // Reset district và ward
+            const districtSelect = document.getElementById('district');
+            const wardSelect = document.getElementById('ward');
+            districtSelect.innerHTML = '<option value="">-- Chọn quận/huyện --</option>';
+            wardSelect.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+            districtSelect.disabled = true;
+            wardSelect.disabled = true;
+            document.getElementById('districtHidden').value = '';
+            document.getElementById('wardHidden').value = '';
+            
+            if (!provinceCode) return;
+            
+            // Load danh sách quận/huyện
+            try {
+                const response = await fetch(`${BASE_API}/p/${provinceCode}?depth=2`);
+                const data = await response.json();
+                
+                if (data.districts && data.districts.length > 0) {
+                    data.districts.forEach(district => {
+                        const option = document.createElement('option');
+                        option.value = district.code;
+                        option.textContent = district.name;
+                        option.setAttribute('data-name', district.name);
+                        districtSelect.appendChild(option);
+                    });
+                    districtSelect.disabled = false;
+                }
+            } catch (error) {
+                console.error('Lỗi khi load quận/huyện:', error);
+            }
+        });
+        
+        // Khi chọn quận/huyện
+        document.getElementById('district').addEventListener('change', async function() {
+            const districtCode = this.value;
+            const districtName = this.options[this.selectedIndex]?.getAttribute('data-name');
+            
+            // Cập nhật hidden input
+            document.getElementById('districtHidden').value = districtName || '';
+            
+            // Reset ward
+            const wardSelect = document.getElementById('ward');
+            wardSelect.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+            wardSelect.disabled = true;
+            document.getElementById('wardHidden').value = '';
+            
+            if (!districtCode) return;
+            
+            // Load danh sách phường/xã
+            try {
+                const response = await fetch(`${BASE_API}/d/${districtCode}?depth=2`);
+                const data = await response.json();
+                
+                if (data.wards && data.wards.length > 0) {
+                    data.wards.forEach(ward => {
+                        const option = document.createElement('option');
+                        option.value = ward.code;
+                        option.textContent = ward.name;
+                        option.setAttribute('data-name', ward.name);
+                        wardSelect.appendChild(option);
+                    });
+                    wardSelect.disabled = false;
+                }
+            } catch (error) {
+                console.error('Lỗi khi load phường/xã:', error);
+            }
+        });
+        
+        // Khi chọn phường/xã
+        document.getElementById('ward').addEventListener('change', function() {
+            const wardName = this.options[this.selectedIndex]?.getAttribute('data-name');
+            document.getElementById('wardHidden').value = wardName || '';
+        });
+    </script>
+</th:block>
 
 </body>
 </html>

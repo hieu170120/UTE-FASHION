@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>Thanh toán</title>
+</head>
+<body>
+
+<div class="container mt-5" layout:fragment="content">
+    <h2 class="mb-4 fw-bold">THANH TOÁN</h2>
+
+    <!-- Error Message -->
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i>
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="row">
+        <!-- Form thông tin giao hàng -->
+        <div class="col-md-7">
+            <form th:action="@{/checkout}" th:object="${orderDTO}" method="post">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="fas fa-shipping-fast me-2"></i>Thông tin giao hàng
+                        </h5>
+                    <div class="mb-3">
+                        <label for="recipientName" class="form-label">Họ và tên</label>
+                        <input type="text" class="form-control" id="recipientName" th:field="*{recipientName}" required>
+                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('recipientName')}" th:errors="*{recipientName}"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="phoneNumber" class="form-label">Số điện thoại</label>
+                        <input type="tel" class="form-control" id="phoneNumber" th:field="*{phoneNumber}" required>
+                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" th:field="*{email}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="shippingAddress" class="form-label">Địa chỉ giao hàng</label>
+                        <input type="text" class="form-control" id="shippingAddress" th:field="*{shippingAddress}" required>
+                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('shippingAddress')}" th:errors="*{shippingAddress}"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ward" class="form-label">Phường/Xã</label>
+                        <input type="text" class="form-control" id="ward" th:field="*{ward}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="district" class="form-label">Quận/Huyện</label>
+                        <input type="text" class="form-control" id="district" th:field="*{district}" required>
+                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('district')}" th:errors="*{district}"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="city" class="form-label">Thành phố</label>
+                        <input type="text" class="form-control" id="city" th:field="*{city}" required>
+                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('city')}" th:errors="*{city}"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="postalCode" class="form-label">Mã bưu điện</label>
+                        <input type="text" class="form-control" id="postalCode" th:field="*{postalCode}">
+                    </div>
+                        <div class="mb-3">
+                            <label for="customerNotes" class="form-label">Ghi chú</label>
+                            <textarea class="form-control" id="customerNotes" th:field="*{customerNotes}" rows="3" placeholder="Ghi chú về đơn hàng (tùy chọn)"></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Nút tiếp tục -->
+                <button type="submit" class="btn btn-dark btn-lg w-100" style="border-radius: 25px;">
+                    <i class="fas fa-arrow-right me-2"></i>Tiếp tục đến phương thức thanh toán
+                </button>
+            </form>
+        </div>
+        
+        <!-- Tóm tắt đơn hàng -->
+        <div class="col-md-5">
+            <div class="card shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-shopping-bag me-2"></i>Đơn hàng của bạn
+                    </h5>
+                    
+                    <!-- Danh sách sản phẩm -->
+                    <div class="mb-3" style="max-height: 400px; overflow-y: auto;">
+                        <div class="d-flex align-items-center mb-3 pb-3 border-bottom" th:each="item : ${cart.cartItems}">
+                            <img th:src="${item.productImage}" alt="Product" 
+                                 class="rounded" style="width: 60px; height: 75px; object-fit: cover;">
+                            <div class="ms-3 flex-grow-1">
+                                <h6 class="mb-1" style="font-size: 14px;" th:text="${item.productName}"></h6>
+                                <p class="mb-0 text-muted" style="font-size: 12px;">
+                                    <span th:if="${item.variantSize != null}">
+                                        Size: <strong th:text="${item.variantSize}"></strong>
+                                    </span>
+                                    <span th:if="${item.variantColor != null}">
+                                        / <strong th:text="${item.variantColor}"></strong>
+                                    </span>
+                                </p>
+                                <p class="mb-0" style="font-size: 13px;">
+                                    <span>Số lượng: </span>
+                                    <strong th:text="${item.quantity}"></strong>
+                                </p>
+                            </div>
+                            <div class="text-end">
+                                <p class="mb-0 fw-bold text-danger" th:text="${#numbers.formatDecimal(item.totalPrice, 0, 'COMMA', 0, 'POINT')} + '₫'"></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tổng tiền -->
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <h5 class="mb-0">Tạm tính:</h5>
+                        <h5 class="mb-0 text-danger" th:text="${#numbers.formatDecimal(cart.totalAmount, 0, 'COMMA', 0, 'POINT')} + '₫'"></h5>
+                    </div>
+                    <p class="text-muted small mt-2 mb-0">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Phí vận chuyển và khuyến mãi sẽ được tính ở bước tiếp theo
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

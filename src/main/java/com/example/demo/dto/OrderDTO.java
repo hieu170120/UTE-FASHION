@@ -25,6 +25,7 @@ public class OrderDTO {
     @NotBlank(message = "Thành phố không được để trống")
     private String city;
     private String postalCode;
+    private Integer carrierId;
     private BigDecimal subtotal;
     private BigDecimal shippingFee;
     private BigDecimal discountAmount;

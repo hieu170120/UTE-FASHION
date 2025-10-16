@@ -212,9 +212,15 @@ public class PaymentController {
         try {
             OrderDTO checkoutData = (OrderDTO) session.getAttribute("checkoutData");
             Integer userId = (Integer) session.getAttribute("checkoutUserId");
+            Integer selectedCarrierId = (Integer) session.getAttribute("selectedCarrierId");
             
             if (checkoutData == null) {
                 return "redirect:/cart";
+            }
+            
+            // Set carrier vào checkoutData
+            if (selectedCarrierId != null) {
+                checkoutData.setCarrierId(selectedCarrierId);
             }
             
             // ✅ TẠO ORDER
@@ -253,9 +259,21 @@ public class PaymentController {
             // Lấy cart để tính tổng tiền
             CartDTO cart = cartService.getCartByUserId(userId);
             
+            // Lấy shipping fee và discount từ session
+            BigDecimal shippingFee = (BigDecimal) session.getAttribute("shippingFee");
+            BigDecimal discountAmount = (BigDecimal) session.getAttribute("discountAmount");
+            
+            // Tính tổng tiền = subtotal + shipping - discount
+            BigDecimal amount = cart.getTotalAmount();
+            if (shippingFee != null) {
+                amount = amount.add(shippingFee);
+            }
+            if (discountAmount != null) {
+                amount = amount.subtract(discountAmount);
+            }
+            
             // ⭐ GENERATE ORDER NUMBER (chưa lưu DB)
             String orderNumber = "ORD-" + System.currentTimeMillis();
-            BigDecimal amount = cart.getTotalAmount();
             
             // Lưu vào session
             session.setAttribute("pendingOrderNumber", orderNumber);
@@ -295,9 +313,11 @@ public class PaymentController {
             BigDecimal amount = (BigDecimal) session.getAttribute("pendingOrderAmount");
             Long startTime = (Long) session.getAttribute("qrGeneratedAt");
             
+            // Nếu session đã bị xóa, có thể là order đã tạo thành công rồi
             if (orderNumber == null || startTime == null) {
-                response.put("status", "error");
-                response.put("message", "Session expired");
+                // Không trả lỗi, chỉ trả pending để client dừng polling
+                response.put("status", "completed");
+                response.put("message", "Payment processing completed");
                 return ResponseEntity.ok(response);
             }
             
@@ -320,6 +340,12 @@ public class PaymentController {
                 // ✅ FOUND! Tạo order
                 OrderDTO checkoutData = (OrderDTO) session.getAttribute("checkoutData");
                 Integer userId = (Integer) session.getAttribute("checkoutUserId");
+                Integer selectedCarrierId = (Integer) session.getAttribute("selectedCarrierId");
+                
+                // Set carrier vào checkoutData
+                if (selectedCarrierId != null) {
+                    checkoutData.setCarrierId(selectedCarrierId);
+                }
                 
                 // TẠO ORDER
                 OrderDTO createdOrder = orderService.createOrderFromCart(userId, session.getId(), checkoutData);

@@ -1,5 +1,6 @@
 package com.example.demo.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
@@ -11,13 +12,16 @@ import java.util.List;
  * API: https://my.sepay.vn/userapi/transactions/list
  */
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SePayTransactionDTO {
     
     private int status;
-    private List<String> messages;
+    private Object error;
+    private Object messages;
     private List<Transaction> transactions;
     
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Transaction {
         private Long id;
         

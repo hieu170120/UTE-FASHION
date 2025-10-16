@@ -3,7 +3,9 @@ package com.example.demo.service;
 import com.example.demo.dto.AuthResponse;
 import com.example.demo.dto.LoginRequest;
 import com.example.demo.dto.RegisterRequest;
+import com.example.demo.entity.PendingUser;
 import com.example.demo.entity.User;
+import com.example.demo.repository.PendingUserRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -25,23 +27,27 @@ import java.util.Optional;
 public class AuthService {
     
     private final UserRepository userRepository;
+    private final PendingUserRepository pendingUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
     private final PasswordTestService passwordTestService;
+    private final EmailService emailService;
     
     /**
-     * Đăng ký user mới
+     * Đăng ký user mới và gửi OTP xác thực email (lưu tạm thời vào PendingUser)
      */
     @Transactional
-    public User register(RegisterRequest request) {
-        // Kiểm tra username đã tồn tại
-        if (userRepository.existsByUsername(request.getUsername())) {
+    public PendingUser register(RegisterRequest request) {
+        // Kiểm tra username đã tồn tại trong User hoặc PendingUser
+        if (userRepository.existsByUsername(request.getUsername()) || 
+            pendingUserRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("Tên đăng nhập đã tồn tại");
         }
         
-        // Kiểm tra email đã tồn tại
-        if (userRepository.existsByEmail(request.getEmail())) {
+        // Kiểm tra email đã tồn tại trong User hoặc PendingUser
+        if (userRepository.existsByEmail(request.getEmail()) || 
+            pendingUserRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email đã được sử dụng");
         }
         
@@ -50,17 +56,67 @@ public class AuthService {
             throw new RuntimeException("Mật khẩu xác nhận không khớp");
         }
         
-        // Tạo user mới
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword())); // Mã hóa password bằng BCrypt
-        user.setFullName(request.getFullName());
-        user.setPhoneNumber(request.getPhoneNumber());
-        user.setIsActive(true);
-        user.setIsEmailVerified(false);
+        // Xóa pending user cũ nếu có (trường hợp đăng ký lại)
+        pendingUserRepository.findByEmail(request.getEmail()).ifPresent(pendingUserRepository::delete);
         
-        return userRepository.save(user);
+        // Tạo pending user mới
+        PendingUser pendingUser = new PendingUser();
+        pendingUser.setUsername(request.getUsername());
+        pendingUser.setEmail(request.getEmail());
+        pendingUser.setPasswordHash(passwordEncoder.encode(request.getPassword())); // Mã hóa password bằng BCrypt
+        pendingUser.setFullName(request.getFullName());
+        pendingUser.setPhoneNumber(request.getPhoneNumber());
+        pendingUser.setIsOtpSent(false);
+        
+        PendingUser savedPendingUser = pendingUserRepository.save(pendingUser);
+        
+        // Gửi OTP xác thực email
+        try {
+            emailService.sendOTP(request.getEmail());
+            savedPendingUser.setIsOtpSent(true);
+            pendingUserRepository.save(savedPendingUser);
+        } catch (Exception e) {
+            // Nếu gửi email thất bại, xóa pending user đã tạo
+            pendingUserRepository.delete(savedPendingUser);
+            throw new RuntimeException("Không thể gửi mã xác thực email: " + e.getMessage());
+        }
+        
+        return savedPendingUser;
+    }
+    
+    /**
+     * Xác thực email và chuyển từ PendingUser sang User
+     */
+    @Transactional
+    public User verifyEmail(String email, String otpCode) {
+        // Xác thực OTP
+        boolean isValidOTP = emailService.verifyOTP(email, otpCode);
+        
+        if (isValidOTP) {
+            // Tìm pending user
+            PendingUser pendingUser = pendingUserRepository.findActiveByEmail(email, LocalDateTime.now())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin đăng ký với email: " + email));
+            
+            // Tạo user mới từ pending user
+            User user = new User();
+            user.setUsername(pendingUser.getUsername());
+            user.setEmail(pendingUser.getEmail());
+            user.setPasswordHash(pendingUser.getPasswordHash());
+            user.setFullName(pendingUser.getFullName());
+            user.setPhoneNumber(pendingUser.getPhoneNumber());
+            user.setIsActive(true);
+            user.setIsEmailVerified(true); // Đã xác thực email
+            
+            // Lưu user mới
+            User savedUser = userRepository.save(user);
+            
+            // Xóa pending user
+            pendingUserRepository.delete(pendingUser);
+            
+            return savedUser;
+        }
+        
+        throw new RuntimeException("Mã OTP không đúng hoặc đã hết hạn");
     }
     
     /**

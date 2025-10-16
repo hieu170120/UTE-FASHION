@@ -42,10 +42,13 @@ public class SecurityConfig {
                                 "/static/**", "/css/**", "/js/**", "/images/**",
                                 "/products", "/products/**",
                                 "/cart", "/cart/**",
+                                "/api/cart/**",
                                 "/checkout", "/checkout/**",
                                 "/payment", "/payment/**",
                                 "/payment-test", "/payment-test/**",
-                                "/api/auth/**")
+                                "/api/auth/**",
+                                "/verify-email", "/verify-email/**",
+                                "/resend-otp") // <-- Added resend-otp endpoint
                         .permitAll()
                         .requestMatchers("/profile", "/profile/**")
                         .authenticated()

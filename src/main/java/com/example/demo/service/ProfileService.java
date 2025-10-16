@@ -62,12 +62,23 @@ public class ProfileService {
             user.setPhoneNumber(updateProfileDTO.getPhoneNumber().trim().isEmpty() ? null : updateProfileDTO.getPhoneNumber().trim());
         }
         
+        // Luôn cập nhật avatar URL nếu có giá trị
+        System.out.println("DEBUG: updateProfileDTO.getAvatarUrl() = '" + updateProfileDTO.getAvatarUrl() + "'");
         if (updateProfileDTO.getAvatarUrl() != null) {
-            // Cho phép xóa avatar URL (để trống)
-            user.setAvatarUrl(updateProfileDTO.getAvatarUrl().trim().isEmpty() ? null : updateProfileDTO.getAvatarUrl().trim());
+            String newAvatarUrl = updateProfileDTO.getAvatarUrl().trim();
+            // Chỉ set null nếu URL thực sự rỗng hoặc chỉ có khoảng trắng
+            if (newAvatarUrl.isEmpty()) {
+                newAvatarUrl = null;
+            }
+            System.out.println("DEBUG: Updating avatar URL from '" + user.getAvatarUrl() + "' to '" + newAvatarUrl + "'");
+            user.setAvatarUrl(newAvatarUrl);
+        } else {
+            System.out.println("DEBUG: Avatar URL is null in updateProfileDTO");
         }
         
+        System.out.println("DEBUG: Saving user to database...");
         User savedUser = userRepository.save(user);
+        System.out.println("DEBUG: User saved successfully. Avatar URL in DB: " + savedUser.getAvatarUrl());
         return convertToProfileDTO(savedUser);
     }
     

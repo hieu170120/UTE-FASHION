@@ -26,6 +26,15 @@
 <body>
 
 <div class="container mt-5" layout:fragment="content">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/cart}" class="text-decoration-none">Giỏ hàng</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/checkout}" class="text-decoration-none">Thông tin vận chuyển</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Phương thức thanh toán</li>
+        </ol>
+    </nav>
+    
     <h2 class="mb-4 fw-bold">PHƯƠNG THỨC THANH TOÁN</h2>
         
         <!-- Success Message -->

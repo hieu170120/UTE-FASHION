@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác thực Email - UTE Fashion</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 40px 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .verify-container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .verify-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .verify-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .verify-header h2 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 28px;
+        }
+        
+        .verify-header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+        
+        .verify-body {
+            padding: 30px;
+        }
+        
+        .otp-input-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .otp-input {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        
+        .otp-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            outline: none;
+        }
+        
+        .btn-verify {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: transform 0.2s;
+            color: white;
+        }
+        
+        .btn-verify:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-resend {
+            background: transparent;
+            border: 2px solid #667eea;
+            color: #667eea;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-resend:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        
+        .email-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .countdown {
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+        
+        .back-link a {
+            color: #667eea;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="verify-container">
+            <div class="verify-card">
+                <!-- Header -->
+                <div class="verify-header">
+                    <i class="fas fa-envelope-open fa-3x mb-3"></i>
+                    <h2>Xác thực Email</h2>
+                    <p>Nhập mã OTP để kích hoạt tài khoản</p>
+                </div>
+                
+                <!-- Body -->
+                <div class="verify-body">
+                    <!-- Success Message -->
+                    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span th:text="${successMessage}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    
+                    <!-- Error Message -->
+                    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <span th:text="${errorMessage}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    
+                    <!-- Email Info -->
+                    <div class="email-info">
+                        <i class="fas fa-envelope me-2"></i>
+                        <strong>Email:</strong> <span th:text="${email}"></span>
+                    </div>
+                    
+                    <!-- OTP Form -->
+                    <form th:action="@{/verify-email}" method="post">
+                        <input type="hidden" name="email" th:value="${email}">
+                        
+                        <!-- OTP Input -->
+                        <div class="mb-4">
+                            <label class="form-label text-center d-block">
+                                <i class="fas fa-key me-1"></i> Nhập mã OTP (6 số)
+                            </label>
+                            <div class="otp-input-group">
+                                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" required>
+                                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" required>
+                                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" required>
+                                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" required>
+                                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" required>
+                                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" required>
+                            </div>
+                            <input type="hidden" name="otpCode" id="otpCode">
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn btn-verify w-100 mb-3">
+                            <i class="fas fa-check me-2"></i> Xác thực Email
+                        </button>
+                    </form>
+                    
+                    <!-- Resend Button -->
+                    <div class="text-center mb-3">
+                        <button type="button" class="btn btn-resend" onclick="resendOTP()">
+                            <i class="fas fa-redo me-2"></i> Gửi lại mã OTP
+                        </button>
+                    </div>
+                    
+                    <!-- Countdown -->
+                    <div class="text-center">
+                        <small class="text-muted">
+                            Mã OTP có hiệu lực trong <span class="countdown" id="countdown">15:00</span>
+                        </small>
+                    </div>
+                    
+                    <!-- Back Link -->
+                    <div class="back-link">
+                        <a th:href="@{/register}">
+                            <i class="fas fa-arrow-left me-1"></i> Quay lại đăng ký
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="text-center mt-4 text-white">
+                <p class="mb-0">
+                    <i class="fas fa-heart text-danger"></i> 
+                    UTE Fashion &copy; 2024
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Auto-focus và auto-tab cho OTP inputs
+        const otpInputs = document.querySelectorAll('.otp-input');
+        const otpCodeInput = document.getElementById('otpCode');
+        
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', function(e) {
+                if (e.target.value.length === 1) {
+                    if (index < otpInputs.length - 1) {
+                        otpInputs[index + 1].focus();
+                    }
+                }
+                updateOTPCode();
+            });
+            
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace' && e.target.value === '') {
+                    if (index > 0) {
+                        otpInputs[index - 1].focus();
+                    }
+                }
+            });
+            
+            input.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text');
+                if (/^\d{6}$/.test(pastedData)) {
+                    for (let i = 0; i < 6; i++) {
+                        otpInputs[i].value = pastedData[i];
+                    }
+                    updateOTPCode();
+                    otpInputs[5].focus();
+                }
+            });
+        });
+        
+        function updateOTPCode() {
+            const otpCode = Array.from(otpInputs).map(input => input.value).join('');
+            otpCodeInput.value = otpCode;
+        }
+        
+        // Countdown timer
+        let timeLeft = 15 * 60; // 15 minutes in seconds
+        const countdownElement = document.getElementById('countdown');
+        
+        function updateCountdown() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (timeLeft <= 0) {
+                countdownElement.textContent = 'Hết hạn';
+                countdownElement.style.color = '#dc3545';
+            } else {
+                timeLeft--;
+            }
+        }
+        
+        setInterval(updateCountdown, 1000);
+        
+        // Resend OTP function
+        function resendOTP() {
+            const email = document.querySelector('input[name="email"]').value;
+            
+            fetch('/api/auth/resend-verification-otp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `email=${encodeURIComponent(email)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Mã OTP mới đã được gửi đến email của bạn!');
+                    // Reset countdown
+                    timeLeft = 15 * 60;
+                    countdownElement.style.color = '#667eea';
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Có lỗi xảy ra khi gửi lại mã OTP');
+            });
+        }
+        
+        // Focus first input on load
+        otpInputs[0].focus();
+    </script>
+</body>
+</html>

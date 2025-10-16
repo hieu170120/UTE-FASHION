@@ -73,13 +73,16 @@ public class OrderServiceImpl implements OrderService {
         order.setCustomerNotes(orderDTO.getCustomerNotes());
 
         // Set carrier and shipping fee
-        if (orderDTO.getUserId() == null) {
-            throw new ResourceNotFoundException("Carrier ID is required");
+        Integer carrierId = orderDTO.getCarrierId();
+        if (carrierId != null) {
+            Carrier carrier = carrierRepository.findById(carrierId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Carrier not found: " + carrierId));
+            order.setCarrier(carrier);
+            order.setShippingFee(carrier.getDefaultShippingFee());
+        } else {
+            // Set default shipping fee if no carrier selected
+            order.setShippingFee(BigDecimal.valueOf(30000)); // Default 30k
         }
-        Carrier carrier = carrierRepository.findById(orderDTO.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("Carrier not found: " + orderDTO.getUserId()));
-        order.setCarrier(carrier);
-        order.setShippingFee(carrier.getDefaultShippingFee());
 
         BigDecimal subtotal = BigDecimal.ZERO;
         for (CartItem cartItem : cart.getCartItems()) {
