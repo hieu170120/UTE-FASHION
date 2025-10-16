@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  * Entity PasswordResetToken - Lưu trữ thông tin reset password với OTP
  */
 @Entity
-@Table(name = "PasswordResetTokens")
+@Table(name = "password_reset_tokens")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
