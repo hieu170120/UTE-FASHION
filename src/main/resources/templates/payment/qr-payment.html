@@ -107,8 +107,9 @@
         let pollingInterval;
         let countdownInterval;
         
-        // Get context path for proper URL
+        // Get context path for proper URL (without trailing slash)
         const contextPath = /*[[@{/}]]*/ '/UTE_Fashion';
+        const apiPath = contextPath.replace(/\/$/, ''); // Remove trailing slash if exists
 
         // Countdown timer (1 second intervals)
         countdownInterval = setInterval(() => {
@@ -127,7 +128,7 @@
         // Polling every 3 seconds to check payment status
         pollingInterval = setInterval(async () => {
             try {
-                const response = await fetch(contextPath + '/payment/sepay-qr/check');
+                const response = await fetch(apiPath + '/payment/sepay-qr/check');
                 const data = await response.json();
                 
                 if (data.status === 'success') {
@@ -158,6 +159,18 @@
                     document.getElementById('status').innerHTML = 
                         '<i class="fas fa-exclamation-circle"></i> Lỗi: ' + data.message;
                     document.getElementById('status').className = 'alert alert-danger';
+                    
+                } else if (data.status === 'completed') {
+                    // Session cleared - payment may have been processed
+                    clearInterval(pollingInterval);
+                    clearInterval(countdownInterval);
+                    document.getElementById('status').innerHTML = 
+                        '<i class="fas fa-check-circle"></i> Đang xử lý thanh toán... Vui lòng kiểm tra đơn hàng của bạn.';
+                    document.getElementById('status').className = 'alert alert-info';
+                    // Redirect to home after 3 seconds
+                    setTimeout(() => {
+                        window.location.href = contextPath + '/';
+                    }, 3000);
                     
                 } else if (data.status === 'pending') {
                     // Still waiting - continue polling
