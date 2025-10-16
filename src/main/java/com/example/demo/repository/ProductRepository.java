@@ -48,8 +48,8 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
            countQuery = "SELECT count(p) FROM Product p")
     Page<Product> findByOrderByAverageRatingDesc(Pageable pageable);
 
-    @Query(value = "SELECT p FROM Product p JOIN FETCH p.category c JOIN FETCH p.brand b LEFT JOIN p.wishlists w GROUP BY p.id ORDER BY COUNT(w) DESC",
-           countQuery = "SELECT count(p) FROM Product p")
+    @Query(value = "SELECT p FROM Product p JOIN FETCH p.category c JOIN FETCH p.brand b ORDER BY p.wishlistCount DESC",
+            countQuery = "SELECT count(p) FROM Product p")
     Page<Product> findByOrderByWishlistCountDesc(Pageable pageable);
 
     List<Product> findTop8ByIsActiveTrueOrderByCreatedAtDesc();

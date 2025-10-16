@@ -19,8 +19,8 @@ public class HomeController {
 
 	@GetMapping("/")
 	public String home(Model model) {
-		List<ProductDTO> newestProducts = productService.getAllProducts(PageRequest.of(0, 8)).getContent();
-		model.addAttribute("newestProducts", newestProducts);
+        List<ProductDTO> newestProducts = productService.getNewestProducts();
+        model.addAttribute("newestProducts", newestProducts);
 
 		List<ProductDTO> bestsellerProducts = productService.getBestsellerProducts();
 		model.addAttribute("bestsellerProducts", bestsellerProducts);

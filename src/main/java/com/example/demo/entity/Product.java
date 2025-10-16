@@ -6,6 +6,7 @@ import java.util.Set;
 
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import jakarta.persistence.CascadeType;
@@ -117,7 +118,8 @@ public class Product {
 	@OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
 	@BatchSize(size = 20)
 	private Set<ProductVariant> variants;
-
+    @Formula("(SELECT COUNT(w.wishlist_id) FROM Wishlists w WHERE w.product_id = product_id)")
+    private int wishlistCount;
 	@OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
 	private Set<Wishlist> wishlists;
 

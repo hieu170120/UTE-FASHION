@@ -53,6 +53,7 @@ public class ProductServiceImpl implements ProductService {
                 productPage = productRepository.findAll(pageable);
                 break;
         }
+        productPage.getContent().forEach(p -> p.getImages().size());
         return productPage.map(product -> modelMapper.map(product, ProductDTO.class));
     }
 
@@ -75,34 +76,40 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public Page<ProductDTO> getProductsByCategory(String slug, Pageable pageable) {
-        return productRepository.findByCategorySlug(slug, pageable)
-                .map(product -> modelMapper.map(product, ProductDTO.class));
+        Page<Product> productPage = productRepository.findByCategorySlug(slug, pageable);
+        productPage.getContent().forEach(p -> p.getImages().size());
+        return productPage.map(product -> modelMapper.map(product, ProductDTO.class));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ProductDTO> getProductsByBrand(String slug, Pageable pageable) {
-        return productRepository.findByBrandSlug(slug, pageable)
-                .map(product -> modelMapper.map(product, ProductDTO.class));
+        Page<Product> productPage = productRepository.findByBrandSlug(slug, pageable);
+        productPage.getContent().forEach(p -> p.getImages().size());
+        return productPage.map(product -> modelMapper.map(product, ProductDTO.class));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ProductDTO> getProductsByShop(Integer shopId, Pageable pageable) {
-        return productRepository.findByShopId(shopId, pageable)
-                .map(product -> modelMapper.map(product, ProductDTO.class));
+        Page<Product> productPage = productRepository.findByShopId(shopId, pageable);
+        productPage.getContent().forEach(p -> p.getImages().size());
+        return productPage.map(product -> modelMapper.map(product, ProductDTO.class));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ProductDTO> searchProducts(String keyword, Pageable pageable) {
-        return productRepository.findByProductNameContainingIgnoreCase(keyword, pageable)
-                .map(product -> modelMapper.map(product, ProductDTO.class));
+        Page<Product> productPage = productRepository.findByProductNameContainingIgnoreCase(keyword, pageable);
+        productPage.getContent().forEach(p -> p.getImages().size());
+        return productPage.map(product -> modelMapper.map(product, ProductDTO.class));
     }
 
     @Override
     public List<ProductDTO> getBestsellerProducts() {
-        return productRepository.findTop8ByIsActiveTrueOrderBySoldCountDesc().stream()
+        List<Product> products = productRepository.findTop8ByIsActiveTrueOrderBySoldCountDesc();
+        products.forEach(p -> p.getImages().size());
+        return products.stream()
                 .map(product -> modelMapper.map(product, ProductDTO.class)).collect(Collectors.toList());
     }
 
@@ -140,25 +147,30 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<ProductDTO> getNewestProducts() {
-        return productRepository.findTop8ByIsActiveTrueOrderByCreatedAtDesc().stream()
+        List<Product> products = productRepository.findTop8ByIsActiveTrueOrderByCreatedAtDesc();
+        products.forEach(p -> p.getImages().size());
+        return products.stream()
                 .map(product -> modelMapper.map(product, ProductDTO.class)).collect(Collectors.toList());
     }
 
     @Override
     public Page<ProductDTO> getBestsellerProducts(Pageable pageable) {
-        return productRepository.findByOrderBySoldCountDesc(pageable)
-                .map(product -> modelMapper.map(product, ProductDTO.class));
+        Page<Product> productPage = productRepository.findByOrderBySoldCountDesc(pageable);
+        productPage.getContent().forEach(p -> p.getImages().size());
+        return productPage.map(product -> modelMapper.map(product, ProductDTO.class));
     }
 
     @Override
     public Page<ProductDTO> getTopRatedProducts(Pageable pageable) {
-        return productRepository.findByOrderByAverageRatingDesc(pageable)
-                .map(product -> modelMapper.map(product, ProductDTO.class));
+        Page<Product> productPage = productRepository.findByOrderByAverageRatingDesc(pageable);
+        productPage.getContent().forEach(p -> p.getImages().size());
+        return productPage.map(product -> modelMapper.map(product, ProductDTO.class));
     }
 
     @Override
     public Page<ProductDTO> getMostWishedProducts(Pageable pageable) {
-        return productRepository.findByOrderByWishlistCountDesc(pageable)
-                .map(product -> modelMapper.map(product, ProductDTO.class));
+        Page<Product> productPage = productRepository.findByOrderByWishlistCountDesc(pageable);
+        productPage.getContent().forEach(p -> p.getImages().size());
+        return productPage.map(product -> modelMapper.map(product, ProductDTO.class));
     }
 }
