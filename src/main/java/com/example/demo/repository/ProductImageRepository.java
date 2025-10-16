@@ -15,6 +15,14 @@ public interface ProductImageRepository extends JpaRepository<ProductImage, Inte
     List<ProductImage> findImagesByProductIds(@Param("productIds") List<Integer> productIds);
 
     /**
+     * Fetches all images for a specific product, ordered by their display order.
+     * @param productId The ID of the product.
+     * @return A list of ProductImage entities.
+     */
+    @Query("SELECT pi FROM ProductImage pi WHERE pi.product.id = :productId ORDER BY pi.displayOrder ASC, pi.id ASC")
+    List<ProductImage> findAllByProductId(@Param("productId") Integer productId);
+
+    /**
      * Fetches the top 2 images for each product in a given list of product IDs.
      * This uses a native SQL query with a window function (ROW_NUMBER) for high efficiency,
      * avoiding the N+1 problem.
