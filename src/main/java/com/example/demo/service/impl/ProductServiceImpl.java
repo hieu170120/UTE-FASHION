@@ -70,7 +70,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductSummaryDTO> getB bestsellerProducts() {
+    public List<ProductSummaryDTO> getBestsellerProducts() {
         return productRepository.findSummaryBestsellers(PageRequest.of(0, 8));
     }
 
