@@ -28,138 +28,140 @@ import com.example.demo.service.ShopService;
 @RequestMapping("/products")
 public class ProductController {
 
-	@Autowired
-	private ProductService productService;
+    @Autowired
+    private ProductService productService;
 
-	@Autowired
-	private CategoryService categoryService;
+    @Autowired
+    private CategoryService categoryService;
 
-	@Autowired
-	private BrandService brandService;
+    @Autowired
+    private BrandService brandService;
 
-	@Autowired
-	private ShopService shopService;
+    @Autowired
+    private ShopService shopService;
 
-	@Autowired
-	private ProductVariantRepository productVariantRepository;
+    @Autowired
+    private ProductVariantRepository productVariantRepository;
 
-	@Autowired
-	private ProductRepository productRepository; // Inject ProductRepository
+    @Autowired
+    private ProductRepository productRepository; // Inject ProductRepository
 
-	private void addCommonAttributes(Model model) {
-		model.addAttribute("categories", categoryService.getAllCategories());
-		model.addAttribute("brands", brandService.getAllBrands());
-		model.addAttribute("shops", shopService.getAllShops());
-	}
+    private void addCommonAttributes(Model model) {
+        model.addAttribute("categories", categoryService.getAllCategories());
+        model.addAttribute("brands", brandService.getAllBrands());
+        model.addAttribute("shops", shopService.getAllShops());
+    }
 
-	@GetMapping
-	public String listAllProducts(Model model, @RequestParam(name = "page", defaultValue = "0") int page,
-			@RequestParam(name = "size", defaultValue = "9") int size,
-			@RequestParam(name = "keyword", required = false) String keyword) {
+    @GetMapping
+    public String listAllProducts(Model model, @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "sort", defaultValue = "newest") String sort) {
 
-		Page<ProductDTO> productPage;
-		if (keyword != null && !keyword.isEmpty()) {
-			productPage = productService.searchProducts(keyword, PageRequest.of(page, size));
-			model.addAttribute("pageTitle", "Kết quả tìm kiếm cho '" + keyword + "'");
-		} else {
-			productPage = productService.getAllProducts(PageRequest.of(page, size));
-			model.addAttribute("pageTitle", "Tất cả sản phẩm");
-		}
+        Page<ProductDTO> productPage;
+        if (keyword != null && !keyword.isEmpty()) {
+            productPage = productService.searchProducts(keyword, PageRequest.of(page, size));
+            model.addAttribute("pageTitle", "Kết quả tìm kiếm cho '" + keyword + "'");
+        } else {
+            productPage = productService.getAllProducts(PageRequest.of(page, size), sort);
+            model.addAttribute("pageTitle", "Tất cả sản phẩm");
+        }
 
-		addCommonAttributes(model);
-		model.addAttribute("productPage", productPage);
-		model.addAttribute("keyword", keyword);
-		model.addAttribute("currentCategory", null);
-		model.addAttribute("currentBrand", null);
-		model.addAttribute("currentShop", null);
+        addCommonAttributes(model);
+        model.addAttribute("productPage", productPage);
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("sort", sort);
+        model.addAttribute("currentCategory", null);
+        model.addAttribute("currentBrand", null);
+        model.addAttribute("currentShop", null);
 
-		return "product/products";
-	}
+        return "product/products";
+    }
 
-	@GetMapping("/category/{categorySlug}")
-	public String listProductsByCategory(Model model, @PathVariable String categorySlug,
-			@RequestParam(name = "page", defaultValue = "0") int page,
-			@RequestParam(name = "size", defaultValue = "9") int size) {
+    @GetMapping("/category/{categorySlug}")
+    public String listProductsByCategory(Model model, @PathVariable String categorySlug,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
 
-		Page<ProductDTO> productPage = productService.getProductsByCategory(categorySlug, PageRequest.of(page, size));
-		CategoryDTO category = categoryService.getCategoryBySlug(categorySlug);
+        Page<ProductDTO> productPage = productService.getProductsByCategory(categorySlug, PageRequest.of(page, size));
+        CategoryDTO category = categoryService.getCategoryBySlug(categorySlug);
 
-		addCommonAttributes(model);
-		model.addAttribute("productPage", productPage);
-		model.addAttribute("pageTitle", "Sản phẩm thuộc danh mục '" + category.getCategoryName() + "'");
-		model.addAttribute("currentCategory", categorySlug);
-		model.addAttribute("currentBrand", null);
-		model.addAttribute("currentShop", null);
+        addCommonAttributes(model);
+        model.addAttribute("productPage", productPage);
+        model.addAttribute("pageTitle", "Sản phẩm thuộc danh mục '" + category.getCategoryName() + "'");
+        model.addAttribute("currentCategory", categorySlug);
+        model.addAttribute("currentBrand", null);
+        model.addAttribute("currentShop", null);
 
-		return "product/products";
-	}
+        return "product/products";
+    }
 
-	@GetMapping("/brand/{brandSlug}")
-	public String listProductsByBrand(Model model, @PathVariable String brandSlug,
-			@RequestParam(name = "page", defaultValue = "0") int page,
-			@RequestParam(name = "size", defaultValue = "9") int size) {
+    @GetMapping("/brand/{brandSlug}")
+    public String listProductsByBrand(Model model, @PathVariable String brandSlug,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
 
-		Page<ProductDTO> productPage = productService.getProductsByBrand(brandSlug, PageRequest.of(page, size));
-		BrandDTO brand = brandService.getBrandBySlug(brandSlug);
+        Page<ProductDTO> productPage = productService.getProductsByBrand(brandSlug, PageRequest.of(page, size));
+        BrandDTO brand = brandService.getBrandBySlug(brandSlug);
 
-		addCommonAttributes(model);
-		model.addAttribute("productPage", productPage);
-		model.addAttribute("pageTitle", "Sản phẩm thuộc thương hiệu '" + brand.getBrandName() + "'");
-		model.addAttribute("currentBrand", brandSlug);
-		model.addAttribute("currentCategory", null);
-		model.addAttribute("currentShop", null);
+        addCommonAttributes(model);
+        model.addAttribute("productPage", productPage);
+        model.addAttribute("pageTitle", "Sản phẩm thuộc thương hiệu '" + brand.getBrandName() + "'");
+        model.addAttribute("currentBrand", brandSlug);
+        model.addAttribute("currentCategory", null);
+        model.addAttribute("currentShop", null);
 
-		return "product/products";
-	}
+        return "product/products";
+    }
 
-	@GetMapping("/shop/{shopId}")
-	public String listProductsByShop(Model model, @PathVariable Integer shopId,
-			@RequestParam(name = "page", defaultValue = "0") int page,
-			@RequestParam(name = "size", defaultValue = "9") int size) {
+    @GetMapping("/shop/{shopId}")
+    public String listProductsByShop(Model model, @PathVariable Integer shopId,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
 
-		Page<ProductDTO> productPage = productService.getProductsByShop(shopId, PageRequest.of(page, size));
-		ShopDTO shop = shopService.getShopById(shopId);
+        Page<ProductDTO> productPage = productService.getProductsByShop(shopId, PageRequest.of(page, size));
+        ShopDTO shop = shopService.getShopById(shopId);
 
-		addCommonAttributes(model);
-		model.addAttribute("productPage", productPage);
-		model.addAttribute("pageTitle", "Sản phẩm của shop '" + shop.getShopName() + "'");
-		model.addAttribute("currentShop", shopId);
-		model.addAttribute("currentCategory", null);
-		model.addAttribute("currentBrand", null);
+        addCommonAttributes(model);
+        model.addAttribute("productPage", productPage);
+        model.addAttribute("pageTitle", "Sản phẩm của shop '" + shop.getShopName() + "'");
+        model.addAttribute("currentShop", shopId);
+        model.addAttribute("currentCategory", null);
+        model.addAttribute("currentBrand", null);
 
-		return "product/products";
-	}
+        return "product/products";
+    }
 
-	@GetMapping("/{slug}")
-	public String viewProduct(@PathVariable String slug, Model model) {
-		try {
-			ProductDTO productDTO = productService.getProductBySlug(slug);
-			model.addAttribute("product", productDTO);
+    @GetMapping("/{slug}")
+    public String viewProduct(@PathVariable String slug, Model model) {
+        try {
+            ProductDTO productDTO = productService.getProductBySlug(slug);
+            model.addAttribute("product", productDTO);
 
-			productRepository.findById(productDTO.getId()).ifPresent(product -> {
-				if (product.getBrand() != null) {
-					BrandDTO brand = brandService.getBrandById(product.getBrand().getId());
-					model.addAttribute("brand", brand);
-				}
-			});
+            productRepository.findById(productDTO.getId()).ifPresent(product -> {
+                if (product.getBrand() != null) {
+                    BrandDTO brand = brandService.getBrandById(product.getBrand().getId());
+                    model.addAttribute("brand", brand);
+                }
+            });
 
-			List<ProductVariant> variants = productVariantRepository.findByProductId(productDTO.getId());
-			variants.forEach(variant -> {
-				if (variant.getColor() != null) {
-					variant.getColor().getColorName();
-				}
-				if (variant.getSize() != null) {
-					variant.getSize().getSizeName();
-				}
-			});
-			model.addAttribute("variants", variants);
+            List<ProductVariant> variants = productVariantRepository.findByProductId(productDTO.getId());
+            variants.forEach(variant -> {
+                if (variant.getColor() != null) {
+                    variant.getColor().getColorName();
+                }
+                if (variant.getSize() != null) {
+                    variant.getSize().getSizeName();
+                }
+            });
+            model.addAttribute("variants", variants);
 
-			model.addAttribute("pageTitle", productDTO.getProductName());
+            model.addAttribute("pageTitle", productDTO.getProductName());
 
-			return "product/product-detail";
-		} catch (Exception e) {
-			e.printStackTrace();
-			return "redirect:/products";
-		}
-	}
+            return "product/product-detail";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "redirect:/products";
+        }
+    }
 }

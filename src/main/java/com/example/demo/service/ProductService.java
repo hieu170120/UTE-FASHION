@@ -1,34 +1,39 @@
-
 package com.example.demo.service;
 
+import com.example.demo.dto.ProductDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-
-import com.example.demo.dto.ProductDTO;
 
 import java.util.List;
 
 public interface ProductService {
-	Page<ProductDTO> getAllProducts(Pageable pageable);
+    Page<ProductDTO> getAllProducts(Pageable pageable, String sort);
 
-	ProductDTO getProductById(Integer id);
+    ProductDTO getProductById(Integer id);
 
-	ProductDTO getProductBySlug(String slug);
+    ProductDTO getProductBySlug(String slug);
 
-	Page<ProductDTO> getProductsByCategory(String slug, Pageable pageable);
+    Page<ProductDTO> getProductsByCategory(String slug, Pageable pageable);
 
-	Page<ProductDTO> getProductsByBrand(String slug, Pageable pageable);
-    
-	Page<ProductDTO> getProductsByShop(Integer shopId, Pageable pageable);
+    Page<ProductDTO> getProductsByBrand(String slug, Pageable pageable);
 
-	Page<ProductDTO> searchProducts(String keyword, Pageable pageable);
+    Page<ProductDTO> getProductsByShop(Integer shopId, Pageable pageable);
 
-	List<ProductDTO> getBestsellerProducts();
+    Page<ProductDTO> searchProducts(String keyword, Pageable pageable);
 
-	ProductDTO createProduct(ProductDTO productDTO, Integer shopId);
+    List<ProductDTO> getBestsellerProducts();
 
-	ProductDTO updateProduct(Integer id, ProductDTO productDTO, Integer shopId);
+    List<ProductDTO> getNewestProducts();
 
-	void deleteProduct(Integer id);
+    ProductDTO createProduct(ProductDTO productDTO, Integer shopId);
 
+    ProductDTO updateProduct(Integer id, ProductDTO productDTO, Integer shopId);
+
+    void deleteProduct(Integer id);
+
+    Page<ProductDTO> getBestsellerProducts(Pageable pageable);
+
+    Page<ProductDTO> getTopRatedProducts(Pageable pageable);
+
+    Page<ProductDTO> getMostWishedProducts(Pageable pageable);
 }
