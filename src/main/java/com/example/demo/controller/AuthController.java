@@ -140,16 +140,27 @@ public class AuthController {
     public String register(@Valid @ModelAttribute RegisterRequest registerRequest,
                           BindingResult result,
                           RedirectAttributes redirectAttributes,
-                          Model model) {
+                          Model model,
+                          HttpSession session) {
         
         if (result.hasErrors()) {
             return "auth/register";
         }
         
         try {
-            authService.register(registerRequest);
-            redirectAttributes.addFlashAttribute("successMessage", "Đăng ký thành công! Vui lòng đăng nhập.");
-            return "redirect:/login";
+            var pendingUser = authService.register(registerRequest);
+            
+            // Lưu email vào session để xác thực
+            System.out.println("=== DEBUG REGISTER SUCCESS ===");
+            System.out.println("Registering email: " + registerRequest.getEmail());
+            System.out.println("Session ID: " + session.getId());
+            System.out.println("Pending User ID: " + pendingUser.getPendingId());
+            session.setAttribute("pendingEmail", registerRequest.getEmail());
+            System.out.println("✅ Session pendingEmail set to: " + registerRequest.getEmail());
+            
+            redirectAttributes.addFlashAttribute("successMessage", 
+                "Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.");
+            return "redirect:/verify-email?email=" + registerRequest.getEmail();
         } catch (Exception e) {
             model.addAttribute("errorMessage", e.getMessage());
             return "auth/register";
@@ -160,11 +171,12 @@ public class AuthController {
     @ResponseBody
     public ResponseEntity<?> registerApi(@Valid @RequestBody RegisterRequest registerRequest) {
         try {
-            User user = authService.register(registerRequest);
+            var pendingUser = authService.register(registerRequest);
             Map<String, Object> response = new HashMap<>();
-            response.put("message", "Đăng ký thành công!");
-            response.put("userId", user.getUserId());
-            response.put("username", user.getUsername());
+            response.put("message", "Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.");
+            response.put("pendingId", pendingUser.getPendingId());
+            response.put("username", pendingUser.getUsername());
+            response.put("email", pendingUser.getEmail());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();

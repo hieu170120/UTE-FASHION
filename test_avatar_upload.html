@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Avatar Upload</title>
+</head>
+<body>
+    <h1>Test Avatar Upload</h1>
+    
+    <form action="http://localhost:5055/UTE_Fashion/profile/upload-avatar" method="post" enctype="multipart/form-data">
+        <div>
+            <label for="avatarFile">Chọn file ảnh:</label>
+            <input type="file" id="avatarFile" name="avatarFile" accept="image/*" required>
+        </div>
+        <div>
+            <button type="submit">Upload Avatar</button>
+        </div>
+    </form>
+    
+    <h2>Test với curl:</h2>
+    <pre>
+curl -X POST \
+  -F "avatarFile=@test_image.jpg" \
+  -H "Cookie: UTE_FASHION_SESSION=your_session_id" \
+  http://localhost:5055/UTE_Fashion/profile/upload-avatar
+    </pre>
+</body>
+</html>
+
+
+
+
+
