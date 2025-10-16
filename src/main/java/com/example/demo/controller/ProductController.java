@@ -1,7 +1,10 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.*;
+import com.example.demo.entity.Order;
 import com.example.demo.entity.ProductVariant;
+import com.example.demo.entity.User;
+import com.example.demo.repository.OrderRepository;
 import com.example.demo.repository.ProductRepository;
 import com.example.demo.repository.ProductVariantRepository;
 import com.example.demo.service.BrandService;
@@ -11,6 +14,7 @@ import com.example.demo.service.ShopService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.Collections;
 import java.util.List;
 
 @Controller
@@ -26,21 +31,18 @@ public class ProductController {
 
     @Autowired
     private ProductService productService;
-
     @Autowired
     private CategoryService categoryService;
-
     @Autowired
     private BrandService brandService;
-
     @Autowired
     private ShopService shopService;
-
     @Autowired
     private ProductVariantRepository productVariantRepository;
-
     @Autowired
-    private ProductRepository productRepository; // Inject ProductRepository
+    private ProductRepository productRepository;
+    @Autowired
+    private OrderRepository orderRepository; 
 
     private void addCommonAttributes(Model model) {
         model.addAttribute("categories", categoryService.getAllCategories());
@@ -128,36 +130,47 @@ public class ProductController {
         return "product/products";
     }
 
+
     @GetMapping("/{slug}")
-    public String viewProduct(@PathVariable String slug, Model model) {
+    public String viewProduct(@PathVariable String slug, Model model, @AuthenticationPrincipal User currentUser) {
         try {
             ProductDTO productDTO = productService.getProductBySlug(slug);
             model.addAttribute("product", productDTO);
 
+            // Fetch Brand
             productRepository.findById(productDTO.getId()).ifPresent(product -> {
                 if (product.getBrand() != null) {
-                    BrandDTO brand = brandService.getBrandById(product.getBrand().getId());
-                    model.addAttribute("brand", brand);
+                    model.addAttribute("brand", brandService.getBrandById(product.getBrand().getId()));
                 }
             });
 
+            // Fetch Variants and eagerly load related entities
             List<ProductVariant> variants = productVariantRepository.findByProductId(productDTO.getId());
             variants.forEach(variant -> {
                 if (variant.getColor() != null) {
-                    variant.getColor().getColorName();
+                    variant.getColor().getColorName(); // Eagerly load color name
                 }
                 if (variant.getSize() != null) {
-                    variant.getSize().getSizeName();
+                    variant.getSize().getSizeName(); // Eagerly load size name
                 }
             });
             model.addAttribute("variants", variants);
+
+            // Fetch eligible orders for review
+            List<Order> eligibleOrders = Collections.emptyList();
+            if (currentUser != null) {
+                eligibleOrders = orderRepository.findEligibleOrdersForReview(currentUser.getId(), productDTO.getId());
+            }
+            model.addAttribute("eligibleOrders", eligibleOrders);
 
             model.addAttribute("pageTitle", productDTO.getProductName());
 
             return "product/product-detail";
         } catch (Exception e) {
+            // Log the exception for debugging
             e.printStackTrace();
-            return "redirect:/products";
+            // Redirect to a general error page or product list
+            return "redirect:/products?error=notfound";
         }
     }
 }
