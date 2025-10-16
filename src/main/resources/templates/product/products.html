@@ -171,7 +171,12 @@
                 height: 100%;
                 object-fit: cover;
                 display: block;
-                transition: transform 0.4s ease;
+                transition: transform 0.4s ease, opacity 0.3s ease;
+                opacity: 0; /* Initially hidden for fade-in */
+            }
+
+            .product-image-container img.loaded {
+                opacity: 1; /* Fade-in when loaded */
             }
 
             .product-overlay {
@@ -239,7 +244,7 @@
 <body>
 
     <div class="container" layout:fragment="content">
-        <!-- Carousel Start -->
+        <!-- Carousel: Also applying lazy loading to off-screen images -->
         <div id="header-carousel" class="carousel slide mb-4" data-bs-ride="carousel">
             <div class="carousel-inner">
                 <div class="carousel-item active">
@@ -248,8 +253,9 @@
                         alt="Banner Image">
                 </div>
                 <div class="carousel-item">
-                    <img class="w-100"
-                        src="https://file.hstatic.net/200000182297/file/vac_fd6422cd073b44208df1c5e9432f4043.jpg"
+                    <img class="w-100 lazy-image"
+                        src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                        data-main-src="https://file.hstatic.net/200000182297/file/vac_fd6422cd073b44208df1c5e9432f4043.jpg"
                         alt="Another Banner">
                 </div>
             </div>
@@ -272,7 +278,7 @@
                         <option value="newest" th:selected="${sort == 'newest'}">Sản phẩm mới</option>
                         <option value="bestseller" th:selected="${sort == 'bestseller'}">Bán chạy</option>
                         <option value="toprated" th:selected="${sort == 'toprated'}">Đánh giá cao</option>
-                        <option value="mostwished" th:selected="${sort == 'mostwished'}">Yêu thích nhất</option>
+                        <option value="mostwished" th:selected="${sort == 'mostwished'}" disabled>Yêu thích nhất</option>
                     </select>
                     <input type="hidden" name="keyword" th:value="${keyword}" />
                 </form>
@@ -322,13 +328,15 @@
                     <h3>Không tìm thấy sản phẩm nào.</h3>
                 </div>
                 <div class="product-grid" th:if="${productPage.totalElements > 0}">
-                    <!-- Updated Product Card Structure -->
+                    <!-- MODIFIED Product Card Structure for Lazy Loading -->
                     <a th:href="@{/products/{slug}(slug=${product.slug})}" class="product-card"
                         th:each="product : ${productPage.content}">
                         <div class="product-image-container"
-                            th:data-hover-src="${(product.images != null and #lists.size(product.images) > 1) ? product.images[1].imageUrl : ''}">
-                            <img th:src="${!#lists.isEmpty(product.images)} ? ${product.images[0].imageUrl} : 'https://ih1.redbubble.net/image.4905811472.8675/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg'"
-                                th:alt="${product.productName}">
+                            th:attr="data-hover-src=${(product.images != null and #lists.size(product.images) > 1) ? product.images[1].imageUrl : ''}">
+                            <img class="lazy-image" 
+                                 src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                                 th:attr="data-main-src=${!#lists.isEmpty(product.images)} ? ${product.images[0].imageUrl} : 'https://ih1.redbubble.net/image.4905811472.8675/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg'"
+                                 th:alt="${product.productName}">
                             <div class="sale-badge"
                                 th:if="${product.salePrice != null and product.salePrice < product.price and product.price > 0}"
                                 th:text="|-${#numbers.formatInteger(((product.price - product.salePrice) * 100.0) / product.price, 0)}%|">
@@ -360,8 +368,7 @@
                 <!-- Pagination -->
                 <nav aria-label="Page navigation" th:if="${productPage.totalPages > 1}" class="mt-4">
                     <th:block
-                        th:with="baseUrl = ${currentCategory != null} ? @{/products/category/{slug}(slug=${currentCategory})} : (${currentBrand != null} ? @{/products/brand/{slug}(slug=${currentBrand})} : (${currentShop != null} ? @{/products/shop/{id}(id=${currentShop})} : @{/products})) ">
-                    </th:block>
+                        th:with="baseUrl = ${currentCategory != null} ? @{/products/category/{slug}(slug=${currentCategory})} : (${currentBrand != null} ? @{/products/brand/{slug}(slug=${currentBrand})} : (${currentShop != null} ? @{/products/shop/{id}(id=${currentShop})} : @{/products})) "></th:block>
                     <ul class="pagination justify-content-center">
                         <li class="page-item" th:classappend="${productPage.first} ? 'disabled'">
                             <a class="page-link"
@@ -388,36 +395,70 @@
     <th:block layout:fragment="scripts">
         <script>
             document.addEventListener("DOMContentLoaded", function () {
+                // Initialize Bootstrap Carousel
                 var headerCarouselEl = document.querySelector('#header-carousel');
                 if (headerCarouselEl) {
                     new bootstrap.Carousel(headerCarouselEl, { interval: 3000, wrap: true });
                 }
-                const productContainers = document.querySelectorAll('.product-image-container');
-                productContainers.forEach(container => {
-                    const img = container.querySelector('img');
-                    const hoverSrc = container.dataset.hoverSrc;
 
-                    if (!img || !img.src) return;
+                // --- NEW: Combined Lazy Loading and Hover Effect Logic ---
+                const lazyImageObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            const mainSrc = img.dataset.mainSrc;
 
-                    const originalSrc = img.src;
+                            if (!mainSrc) {
+                                observer.unobserve(img);
+                                return;
+                            }
+                            
+                            // 1. Start loading the main image
+                            img.src = mainSrc;
 
-                    if (hoverSrc) {
-                        // Preload the hover image to avoid flickering
-                        const hoverImage = new Image();
-                        hoverImage.src = hoverSrc;
-                    }
+                            const container = img.closest('.product-image-container');
+                            
+                            // 2. When the main image finishes loading, set up the hover effect
+                            img.onload = () => {
+                                // Add fade-in class
+                                img.classList.add('loaded');
 
-                    container.addEventListener('mouseenter', () => {
-                        if (hoverSrc) {
-                            img.src = hoverSrc;
+                                if (container) {
+                                    const hoverSrc = container.dataset.hoverSrc;
+
+                                    // Only add hover effect if there's a hover image
+                                    if (hoverSrc) {
+                                        // Preload the hover image to prevent flickering
+                                        const hoverImage = new Image();
+                                        hoverImage.src = hoverSrc;
+
+                                        container.addEventListener('mouseenter', () => {
+                                            img.src = hoverSrc;
+                                        });
+
+                                        container.addEventListener('mouseleave', () => {
+                                            img.src = mainSrc; // Revert to the loaded main image
+                                        });
+                                    }
+                                }
+                            };
+
+                            img.onerror = () => {
+                                // Optional: Handle image loading errors, maybe show a fallback
+                                console.error('Image failed to load:', mainSrc);
+                                img.classList.add('loaded'); // Still show the space
+                            };
+
+                            // 3. Stop observing this image, its job is done
+                            observer.unobserve(img);
                         }
                     });
+                }, { rootMargin: "0px 0px 200px 0px" }); // Start loading images 200px before they enter the screen
 
-                    container.addEventListener('mouseleave', () => {
-                        if (hoverSrc) {
-                            img.src = originalSrc;
-                        }
-                    });
+                // Target all images that need lazy loading
+                const imagesToLoad = document.querySelectorAll('.lazy-image');
+                imagesToLoad.forEach(image => {
+                    lazyImageObserver.observe(image);
                 });
             });
         </script>

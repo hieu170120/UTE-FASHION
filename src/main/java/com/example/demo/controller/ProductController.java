@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.ProductDTO;
 import com.example.demo.dto.ProductSearchCriteria;
 import com.example.demo.dto.ProductSummaryDTO;
 import com.example.demo.dto.ReviewDTO;
@@ -33,22 +34,20 @@ public class ProductController {
         Page<ProductSummaryDTO> productPage = productService.searchAndFilterProducts(criteria, PageRequest.of(page, size));
 
         model.addAttribute("productPage", productPage);
-        model.addAttribute("criteria", criteria); // Pass criteria to the view for form binding
-        model.addAttribute("pageTitle", "Danh sách sản phẩm"); // Generic title
+        model.addAttribute("criteria", criteria); 
+        model.addAttribute("pageTitle", "Danh sách sản phẩm"); 
 
-        // The view will now handle filter states and combine parameters using JavaScript
         return "product/products";
     }
 
     @GetMapping("/products/{slug}")
     public String viewProduct(@PathVariable String slug, Model model) {
         try {
-            // Initial, lightweight product data load
-            model.addAttribute("product", productService.findProductDetailBySlug(slug));
-            model.addAttribute("pageTitle", productService.findProductDetailBySlug(slug).getProductName());
+            ProductDTO product = productService.findProductDetailBySlug(slug);
+            model.addAttribute("product", product);
+            model.addAttribute("pageTitle", product.getProductName());
 
-            // Fetch reviews for the product
-            Page<ReviewDTO> reviewPage = reviewService.getReviewsByProductId(productService.findProductDetailBySlug(slug).getId(), PageRequest.of(0, 5));
+            Page<ReviewDTO> reviewPage = reviewService.getReviewsByProductId(product.getId(), PageRequest.of(0, 5));
             model.addAttribute("reviewPage", reviewPage);
 
             return "product/product-detail";
