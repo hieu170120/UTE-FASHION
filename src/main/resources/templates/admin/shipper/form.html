@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:if="${shipperDTO.id == null}">Thêm shipper</title>
+    <title th:if="${shipperDTO.id != null}">Sửa shipper</title>
+    
+    <!-- Thêm Bootstrap CSS từ CDN cho layout chuyên nghiệp -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    
+    <!-- Font Awesome cho icon (làm màu mè hơn) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40/MKBW2W4W4Rhis/DbILU2W4W4Rhis/DbILU2W4W4Rhis/DbILU2W4W4Rhis/DbILU2W4W==" crossorigin="anonymous">
+    
+    <!-- Link CSS tùy chỉnh nếu có -->
+    <link rel="stylesheet" href="/css/admin.css"> <!-- Giả sử có CSS -->
+    
+    <!-- Style tùy chỉnh để làm "màu mè" như web thật: màu sắc, shadow, hover, gradient -->
+    <style>
+        body {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); /* Gradient nền đẹp */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 40px 0;
+        }
+        .container {
+            max-width: 800px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15); /* Shadow cho nổi bật */
+            padding: 30px;
+            margin: auto;
+        }
+        h1 {
+            color: #ff6b6b; /* Màu hồng cam nổi bật */
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); /* Shadow chữ */
+        }
+        .form-group label {
+            font-weight: 600;
+            color: #333;
+        }
+        .form-control {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #ff6b6b; /* Màu hồng khi focus */
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+        }
+        .text-danger {
+            font-size: 0.875rem;
+            color: #e74c3c !important; /* Màu đỏ cho lỗi */
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); /* Gradient button */
+            border: none;
+            border-radius: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-success:hover {
+            transform: scale(1.05); /* Zoom nhẹ khi hover */
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            border: none;
+            border-radius: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-secondary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.4);
+        }
+        .form-check-input:checked {
+            background-color: #ff6b6b; /* Màu checkbox khi check */
+            border-color: #ff6b6b;
+        }
+        /* Icon cho label để màu mè */
+        .form-group label i {
+            margin-right: 8px;
+            color: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 th:if="${shipperDTO.id == null}">Thêm shipper mới</h1>
+        <h1 th:if="${shipperDTO.id != null}">Sửa thông tin shipper</h1>
+        <form th:action="${shipperDTO.id} ? @{/admin/shippers/{id}(id=${shipperDTO.id})} : @{/admin/shippers}" th:object="${shipperDTO}" method="post">
+            <div class="form-group">
+                <label for="fullName"><i class="fas fa-user"></i> Họ tên:</label>
+                <input type="text" id="fullName" th:field="*{fullName}" class="form-control" />
+                <span th:errors="*{fullName}" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label for="phoneNumber"><i class="fas fa-phone"></i> Số điện thoại:</label>
+                <input type="text" id="phoneNumber" th:field="*{phoneNumber}" class="form-control" />
+                <span th:errors="*{phoneNumber}" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label for="email"><i class="fas fa-envelope"></i> Email:</label>
+                <input type="email" id="email" th:field="*{email}" class="form-control" />
+                <span th:errors="*{email}" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label for="vehicleType"><i class="fas fa-motorcycle"></i> Loại phương tiện:</label>
+                <input type="text" id="vehicleType" th:field="*{vehicleType}" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label for="carrierId"><i class="fas fa-truck"></i> Nhà vận chuyển:</label>
+                <select id="carrierId" th:field="*{carrierId}" class="form-control">
+                    <option th:each="carrier : ${carriers}" th:value="${carrier.id}" th:text="${carrier.carrierName}"></option>
+                </select>
+                <span th:errors="*{carrierId}" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input" id="active" th:field="*{active}" />
+                <label class="form-check-label" for="active"><i class="fas fa-toggle-on"></i> Hoạt động</label>
+            </div>
+            <!-- cancelCount không edit ở đây -->
+            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Lưu</button>
+            <a href="/admin/shippers" class="btn btn-secondary"><i class="fas fa-times"></i> Hủy</a>
+        </form>
+    </div>
+    
+    <!-- JS cho Bootstrap (nếu cần animation hoặc tooltip) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+</body>
+</html>

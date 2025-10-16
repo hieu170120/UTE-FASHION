@@ -1,0 +1,49 @@
+<!-- resources/templates/admin/shipper/list.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Danh sách shipper</title>
+    <link rel="stylesheet" href="/css/admin.css"> <!-- Giả sử có CSS -->
+</head>
+<body>
+    <div class="container">
+        <h1>Danh sách shipper</h1>
+        <a href="/admin/shippers/new" class="btn btn-primary">Thêm mới</a>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Họ tên</th>
+                    <th>Số điện thoại</th>
+                    <th>Email</th>
+                    <th>Loại phương tiện</th>
+                    <th>Nhà vận chuyển</th>
+                    <th>Hoạt động</th>
+                    <th>Số lần hủy</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="shipper : ${shipperPage.content}">
+                    <td th:text="${shipper.id}"></td>
+                    <td th:text="${shipper.fullName}"></td>
+                    <td th:text="${shipper.phoneNumber}"></td>
+                    <td th:text="${shipper.email}"></td>
+                    <td th:text="${shipper.vehicleType}"></td>
+                    <td th:text="${shipper.carrierId}"></td> <!-- Có thể join tên carrier nếu cần -->
+                    <td th:text="${shipper.active ? 'Có' : 'Không'}"></td>
+                    <td th:text="${shipper.cancelCount}"></td>
+                    <td>
+                        <a th:href="@{/admin/shippers/{id}/edit(id=${shipper.id})}" class="btn btn-sm btn-warning">Sửa</a>
+                        <a th:href="@{/admin/shippers/{id}/delete(id=${shipper.id})}" class="btn btn-sm btn-danger" onclick="return confirm('Bạn chắc chắn muốn xóa?')">Xóa</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <!-- Paging nếu dùng Page -->
+        <!-- Flash messages -->
+        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+    </div>
+</body>
+</html>

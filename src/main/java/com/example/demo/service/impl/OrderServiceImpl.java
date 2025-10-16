@@ -3,6 +3,7 @@ package com.example.demo.service.impl;
 import com.example.demo.dto.OrderDTO;
 import com.example.demo.dto.OrderItemDTO;
 import com.example.demo.entity.*;
+import com.example.demo.enums.OrderStatus;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.*;
 import com.example.demo.service.OrderService;
@@ -16,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -36,6 +39,12 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private CarrierRepository carrierRepository;
+
+    @Autowired
+    private ShipperRepository shipperRepository;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -61,6 +70,16 @@ public class OrderServiceImpl implements OrderService {
         order.setCity(orderDTO.getCity());
         order.setPostalCode(orderDTO.getPostalCode());
         order.setOrderDate(LocalDateTime.now());
+        order.setCustomerNotes(orderDTO.getCustomerNotes());
+
+        // Set carrier and shipping fee
+        if (orderDTO.getUserId() == null) {
+            throw new ResourceNotFoundException("Carrier ID is required");
+        }
+        Carrier carrier = carrierRepository.findById(orderDTO.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Carrier not found: " + orderDTO.getUserId()));
+        order.setCarrier(carrier);
+        order.setShippingFee(carrier.getDefaultShippingFee());
 
         BigDecimal subtotal = BigDecimal.ZERO;
         for (CartItem cartItem : cart.getCartItems()) {
@@ -88,6 +107,8 @@ public class OrderServiceImpl implements OrderService {
 
         order.setSubtotal(subtotal);
         order.setTotalAmount(subtotal.add(order.getShippingFee()).subtract(order.getDiscountAmount()).add(order.getTaxAmount()));
+        // Initial status: Processing (Đang xử lý)
+        order.setOrderStatus(OrderStatus.PROCESSING.getValue());
         orderRepository.save(order);
 
         // Clear cart after order creation
@@ -97,7 +118,7 @@ public class OrderServiceImpl implements OrderService {
         // Save order status history
         OrderStatusHistory history = new OrderStatusHistory();
         history.setOrder(order);
-        history.setNewStatus("Pending");
+        history.setNewStatus(OrderStatus.PROCESSING.getValue());
         history.setChangedAt(LocalDateTime.now());
         statusHistoryRepository.save(history);
 
@@ -143,10 +164,10 @@ public class OrderServiceImpl implements OrderService {
         statusHistoryRepository.save(history);
 
         order.setOrderStatus(newStatus);
-        if (newStatus.equals("Confirmed")) order.setConfirmedAt(LocalDateTime.now());
-        else if (newStatus.equals("Shipping")) order.setShippedAt(LocalDateTime.now());
-        else if (newStatus.equals("Delivered")) order.setDeliveredAt(LocalDateTime.now());
-        else if (newStatus.equals("Cancelled")) order.setCancelledAt(LocalDateTime.now());
+        if (newStatus.equals(OrderStatus.CONFIRMED.getValue())) order.setConfirmedAt(LocalDateTime.now());
+        else if (newStatus.equals(OrderStatus.SHIPPING.getValue())) order.setShippedAt(LocalDateTime.now());
+        else if (newStatus.equals(OrderStatus.DELIVERED.getValue())) order.setDeliveredAt(LocalDateTime.now());
+        else if (newStatus.equals(OrderStatus.CANCELLED.getValue())) order.setCancelledAt(LocalDateTime.now());
         orderRepository.save(order);
 
         return mapToOrderDTO(order);
@@ -160,7 +181,128 @@ public class OrderServiceImpl implements OrderService {
         if (!order.getUser().getUserId().equals(userId)) {
             throw new RuntimeException("Unauthorized to cancel this order");
         }
-        updateOrderStatus(orderId, "Cancelled", "Cancelled by user", userId);
+        String currentStatus = order.getOrderStatus();
+        if (!currentStatus.equals(OrderStatus.PROCESSING.getValue()) && !currentStatus.equals(OrderStatus.CONFIRMED.getValue())) {
+            throw new RuntimeException("Cannot cancel order in status: " + currentStatus);
+        }
+        updateOrderStatus(orderId, OrderStatus.CANCELLED.getValue(), "Cancelled by user", userId);
+        // If already assigned shipper, clear it
+        order.setShipper(null);
+        orderRepository.save(order);
+    }
+
+    @Transactional
+    public void assignShipperAndConfirm(Integer orderId, Integer shipperId, Integer adminId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+        if (!order.getOrderStatus().equals(OrderStatus.PROCESSING.getValue())) {
+            throw new RuntimeException("Order not in processing status");
+        }
+        Shipper shipper = shipperRepository.findById(shipperId)
+                .orElseThrow(() -> new ResourceNotFoundException("Shipper not found: " + shipperId));
+        if (!shipper.getCarrier().getId().equals(order.getCarrier().getId())) {
+            throw new RuntimeException("Shipper does not match carrier");
+        }
+        order.setShipper(shipper);
+        updateOrderStatus(orderId, OrderStatus.CONFIRMED.getValue(), "Assigned shipper and confirmed by admin", adminId);
+    }
+
+    public List<OrderDTO> getOrdersByShipper(Integer shipperId) {
+        return orderRepository.findByUser_UserId(shipperId).stream()
+                .map(this::mapToOrderDTO)
+                .collect(Collectors.toList());
+    }
+
+    public Map<String, Object> getShipperOrderStats(Integer shipperId) {
+        // Example stats: count by status
+        List<Order> orders = orderRepository.findByUser_UserId(shipperId);
+        long total = orders.size();
+        long delivered = orders.stream().filter(o -> o.getOrderStatus().equals(OrderStatus.DELIVERED.getValue())).count();
+        long cancelled = orders.stream().filter(o -> o.getOrderStatus().equals(OrderStatus.CANCELLED.getValue())).count();
+        return Map.of("total", total, "delivered", delivered, "cancelled", cancelled);
+    }
+
+    @Transactional
+    public void shipperConfirmOrder(Integer orderId, Integer shipperId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+        if (!order.getShipper().getId().equals(shipperId)) {
+            throw new RuntimeException("Unauthorized");
+        }
+        if (!order.getOrderStatus().equals(OrderStatus.CONFIRMED.getValue())) {
+            throw new RuntimeException("Order not in confirmed status");
+        }
+        updateOrderStatus(orderId, OrderStatus.SHIPPING.getValue(), "Shipper confirmed and started shipping", order.getShipper().getUser().getUserId());
+        // Set random shipping time 2-5 minutes for simulation
+        Random random = new Random();
+        int randomMin = random.nextInt(4) + 2; // 2 to 5
+        order.setShippingTime(randomMin * 60); // in seconds
+        order.setEstimatedDeliveryTime(LocalDateTime.now().plusMinutes(randomMin));
+        orderRepository.save(order);
+    }
+
+    @Transactional
+    public void shipperCancelOrder(Integer orderId, Integer shipperId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+        if (!order.getShipper().getId().equals(shipperId)) {
+            throw new RuntimeException("Unauthorized");
+        }
+        if (!order.getOrderStatus().equals(OrderStatus.CONFIRMED.getValue())) {
+            throw new RuntimeException("Order not in confirmed status");
+        }
+        Shipper shipper = order.getShipper();
+        if (shipper.getCancelCount() >= 3) {
+            throw new RuntimeException("Reached cancel limit");
+        }
+        shipper.setCancelCount(shipper.getCancelCount() + 1);
+        shipperRepository.save(shipper);
+        order.setShipper(null);
+        updateOrderStatus(orderId, OrderStatus.PROCESSING.getValue(), "Shipper cancelled assignment", shipper.getUser().getUserId());
+    }
+
+    @Transactional
+    public void requestReturn(Integer orderId, Integer userId, String notes) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+        if (!order.getUser().getUserId().equals(userId)) {
+            throw new RuntimeException("Unauthorized");
+        }
+        if (!order.getOrderStatus().equals(OrderStatus.DELIVERED.getValue())) {
+            throw new RuntimeException("Order not delivered");
+        }
+        updateOrderStatus(orderId, "Return Requested", notes, userId);
+    }
+
+    @Transactional
+    public void approveReturn(Integer orderId, String notes, Integer adminId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+        if (!order.getOrderStatus().equals("Return Requested")) {
+            throw new RuntimeException("No return requested");
+        }
+        updateOrderStatus(orderId, OrderStatus.REFUNDED.getValue(), notes, adminId);
+        // Additional refund logic if needed
+    }
+
+    @Transactional
+    public void rejectReturn(Integer orderId, String notes, Integer adminId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+        if (!order.getOrderStatus().equals("Return Requested")) {
+            throw new RuntimeException("No return requested");
+        }
+        updateOrderStatus(orderId, OrderStatus.DELIVERED.getValue(), notes, adminId);
+    }
+
+    // Simulate delivery after timer (could be called by scheduler)
+    @Transactional
+    public void completeDelivery(Integer orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+        if (order.getOrderStatus().equals(OrderStatus.SHIPPING.getValue()) && LocalDateTime.now().isAfter(order.getEstimatedDeliveryTime())) {
+            updateOrderStatus(orderId, OrderStatus.DELIVERED.getValue(), "Delivery completed", null);
+        }
     }
 
     private OrderDTO mapToOrderDTO(Order order) {
@@ -168,6 +310,12 @@ public class OrderServiceImpl implements OrderService {
         orderDTO.setOrderItems(order.getOrderItems().stream()
                 .map(item -> modelMapper.map(item, OrderItemDTO.class))
                 .collect(Collectors.toList()));
+        if (order.getCarrier() != null) {
+            orderDTO.setUserId(order.getCarrier().getId());
+        }
+        if (order.getShipper() != null) {
+            orderDTO.setUserId(order.getShipper().getId());
+        }
         return orderDTO;
     }
 }

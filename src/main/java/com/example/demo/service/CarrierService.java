@@ -1,30 +1,18 @@
+// Interface
 package com.example.demo.service;
 
-import com.example.demo.entity.Carrier;
-import com.example.demo.repository.CarrierRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import com.example.demo.dto.CarrierDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
-@Service
-@RequiredArgsConstructor
-public class CarrierService {
-
-    private final CarrierRepository carrierRepository;
-
-    /**
-     * Lấy danh sách carrier đang hoạt động
-     */
-    public List<Carrier> getAllActiveCarriers() {
-        return carrierRepository.findByIsActiveTrue();
-    }
-
-    /**
-     * Lấy carrier theo ID
-     */
-    public Carrier getCarrierById(Integer carrierId) {
-        return carrierRepository.findById(carrierId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhà vận chuyển"));
-    }
+public interface CarrierService {
+    List<CarrierDTO> getAllCarriers();
+    List<CarrierDTO> getActiveCarriers();
+    CarrierDTO getCarrierById(Integer id);
+    CarrierDTO createCarrier(CarrierDTO carrierDTO);
+    CarrierDTO updateCarrier(Integer id, CarrierDTO carrierDTO);
+    void deleteCarrier(Integer id);
+    Page<CarrierDTO> getAllCarriersPaged(Pageable pageable); // Nếu cần paging
 }
