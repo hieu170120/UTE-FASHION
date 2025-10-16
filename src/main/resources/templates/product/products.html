@@ -142,7 +142,7 @@
                 const brandList = document.getElementById('brand-list');
 
                 if(categoryList) {
-                    fetch('/api/categories').then(res => res.json()).then(categories => {
+                    fetch(/*[[@{/api/filters/categories}]]*/).then(res => res.json()).then(categories => {
                         categoryList.innerHTML = '';
                         let allProductsClass = (currentCategory == null && currentBrand == null) ? 'active' : '';
                         categoryList.innerHTML += `<a href="/products" class="list-group-item list-group-item-action ${allProductsClass}">Tất cả sản phẩm</a>`;
@@ -154,7 +154,7 @@
                 }
 
                 if(brandList) {
-                    fetch('/api/brands').then(res => res.json()).then(brands => {
+                    fetch(/*[[@{/api/filters/brands}]]*/).then(res => res.json()).then(brands => {
                         brandList.innerHTML = '';
                         brands.forEach(br => {
                             const activeClass = br.slug === currentBrand ? 'active' : '';
@@ -171,8 +171,7 @@
 
                 const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
                 const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
-
-                fetch('/api/products/images-for-list', { method: 'POST', headers: {'Content-Type': 'application/json', ...(csrfToken && { [csrfHeader]: csrfToken })}, body: JSON.stringify(productIds) })
+                fetch(/*[[@{/api/products/images-for-list}]]*/, { method: 'POST', headers: {'Content-Type': 'application/json', ...(csrfToken && { [csrfHeader]: csrfToken })}, body: JSON.stringify(productIds) })
                     .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch images'))
                     .then(imagesMap => {
                         productCards.forEach(card => {

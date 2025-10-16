@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
@@ -29,6 +28,10 @@
                 max-height: 500px;
                 overflow-y: auto;
             }
+            .thumbnail-list.loading-state {
+                 /* Chiều cao giả định cho thumbnail list khi đang tải */
+                min-height: 100px;
+            }
             .thumbnail-item img {
                 width: 100%;
                 height: auto;
@@ -51,6 +54,14 @@
                 background-color: #f0f0f0;
             }
             .main-image img.loaded { opacity: 1; }
+            .main-image-placeholder {
+                min-height: 400px; /* Giả định chiều cao ảnh chính */
+                background-color: #f0f0f0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
 
             /* --- Pricing --- */
             .product-price .sale-price { font-size: 28px; font-weight: bold; color: #e60023; }
@@ -58,7 +69,7 @@
             .product-price .discount-badge { background-color: #e60023; color: white; font-size: 14px; font-weight: bold; padding: 4px 8px; border-radius: 4px; margin-left: 10px; vertical-align: middle; }
 
             /* --- Size & Color Options --- */
-            .size-options, .color-options { display: flex; flex-wrap: wrap; gap: 10px; }
+            .size-options, .color-options { display: flex; flex-wrap: wrap; gap: 10px; min-height: 40px; }
             .size-option { border: 1px solid #ccc; padding: 8px 16px; cursor: pointer; background-color: #fff; transition: border-color 0.2s; position: relative; }
             .size-option.out-of-stock { background-color: #f2f2f2; color: #ccc; cursor: not-allowed; text-decoration: line-through; }
             .size-option:not(.out-of-stock):hover { border-color: #000; }
@@ -80,71 +91,46 @@
             .btn-add-to-cart:hover { background-color: #f0f0f0; color: #000; }
             .btn-buy-now { background-color: #000; color: #fff; border: 2px solid #000; }
             .btn-buy-now:hover { background-color: #333; border-color: #333; color: #fff; }
-
-            /* --- Product Description & Reviews --- */
-            .product-description { margin-top: 30px; font-size: 14px; line-height: 1.6; }
-            .review-section { margin-top: 40px; }
-            .review-summary { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
-            .review-summary .total-reviews { font-size: 16px; color: #555; }
-            .star-rating { color: #ffc107; }
-            .star-rating .bi-star { color: #e4e5e9; }
-            .btn-write-review { font-weight: bold; }
-            #review-form-container { background-color: #f8f9fa; padding: 20px; border: 1px solid #dee2e6; border-radius: 5px; margin-top: 20px; }
-            .review-item { border-bottom: 1px solid #eee; padding: 15px 0; }
-            .review-author { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-            .review-author img { width: 40px; height: 40px; border-radius: 50%; }
-            .review-author span { font-weight: bold; }
-            .review-meta { font-size: 12px; color: #888; }
-            .review-content .review-title { font-weight: bold; margin: 10px 0 5px; }
-            .rating-input-group { display: flex; flex-direction: row-reverse; justify-content: flex-end; }
-            .rating-input-group > input { display: none; }
-            .rating-input-group > label { font-size: 2rem; color: #e4e5e9; cursor: pointer; }
-            .rating-input-group > input:checked ~ label, .rating-input-group > label:hover, .rating-input-group > label:hover ~ label { color: #ffc107; }
+            
+            /* Loading Spinner Style */
+            .spinner-container {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100px;
+            }
         </style>
     </th:block>
 </head>
 
 <body>
 
-	<div class="container" layout:fragment="content">
-		<nav aria-label="breadcrumb">
-			<ol class="breadcrumb">
-				<li class="breadcrumb-item"><a th:href="@{/}">TRANG CHỦ</a></li>
-				<li class="breadcrumb-item"><a th:href="@{/products}">TẤT CẢ SẢN PHẨM</a></li>
-				<li class="breadcrumb-item active" aria-current="page" th:text="${product.productName.toUpperCase()}"></li>
-			</ol>
-		</nav>
+<div class="container" layout:fragment="content">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/}">TRANG CHỦ</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/products}">TẤT CẢ SẢN PHẨM</a></li>
+            <li class="breadcrumb-item active" aria-current="page" th:text="${product.productName.toUpperCase()}"></li>
+        </ol>
+    </nav>
 
     <div class="row">
-        <!-- MODIFIED: Product Image Gallery for Lazy Loading -->
         <div class="col-md-7">
-             <div class="row">
-                    <div class="col-md-2 order-md-1">
-                        <div class="thumbnail-list">
-                            <div class="thumbnail-item" th:each="image, iterStat : ${product.images}">
-                                <img class="lazy-image"
-                                     src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-                                     th:data-src="${image.imageUrl}"
-                                     th:alt="${product.productName + ' thumbnail ' + iterStat.index}"
-                                     th:classappend="${iterStat.index == 0} ? 'active'"
-                                     th:onclick="'changeMainImage(this)'">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-10 order-md-2">
-                        <div class="main-image">
-                            <img id="mainProductImage"
-                                 class="lazy-image"
-                                 th:if="${!#lists.isEmpty(product.images)}"
-                                 src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-                                 th:data-src="${product.images[0].imageUrl}"
-                                 th:alt="${product.productName}">
-                            <img id="mainProductImagePlaceholder"
-                                 th:if="${#lists.isEmpty(product.images)}"
-                                 src="https://via.placeholder.com/500" alt="No Image Available">
-                        </div>
+            <div class="row">
+                <div class="col-md-2 order-md-1">
+                    <div id="thumbnail-list" class="thumbnail-list loading-state">
+                        <div class="spinner-container"><div class="spinner-border spinner-border-sm" role="status"><span class="visually-hidden">Loading images...</span></div></div>
                     </div>
                 </div>
+                <div class="col-md-10 order-md-2">
+                    <div class="main-image">
+                        <div id="main-image-placeholder" class="main-image-placeholder">
+                            <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading main image...</span></div>
+                        </div>
+                        <img id="mainProductImage" style="display: none;" alt="Main image">
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="col-md-5 product-details">
@@ -156,44 +142,31 @@
             <div class="my-3 product-price d-flex align-items-center">
                 <span class="sale-price" th:text="${#numbers.formatDecimal(product.salePrice, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
                 <span class="original-price text-decoration-line-through" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
-                <span class="discount-badge" th:if="${product.price > 0}" th:text="'-' + ${#numbers.formatInteger(((product.price - product.salePrice) * 100) / product.price, 0)} + '%'"></span>
+                <span class="discount-badge" th:if="${product.price > 0 and product.salePrice < product.price}" th:text="'-' + ${#numbers.formatInteger(((product.price - product.salePrice) * 100) / product.price, 0)} + '%'"></span>
             </div>
 
-            <!-- Size & Color Options -->
             <div class="mb-4">
                 <label class="option-label">Kích thước</label>
-                <div class="size-options">
-                    <span th:each="size : ${availableSizes}"
-                          th:text="${size.sizeName}"
-                          th:classappend="${!#lists.contains(variants, size) ? 'out-of-stock' : ''}"
-                          th:attr="data-size=${size.sizeName}"
-                          th:onclick="${!#lists.contains(variants, size)} ? null : 'selectSize(this)'">
-                    </span>
+                <div id="size-options-container" class="size-options">
+                    <div class="spinner-border spinner-border-sm text-secondary" role="status"><span class="visually-hidden">Loading sizes...</span></div>
                 </div>
-                 <a href="#" class="size-guide-link">HƯỚNG DẪN CHỌN SIZE</a>
+                <a href="#" class="size-guide-link">HƯỚNG DẪN CHỌN SIZE</a>
             </div>
-             <div class="mb-4">
+            <div class="mb-4">
                 <label class="option-label">Màu sắc</label>
-                <div class="color-options">
-                     <span th:each="color : ${availableColors}"
-                           class="color-option"
-                           th:classappend="${!#lists.contains(variants, color) ? 'out-of-stock' : ''}"
-                           th:attr="data-color=${color.colorName}"
-                           th:onclick="${!#lists.contains(variants, color)} ? null : 'selectColor(this)'">
-                        <span class="color-swatch" th:style="'background-color:' + ${color.colorCode}"></span>
-                    </span>
+                <div id="color-options-container" class="color-options">
+                    <div class="spinner-border spinner-border-sm text-secondary" role="status"><span class="visually-hidden">Loading colors...</span></div>
                 </div>
             </div>
 
-            <!-- Quantity -->
             <div class="mb-4">
                 <label class="option-label">Số lượng</label>
-                 <div class="quantity-selector">
+                <div class="quantity-selector">
                     <button type="button" onclick="this.nextElementSibling.stepDown()">-</button>
                     <input type="number" id="quantity" class="form-control text-center" value="1" min="1">
                     <button type="button" onclick="this.previousElementSibling.stepUp()">+</button>
                 </div>
-                 <p id="stock-info" class="mt-2 text-danger" style="display: none;">Hết hàng</p>
+                <p id="stock-info" class="mt-2 text-danger" style="display: none;">Hết hàng</p>
             </div>
 
             <div class="d-grid gap-2 mt-4 action-buttons">
@@ -204,115 +177,351 @@
             <div class="mt-4 product-description" th:utext="${product.description}"></div>
         </div>
     </div>
-    
-    <!-- Product Reviews Section -->
+
     <div class="row review-section">
         <div class="col-12">
             <hr>
             <h3 class="mb-3">Đánh giá sản phẩm</h3>
-            <div class="review-summary"></div>
-            <div sec:authorize="!isAuthenticated()">
-                <div class="alert alert-info">Vui lòng <a th:href="@{/login}">đăng nhập</a> để viết đánh giá.</div>
-            </div>
-            <div sec:authorize="isAuthenticated()">
-                <div th:if="${#lists.isEmpty(eligibleOrders)}">
-                    <div class="alert alert-warning">Bạn chỉ có thể đánh giá sản phẩm này sau khi đã mua và đơn hàng được giao thành công.</div>
+            <div class="review-summary">
+                <div class="star-rating h4 mb-0">
+                    <th:block th:with="rating=${product.averageRating != null ? product.averageRating : 0}">
+                        <i th:each="i : ${#numbers.sequence(1, 5)}"
+                           th:class="${i <= rating} ? 'bi bi-star-fill' : (${i - 1 < rating} ? 'bi bi-star-half' : 'bi bi-star')"></i>
+                    </th:block>
                 </div>
-                <div th:unless="${#lists.isEmpty(eligibleOrders)}">
-                    <button class="btn btn-primary btn-write-review mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#review-form-container">Viết đánh giá</button>
-                    <div class="collapse" id="review-form-container">
-                        <form id="review-form"></form>
+<!--                <span class="total-reviews" th:text="${product.totalReviews} + ' đánh giá'"></span>-->
+                <button class="btn btn-sm btn-outline-dark btn-write-review" onclick="toggleReviewForm()">VIẾT ĐÁNH GIÁ</button>
+            </div>
+
+            <div id="review-form-container" style="display: none;">
+                <form id="review-form" th:action="@{/api/reviews}" method="post">
+                    <h5 class="mb-3">Viết đánh giá của bạn</h5>
+                    <input type="hidden" name="productId" th:value="${product.id}">
+                    <div class="mb-3">
+                        <label for="rating" class="form-label">Đánh giá sao:</label>
+                        <div class="rating-input-group">
+                            <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="Tuyệt vời">★</label>
+                            <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="Rất tốt">★</label>
+                            <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="Bình thường">★</label>
+                            <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="Kém">★</label>
+                            <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="Rất tệ">★</label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Tiêu đề đánh giá:</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="content" class="form-label">Nội dung:</label>
+                        <textarea class="form-control" id="content" name="content" rows="3" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-dark">Gửi Đánh Giá</button>
+                    <button type="button" class="btn btn-secondary" onclick="toggleReviewForm()">Hủy</button>
+                </form>
+            </div>
+
+            <div id="review-list" class="mt-4">
+                <div class="review-item" th:each="review : ${reviewPage.content}">
+                    <div class="review-author">
+                        <img src="https://via.placeholder.com/40" alt="Avatar">
+                        <span th:text="${review.userFullName ?: 'Khách hàng'}"></span>
+                        <span class="review-meta" th:text="${#temporals.format(review.reviewDate, 'dd-MM-yyyy HH:mm')}"></span>
+                    </div>
+                    <div class="star-rating">
+                        <i th:each="i : ${#numbers.sequence(1, 5)}"
+                           th:class="${i <= review.rating} ? 'bi bi-star-fill' : 'bi bi-star'"></i>
+                    </div>
+                    <div class="review-content">
+                        <p class="review-title" th:text="${review.title}"></p>
+                        <p th:text="${review.content}"></p>
                     </div>
                 </div>
+                <div th:if="${reviewPage.totalElements == 0}" class="text-center text-muted py-3">Chưa có đánh giá nào cho sản phẩm này.</div>
             </div>
-            <div id="reviews-list" class="mt-4"></div>
-            <button id="load-more-reviews" class="btn btn-outline-secondary mt-3" style="display: none;">Xem thêm</button>
-        </div>
-    </div>
 
-    <!-- Similar Products -->
-    <div class="row mt-5">
-        <div class="col-12">
-            <h3 class="text-center mb-4">SẢN PHẨM TƯƠNG TỰ</h3>
+            <nav aria-label="Review page navigation" th:if="${reviewPage.totalPages > 1}" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item" th:classappend="${reviewPage.first} ? 'disabled'">
+                        <a class="page-link" href="#" onclick="loadReviews(reviewPage.number - 1); return false;">&laquo;</a>
+                    </li>
+                    <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, reviewPage.totalPages - 1)}"
+                        th:classappend="${pageNumber == reviewPage.number} ? 'active'">
+                        <a class="page-link" href="#" th:text="${pageNumber + 1}" onclick="loadReviews([[${pageNumber}]]); return false;"></a>
+                    </li>
+                    <li class="page-item" th:classappend="${reviewPage.last} ? 'disabled'">
+                        <a class="page-link" href="#" onclick="loadReviews(reviewPage.number + 1); return false;">&raquo;</a>
+                    </li>
+                </ul>
+            </nav>
+
         </div>
     </div>
 </div>
 
 <th:block layout:fragment="scripts">
     <script th:inline="javascript">
-        // Your existing review logic can go here
+        /*<![CDATA[*/
+        const productId = /*[[${product.id}]]*/ null;
+        // Biến toàn cục để lưu trữ tất cả biến thể đã tải
+        let productVariants = [];
+        let uniqueSizes = [];
+        let uniqueColors = [];
+        let selectedSize = null;
+        let selectedColor = null;
+        /*]]>*/
 
-        // --- MODIFIED: Lazy Loading and Image Gallery Logic ---
-        document.addEventListener('DOMContentLoaded', function () {
-            // --- Review logic setup (as before) ---
-            // ... (Your review fetching and form submission logic would be here)
-
-            // --- Image Lazy Loading Logic ---
-            const lazyImageObserver = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const img = entry.target;
-                        const src = img.dataset.src;
-
-                        if (!src) {
-                            observer.unobserve(img);
-                            return;
-                        }
-
-                        img.src = src; // Start loading the image
-
-                        img.onload = () => {
-                            img.classList.add('loaded'); // Apply fade-in effect
-                        };
-                        
-                        img.onerror = () => {
-                             console.error('Image failed to load:', src);
-                             img.classList.add('loaded'); // Show the container even if image fails
-                        };
-
-                        observer.unobserve(img); // Job done, stop observing
-                    }
-                });
-            }, { rootMargin: "0px 0px 200px 0px" }); // Start loading 200px before viewport
-
-            const imagesToLoad = document.querySelectorAll('.lazy-image');
-            imagesToLoad.forEach(image => {
-                lazyImageObserver.observe(image);
-            });
-        });
-
-        // --- MODIFIED: Image Change Function ---
-        function changeMainImage(thumbnailElement) {
-            // Get the full-res source from the data attribute, which is always correct
-            const newImageSrc = thumbnailElement.dataset.src;
-            if (!newImageSrc) return;
-            
+        // --- HÀM XỬ LÝ ẢNH ---
+        const changeMainImage = (thumbnailEl) => {
             const mainImage = document.getElementById('mainProductImage');
-            if (mainImage && mainImage.src !== newImageSrc) {
-                mainImage.src = newImageSrc;
-                // If the main image wasn't loaded yet, the observer will handle the 'loaded' class.
-                // If it was already loaded, this just swaps the src.
-            }
-            
-            // Update the 'active' class on thumbnails
-            document.querySelectorAll('.thumbnail-list .lazy-image').forEach(img => img.classList.remove('active'));
-            thumbnailElement.classList.add('active');
-        }
+            document.querySelectorAll('.thumbnail-item img').forEach(img => img.classList.remove('active'));
+            thumbnailEl.classList.add('active');
 
-        // --- Other functions (selectSize, selectColor, addToCart) ---
-        function selectSize(element) {
-            document.querySelectorAll('.size-option').forEach(el => el.classList.remove('active'));
-            element.classList.add('active');
+            // Ẩn ảnh cũ và hiện placeholder
+            mainImage.style.display = 'none';
+            document.getElementById('main-image-placeholder').style.display = 'flex';
+
+            // Tạo một đối tượng Image để tải ảnh mới
+            const newImage = new Image();
+            newImage.onload = function() {
+                mainImage.src = newImage.src;
+                mainImage.classList.add('loaded');
+                mainImage.style.display = 'block';
+                document.getElementById('main-image-placeholder').style.display = 'none';
+            };
+            newImage.onerror = function() {
+                 mainImage.src = 'https://via.placeholder.com/500?text=Error';
+                 mainImage.classList.add('loaded');
+                 mainImage.style.display = 'block';
+                 document.getElementById('main-image-placeholder').style.display = 'none';
+                 console.error("Failed to load image:", thumbnailEl.dataset.src);
+            };
+
+            // Bắt đầu tải ảnh mới
+            newImage.src = thumbnailEl.dataset.src;
+        };
+
+        const loadProductImages = () => {
+            const thumbnailList = document.getElementById('thumbnail-list');
+            const mainImage = document.getElementById('mainProductImage');
+
+            fetch(/*[[@{/api/products/{productId}/images(productId=${product.id})}]]*/).then(res => res.json()).then(images => {
+                thumbnailList.innerHTML = '';
+                thumbnailList.classList.remove('loading-state');
+                
+                if (images && images.length > 0) {
+                    images.forEach((img, index) => {
+                        const activeClass = index === 0 ? 'active' : '';
+                        const thumbnailHtml = `
+                            <div class="thumbnail-item">
+                                <img class="lazy-image"
+                                     src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                                     data-src="${img.imageUrl}"
+                                     alt="Thumbnail ${index}"
+                                     class="${activeClass}"
+                                     onclick="changeMainImage(this)">
+                            </div>`;
+                        thumbnailList.innerHTML += thumbnailHtml;
+                    });
+                    
+                    // Lazy load the thumbnail images
+                    const lazyImages = thumbnailList.querySelectorAll('.lazy-image');
+                    lazyImages.forEach(lazyImage => {
+                        const image = new Image();
+                        image.onload = () => {
+                            lazyImage.src = lazyImage.dataset.src;
+                            lazyImage.classList.add('loaded');
+                        };
+                        image.src = lazyImage.dataset.src;
+                    });
+
+                    // Set initial main image
+                    const firstImageSrc = images[0].imageUrl;
+                    mainImage.src = firstImageSrc;
+                    mainImage.classList.add('loaded');
+                    mainImage.style.display = 'block';
+                    document.getElementById('main-image-placeholder').style.display = 'none';
+                    
+                } else {
+                    mainImage.src = 'https://via.placeholder.com/500';
+                    mainImage.classList.add('loaded');
+                    mainImage.style.display = 'block';
+                    document.getElementById('main-image-placeholder').style.display = 'none';
+                    thumbnailList.innerHTML = '<div class="text-muted p-2">No images</div>';
+                }
+            }).catch(err => {
+                console.error("Error loading product images:", err);
+                thumbnailList.innerHTML = '<div class="text-danger p-2">Lỗi tải ảnh.</div>';
+                document.getElementById('main-image-placeholder').innerHTML = '<span class="text-danger">Lỗi tải ảnh.</span>';
+            });
+        };
+
+        // --- HÀM XỬ LÝ BIẾN THỂ (SIZE/COLOR) ---
+        const updateVariantOptions = () => {
+            const sizeContainer = document.getElementById('size-options-container');
+            const colorContainer = document.getElementById('color-options-container');
+            
+            // Xóa nội dung cũ
+            sizeContainer.innerHTML = '';
+            colorContainer.innerHTML = '';
+
+            // 1. Lọc và lưu trữ các giá trị size và color duy nhất
+            uniqueSizes = [...new Set(productVariants.map(v => v.sizeName))].filter(s => s).sort();
+            uniqueColors = [...new Set(productVariants.map(v => ({ name: v.colorName, code: v.colorCode })))].filter(c => c.name);
+
+            // 2. Render Size Options
+            uniqueSizes.forEach(sizeName => {
+                const isActive = sizeName === selectedSize ? 'active' : '';
+                
+                // Kiểm tra xem size này có variant nào hợp lệ (còn hàng hoặc không cần color) không
+                const isAvailable = productVariants.some(v => v.sizeName === sizeName && v.stock > 0);
+                const isOutOfStock = !isAvailable ? 'out-of-stock' : '';
+                
+                sizeContainer.innerHTML += `
+                    <span class="size-option ${isActive} ${isOutOfStock}"
+                          data-size="${sizeName}"
+                          onclick="${isOutOfStock ? '' : 'selectSize(this)'}">
+                        ${sizeName}
+                    </span>`;
+            });
+
+            // 3. Render Color Options
+            const renderedColors = new Set();
+            uniqueColors.forEach(color => {
+                if(renderedColors.has(color.name)) return;
+                renderedColors.add(color.name);
+
+                const isActive = color.name === selectedColor ? 'active' : '';
+
+                // Kiểm tra xem color này có variant nào hợp lệ (còn hàng hoặc không cần size) không
+                const isAvailable = productVariants.some(v => v.colorName === color.name && v.stock > 0);
+                const isOutOfStock = !isAvailable ? 'out-of-stock' : '';
+
+                colorContainer.innerHTML += `
+                    <span class="color-option ${isActive} ${isOutOfStock}"
+                          data-color="${color.name}"
+                          onclick="${isOutOfStock ? '' : 'selectColor(this)'}">
+                        <span class="color-swatch" style="background-color:${color.code};"></span>
+                    </span>`;
+            });
+            
+            // Nếu không có size/color nào, hiển thị thông báo "Hết hàng"
+            if (uniqueSizes.length === 0 && uniqueColors.length === 0 && productVariants.length > 0) {
+                 sizeContainer.innerHTML = '<p class="text-muted">Không có tùy chọn kích thước.</p>';
+                 colorContainer.innerHTML = '<p class="text-muted">Không có tùy chọn màu sắc.</p>';
+            } else if (productVariants.length === 0) {
+                 sizeContainer.innerHTML = '<p class="text-danger">Sản phẩm hiện đang hết hàng.</p>';
+                 colorContainer.innerHTML = '<p class="text-danger">Sản phẩm hiện đang hết hàng.</p>';
+            }
+
+            // Cập nhật trạng thái sau khi render xong
+            updateSelectionStatus();
+        };
+        
+        const selectSize = (el) => {
+            const newSize = el.dataset.size;
+            if (selectedSize === newSize) {
+                selectedSize = null; // Bỏ chọn
+            } else {
+                selectedSize = newSize;
+            }
+            // Xóa active class cũ và thêm vào cái mới (nếu có)
+            document.querySelectorAll('.size-option').forEach(s => s.classList.remove('active'));
+            if (selectedSize) {
+                el.classList.add('active');
+            }
+            updateSelectionStatus();
+        };
+
+        const selectColor = (el) => {
+            const newColor = el.dataset.color;
+            if (selectedColor === newColor) {
+                selectedColor = null; // Bỏ chọn
+            } else {
+                selectedColor = newColor;
+            }
+            // Xóa active class cũ và thêm vào cái mới (nếu có)
+            document.querySelectorAll('.color-option').forEach(c => c.classList.remove('active'));
+            if (selectedColor) {
+                el.classList.add('active');
+            }
+            updateSelectionStatus();
+        };
+
+        const updateSelectionStatus = () => {
+            const stockInfo = document.getElementById('stock-info');
+            const quantityInput = document.getElementById('quantity');
+            const addToCartBtn = document.querySelector('.btn-add-to-cart');
+            const buyNowBtn = document.querySelector('.btn-buy-now');
+
+            // 1. Kiểm tra xem đã chọn đủ Size và Color (nếu chúng tồn tại)
+            const isSizeRequired = uniqueSizes.length > 0;
+            const isColorRequired = uniqueColors.length > 0;
+            
+            if ((isSizeRequired && !selectedSize) || (isColorRequired && !selectedColor)) {
+                stockInfo.innerText = "Vui lòng chọn đủ Kích thước và Màu sắc.";
+                stockInfo.style.display = 'block';
+                quantityInput.max = 1;
+                quantityInput.value = 1;
+                quantityInput.disabled = true;
+                addToCartBtn.disabled = true;
+                buyNowBtn.disabled = true;
+                return;
+            }
+
+            // 2. Tìm biến thể khớp với lựa chọn
+            const selectedVariant = productVariants.find(v => 
+                (v.sizeName === selectedSize || !isSizeRequired) &&
+                (v.colorName === selectedColor || !isColorRequired)
+            );
+
+            if (selectedVariant && selectedVariant.stock > 0) {
+                stockInfo.style.display = 'none';
+                quantityInput.max = selectedVariant.stock;
+                quantityInput.value = 1;
+                quantityInput.disabled = false;
+                addToCartBtn.disabled = false;
+                buyNowBtn.disabled = false;
+                // Có thể cập nhật SKU ở đây nếu cần (ex: document.getElementById('sku-display').innerText = selectedVariant.sku;)
+            } else {
+                stockInfo.innerText = "Hết hàng hoặc không tồn tại.";
+                stockInfo.style.display = 'block';
+                quantityInput.max = 1;
+                quantityInput.value = 1;
+                quantityInput.disabled = true;
+                addToCartBtn.disabled = true;
+                buyNowBtn.disabled = true;
+            }
+        };
+
+
+        const loadProductVariants = () => {
+            fetch(/*[[@{/api/products/{productId}/variants(productId=${product.id})}]]*/).then(res => res.json()).then(variants => {
+                productVariants = variants;
+                updateVariantOptions();
+            }).catch(err => {
+                console.error("Error loading product variants:", err);
+                document.getElementById('size-options-container').innerHTML = '<p class="text-danger">Lỗi tải kích thước.</p>';
+                document.getElementById('color-options-container').innerHTML = '<p class="text-danger">Lỗi tải màu sắc.</p>';
+            });
+        };
+
+        // --- HÀM CHUNG ---
+        const toggleReviewForm = () => {
+            const form = document.getElementById('review-form-container');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        };
+        
+        const addToCart = () => {
+             // Logic thêm vào giỏ hàng: cần lấy productId, selectedSize, selectedColor, và quantity
+             alert(`Thêm vào giỏ: Sản phẩm ${productId}, Size: ${selectedSize}, Color: ${selectedColor}, SL: ${document.getElementById('quantity').value}`);
         }
         
-        function selectColor(element) {
-            document.querySelectorAll('.color-option').forEach(el => el.classList.remove('active'));
-            element.classList.add('active');
-        }
-        
-        function addToCart() {
-            console.log('Add to cart clicked');
-        }
+        // --- DOMContentLoaded ---
+        document.addEventListener("DOMContentLoaded", function () {
+            // Khởi tạo tải ảnh và biến thể
+            loadProductImages();
+            loadProductVariants();
+        });
     </script>
 </th:block>
 </body>

@@ -48,7 +48,8 @@ public class SecurityConfig {
                                 "/payment-test", "/payment-test/**",
                                 "/api/auth/**",
                                 "/verify-email", "/verify-email/**",
-                                "/resend-otp") // <-- Added resend-otp endpoint
+                                "/resend-otp",
+                                "/api/**")//TODO config later
                         .permitAll()
                         .requestMatchers("/profile", "/profile/**")
                         .authenticated()
