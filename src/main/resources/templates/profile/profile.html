@@ -277,6 +277,39 @@
                                             </div>
                                         </div>
                                     </div>
+                                    
+                                    <!-- Upload Avatar Section -->
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label">Hoặc Upload Avatar từ máy tính</label>
+                                            <div class="card border-2 border-dashed" style="border-color: #dee2e6 !important;">
+                                                <div class="card-body text-center">
+                                                    <form th:action="@{/profile/upload-avatar}" method="post" enctype="multipart/form-data" id="avatarUploadForm">
+                                                        <div class="mb-3">
+                                                            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                                            <h5 class="text-muted">Chọn ảnh avatar</h5>
+                                                            <p class="text-muted mb-3">
+                                                                Hỗ trợ: JPG, JPEG, PNG, GIF, WEBP<br>
+                                                                Kích thước tối đa: 5MB
+                                                            </p>
+                                                            <input type="file" 
+                                                                   class="form-control" 
+                                                                   id="avatarFile" 
+                                                                   name="avatarFile" 
+                                                                   accept="image/*"
+                                                                   onchange="previewImage(this)">
+                                                        </div>
+                                                        <div id="imagePreview" class="mb-3" style="display: none;">
+                                                            <img id="previewImg" src="" alt="Preview" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
+                                                        </div>
+                                                        <button type="submit" class="btn btn-success" id="uploadBtn" disabled>
+                                                            <i class="fas fa-upload me-2"></i>Upload Avatar
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div class="text-end">
                                         <button type="submit" class="btn btn-primary btn-save">
                                             <i class="fas fa-save me-2"></i>Cập nhật thông tin
@@ -379,6 +412,63 @@
                 
                 newPassword.addEventListener('input', validatePasswordMatch);
                 confirmPassword.addEventListener('input', validatePasswordMatch);
+            });
+            
+            // Image preview function
+            function previewImage(input) {
+                const file = input.files[0];
+                const preview = document.getElementById('imagePreview');
+                const previewImg = document.getElementById('previewImg');
+                const uploadBtn = document.getElementById('uploadBtn');
+                
+                if (file) {
+                    // Validate file size (5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('File quá lớn! Kích thước tối đa là 5MB.');
+                        input.value = '';
+                        preview.style.display = 'none';
+                        uploadBtn.disabled = true;
+                        return;
+                    }
+                    
+                    // Validate file type
+                    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                    if (!allowedTypes.includes(file.type)) {
+                        alert('Định dạng file không được hỗ trợ! Chỉ chấp nhận: JPG, JPEG, PNG, GIF, WEBP.');
+                        input.value = '';
+                        preview.style.display = 'none';
+                        uploadBtn.disabled = true;
+                        return;
+                    }
+                    
+                    // Show preview
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImg.src = e.target.result;
+                        preview.style.display = 'block';
+                        uploadBtn.disabled = false;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    preview.style.display = 'none';
+                    uploadBtn.disabled = true;
+                }
+            }
+            
+            // Upload form submission
+            document.getElementById('avatarUploadForm').addEventListener('submit', function(e) {
+                const fileInput = document.getElementById('avatarFile');
+                const uploadBtn = document.getElementById('uploadBtn');
+                
+                if (!fileInput.files[0]) {
+                    e.preventDefault();
+                    alert('Vui lòng chọn file ảnh!');
+                    return;
+                }
+                
+                // Show loading state
+                uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang upload...';
+                uploadBtn.disabled = true;
             });
         </script>
     </th:block>
