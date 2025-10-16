@@ -6,193 +6,139 @@
     <title>Trang chủ</title>
     <th:block layout:fragment="styles">
         <style>
-            .product-carousel-section .product-carousel-container {
-                position: relative;
-            }
-            .product-carousel-section .product-carousel {
-                display: flex;
-                overflow-x: auto;
-                scroll-behavior: smooth;
-                -ms-overflow-style: none;  /* IE and Edge */
-                scrollbar-width: none;  /* Firefox */
-                gap: 1rem;
-                padding-bottom: 1rem;
-            }
-            .product-carousel-section .product-carousel::-webkit-scrollbar {
-                display: none; /* Chrome, Safari and Opera */
-            }
-            .product-carousel-section .new-product-card {
-                flex: 0 0 24%;
-                max-width: 24%;
-                text-align: center;
-                text-decoration: none;
-                color: #333;
-            }
-            .product-carousel-section .new-product-card h6 {
-                margin-top: 0.5rem;
-                font-size: 0.9rem;
-                font-weight: normal;
-                height: 36px;
-                overflow: hidden;
-            }
-            .product-carousel-section .carousel-control-prev,
-            .product-carousel-section .carousel-control-next {
-                position: absolute;
-                top: 50%;
-                transform: translateY(-50%);
-                background-color: rgba(128, 128, 128, 0.7);
-                color: white;
-                border: none;
-                width: 40px;
-                height: 40px;
-                line-height: 40px;
-                text-align: center;
-                border-radius: 50%;
-                z-index: 10;
-            }
+            /* General Styles for Carousels */
+            .product-carousel-section .product-carousel-container { position: relative; }
+            .product-carousel-section .product-carousel { display: flex; overflow-x: auto; scroll-behavior: smooth; -ms-overflow-style: none; scrollbar-width: none; gap: 1rem; padding-bottom: 1rem; }
+            .product-carousel-section .product-carousel::-webkit-scrollbar { display: none; }
+            .product-carousel-section .carousel-control-prev, .product-carousel-section .carousel-control-next { position: absolute; top: 50%; transform: translateY(-50%); background-color: rgba(128, 128, 128, 0.7); color: white; border: none; width: 40px; height: 40px; line-height: 40px; text-align: center; border-radius: 50%; z-index: 10; }
             .product-carousel-section .carousel-control-prev { left: -20px; }
             .product-carousel-section .carousel-control-next { right: -20px; }
-            .product-image-container { position: relative; overflow: hidden; background-color: #f0f0f0; }
-            .product-image-container img { width: 100%; display: block; transition: transform 0.4s ease, opacity 0.5s ease; opacity: 0; }
+
+            /* Product Card Styles */
+            .product-card { flex: 0 0 24%; max-width: 24%; text-align: center; text-decoration: none; color: #333; }
+            .product-card .product-info h6 { margin-top: 0.5rem; font-size: 0.9rem; font-weight: normal; height: 36px; overflow: hidden; }
+            .product-image-container { position: relative; overflow: hidden; background-color: #f0f0f0; height: 320px; }
+            .product-image-container img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease, opacity 0.5s ease; opacity: 0; }
             .product-image-container img.loaded { opacity: 1; }
+            
+            /* Hover Effects & Overlay */
             .product-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.4); display: flex; justify-content: center; align-items: center; transform: translateX(-101%); opacity: 1; transition: transform 0.4s ease; }
             .view-more-btn { background-color: transparent; color: white; border: 1px solid white; padding: 10px 25px; text-decoration: none; font-size: 0.9rem; font-weight: 500; border-radius: 2px; transform: translateY(20px); opacity: 0; transition: all 0.4s ease; }
             .view-more-btn:hover { background-color: white; color: #333; }
-            .product-image-container:hover .product-overlay { transform: translateX(0); }
-            .product-image-container:hover .view-more-btn { transform: translateY(0); opacity: 1; }
-            .product-image-container:hover img { transform: scale(1.05); }
-            .product-carousel-section .product-image-container .sale-badge { position: absolute; top: 10px; right: 10px; background-color: #fff; color: rgb(255, 0, 0); padding: 2px 8px; font-size: 0.8rem; border: 1px solid #ccc; z-index: 5; }
-            .product-carousel-section .new-product-card .new-product-img { height: 320px; object-fit: cover; }
-            @media (max-width: 992px) { .product-carousel-section .new-product-card { flex: 0 0 32%; max-width: 32%; } }
-            @media (max-width: 768px) { .product-carousel-section .new-product-card { flex: 0 0 48%; max-width: 48%; } }
-            @media (max-width: 576px) { .product-carousel-section .new-product-card { flex: 0 0 80%; max-width: 80%; } }
+            .product-card:hover .product-overlay { transform: translateX(0); }
+            .product-card:hover .view-more-btn { transform: translateY(0); opacity: 1; }
+            .product-card:hover img { transform: scale(1.05); }
+            .product-image-container .sale-badge { position: absolute; top: 10px; right: 10px; background-color: #fff; color: rgb(255, 0, 0); padding: 2px 8px; font-size: 0.8rem; border: 1px solid #ccc; z-index: 5; }
+
+            @media (max-width: 992px) { .product-card { flex: 0 0 32%; max-width: 32%; } }
+            @media (max-width: 768px) { .product-card { flex: 0 0 48%; max-width: 48%; } }
+            @media (max-width: 576px) { .product-card { flex: 0 0 80%; max-width: 80%; } }
         </style>
     </th:block>
 </head>
 <body>
 <div class="container-fluid" layout:fragment="content">
-    <!-- Carousel Start -->
-    <div id="header-carousel" class="carousel slide mb-4" data-bs-ride="carousel">
-        <!-- ... carousel content ... -->
-    </div>
-    <!-- Carousel End -->
+    <div id="header-carousel" class="carousel slide mb-4" data-bs-ride="carousel">...</div>
 
-    <!-- New Arrivals Section Start -->
+    <!-- New Arrivals Section -->
     <div class="container product-carousel-section my-5" th:if="${!#lists.isEmpty(newestProducts)}">
         <h2 class="text-center mb-4">SẢN PHẨM MỚI</h2>
         <div class="product-carousel-container">
             <div class="product-carousel" id="newArrivalsCarousel">
-                <!-- LAZY LOAD: Added 'lazy-load-product' class and 'data-product-id'. 'th:src' is now a placeholder. -->
-                <a th:href="@{/products/{slug}(slug=${product.slug})}" class="new-product-card lazy-load-product" th:each="product : ${newestProducts}" th:data-product-id="${product.productId}">
+                <a th:href="@{/products/{slug}(slug=${product.slug})}" class="product-card" th:each="product : ${newestProducts}" th:attr="data-product-id=${product.id}">
                     <div class="product-image-container">
-                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="img-fluid new-product-img" th:alt="${product.productName}">
-                        <div class="sale-badge" th:if="${product.salePrice != null and product.salePrice < product.price and product.price > 0}" th:text="|-${#numbers.formatInteger(((product.price - product.salePrice) * 100.0) / product.price, 0)}%|"></div>
-                        <div class="product-overlay">
-                            <span class="view-more-btn">XEM THÊM</span>
-                        </div>
+                        <img class="product-main-image" th:alt="${product.productName}">
+                        <div class="sale-badge" th:if="..." th:text="..."></div>
+                        <div class="product-overlay"><span class="view-more-btn">XEM THÊM</span></div>
                     </div>
-                    <div class="product-info">
-                        <h6 th:text="${product.productName}">Product Name</h6>
-                        <div class="price">
-                            <span class="text-danger fw-bold" th:if="${product.salePrice != null and product.salePrice < product.price}" th:text="${#numbers.formatDecimal(product.salePrice, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
-                            <span class="text-muted text-decoration-line-through" th:if="${product.salePrice != null and product.salePrice < product.price}" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
-                            <span th:if="${product.salePrice == null or product.salePrice >= product.price}" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
-                        </div>
-                    </div>
+                    <div class="product-info">...</div>
                 </a>
             </div>
-            <button class="carousel-control-prev" id="prevBtnNew">&lt;</button>
-            <button class="carousel-control-next" id="nextBtnNew">&gt;</button>
+            <button class="carousel-control-prev" onclick="scrollCarousel('newArrivalsCarousel', -1)">&lt;</button>
+            <button class="carousel-control-next" onclick="scrollCarousel('newArrivalsCarousel', 1)">&gt;</button>
         </div>
     </div>
-    <!-- New Arrivals Section End -->
 
-    <!-- Bestseller Section Start -->
+    <!-- Bestseller Section -->
     <div class="container product-carousel-section my-5" th:if="${!#lists.isEmpty(bestsellerProducts)}">
         <h2 class="text-center mb-4">SẢN PHẨM BÁN CHẠY</h2>
         <div class="product-carousel-container">
             <div class="product-carousel" id="bestsellerCarousel">
-                 <!-- LAZY LOAD: Added 'lazy-load-product' class and 'data-product-id'. 'th:src' is now a placeholder. -->
-                <a th:href="@{/products/{slug}(slug=${product.slug})}" class="new-product-card lazy-load-product" th:each="product : ${bestsellerProducts}" th:data-product-id="${product.productId}">
-                    <div class="product-image-container">
-                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="img-fluid new-product-img" th:alt="${product.productName}">
-                        <div class="sale-badge" th:if="${product.salePrice != null and product.salePrice < product.price and product.price > 0}" th:text="|-${#numbers.formatInteger(((product.price - product.salePrice) * 100.0) / product.price, 0)}%|"></div>
-                        <div class="product-overlay">
-                            <span class="view-more-btn">XEM THÊM</span>
-                        </div>
+                <a th:href="@{/products/{slug}(slug=${product.slug})}" class="product-card" th:each="product : ${bestsellerProducts}" th:attr="data-product-id=${product.id}">
+                   <div class="product-image-container">
+                        <img class="product-main-image" th:alt="${product.productName}">
+                        <div class="sale-badge" th:if="..." th:text="..."></div>
+                        <div class="product-overlay"><span class="view-more-btn">XEM THÊM</span></div>
                     </div>
-                    <div class="product-info">
-                        <h6 th:text="${product.productName}">Product Name</h6>
-                        <div class="price">
-                             <span class="text-danger fw-bold" th:if="${product.salePrice != null and product.salePrice < product.price}" th:text="${#numbers.formatDecimal(product.salePrice, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
-                            <span class="text-muted text-decoration-line-through" th:if="${product.salePrice != null and product.salePrice < product.price}" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
-                            <span th:if="${product.salePrice == null or product.salePrice >= product.price}" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
-                        </div>
-                    </div>
+                    <div class="product-info">...</div>
                 </a>
             </div>
-            <button class="carousel-control-prev" id="prevBtnBestseller">&lt;</button>
-            <button class="carousel-control-next" id="nextBtnBestseller">&gt;</button>
+            <button class="carousel-control-prev" onclick="scrollCarousel('bestsellerCarousel', -1)">&lt;</button>
+            <button class="carousel-control-next" onclick="scrollCarousel('bestsellerCarousel', 1)">&gt;</button>
         </div>
     </div>
-    <!-- Bestseller Section End -->
 </div>
 
 <th:block layout:fragment="scripts">
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            // --- Existing Carousel Logic ---
-            function setupProductCarousel(carouselId, prevBtnId, nextBtnId) { /* ... */ }
-            setupProductCarousel('newArrivalsCarousel', 'prevBtnNew', 'nextBtnNew');
-            setupProductCarousel('bestsellerCarousel', 'prevBtnBestseller', 'nextBtnBestseller');
+    <script th:inline="javascript">
+    function scrollCarousel(carouselId, direction) {
+        const carousel = document.getElementById(carouselId);
+        if (carousel) {
+            const scrollAmount = carousel.offsetWidth * 0.9;
+            carousel.scrollBy({ left: scrollAmount * direction, behavior: 'smooth' });
+        }
+    }
 
-            // --- NEW LAZY LOADING LOGIC ---
-            function lazyLoadProductImages() {
-                const productElements = document.querySelectorAll('.lazy-load-product');
-                if (productElements.length === 0) return;
+    document.addEventListener("DOMContentLoaded", function() {
+        // --- LAZY LOADING AND IMAGE FETCHING LOGIC ---
+        const fetchAndDisplayImages = () => {
+            const productCards = Array.from(document.querySelectorAll('.product-card[data-product-id]'));
+            const productIds = productCards.map(card => card.dataset.productId).filter(id => id);
 
-                const productIds = Array.from(productElements).map(el => el.dataset.productId);
+            if (productIds.length === 0) return;
+            
+            const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
 
-                // Fetch images in a single batch
-                fetch('/api/products/images-for-list', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(productIds)
-                })
-                .then(response => response.json())
-                .then(imagesMap => {
-                    productElements.forEach(el => {
-                        const productId = el.dataset.productId;
-                        const images = imagesMap[productId];
-                        const imgTag = el.querySelector('img');
-                        
+            fetch('/api/products/images-for-list', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(csrfToken && { [csrfHeader]: csrfToken })
+                },
+                body: JSON.stringify(productIds)
+            })
+            .then(response => response.ok ? response.json() : Promise.reject('Failed to fetch images'))
+            .then(imagesMap => {
+                productCards.forEach(card => {
+                    const productId = card.dataset.productId;
+                    const images = imagesMap[productId];
+                    const imgElement = card.querySelector('.product-main-image');
+
+                    if (imgElement) {
                         if (images && images.length > 0) {
-                            const firstImage = images[0].imageUrl;
-                            const hoverImageSrc = images.length > 1 ? images[1].imageUrl : firstImage;
-
-                            imgTag.src = firstImage;
-                            imgTag.classList.add('loaded');
+                            imgElement.src = images[0].imageUrl;
+                            imgElement.classList.add('loaded');
                             
-                            // Handle hover effect
-                            const originalSrc = firstImage;
-                            el.addEventListener('mouseenter', () => { imgTag.src = hoverImageSrc; });
-                            el.addEventListener('mouseleave', () => { imgTag.src = originalSrc; });
-
+                            const container = imgElement.closest('.product-image-container');
+                            if (container && images.length > 1) {
+                                const mainSrc = images[0].imageUrl;
+                                const hoverSrc = images[1].imageUrl;
+                                container.addEventListener('mouseenter', () => { imgElement.src = hoverSrc; });
+                                container.addEventListener('mouseleave', () => { imgElement.src = mainSrc; });
+                            }
                         } else {
-                            // Use a default placeholder if no images are found
-                            imgTag.src = 'https://ih1.redbubble.net/image.4905811472.8675/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg';
-                            imgTag.classList.add('loaded');
+                            imgElement.src = 'https://ih1.redbubble.net/image.4905811472.8675/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg';
+                            imgElement.classList.add('loaded');
                         }
-                    });
-                })
-                .catch(error => console.error('Error batch-loading product images:', error));
-            }
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching homepage product images:', error));
+        };
 
-            lazyLoadProductImages();
-
-        });
+        fetchAndDisplayImages();
+    });
     </script>
 </th:block>
 
