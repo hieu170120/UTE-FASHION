@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" 
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>Thông tin cá nhân - UTE Fashion</title>
+    <th:block layout:fragment="styles">
+        <style>
+            .profile-card {
+                border-radius: 15px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                border: none;
+            }
+            
+            .profile-header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border-radius: 15px 15px 0 0;
+                padding: 2rem;
+                text-align: center;
+            }
+            
+            .profile-avatar {
+                width: 120px;
+                height: 120px;
+                border-radius: 50%;
+                border: 4px solid white;
+                object-fit: cover;
+                margin-bottom: 1rem;
+            }
+            
+            .profile-info {
+                padding: 2rem;
+            }
+            
+            .info-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.75rem 0;
+                border-bottom: 1px solid #f0f0f0;
+            }
+            
+            .info-item:last-child {
+                border-bottom: none;
+            }
+            
+            .info-label {
+                font-weight: 600;
+                color: #333;
+                min-width: 120px;
+            }
+            
+            .info-value {
+                color: #666;
+                flex: 1;
+                text-align: right;
+            }
+            
+            .form-section {
+                background: #f8f9fa;
+                border-radius: 10px;
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            .section-title {
+                color: #333;
+                font-weight: 600;
+                margin-bottom: 1rem;
+                padding-bottom: 0.5rem;
+                border-bottom: 2px solid #007bff;
+            }
+            
+            .btn-save {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border: none;
+                border-radius: 25px;
+                padding: 0.75rem 2rem;
+                font-weight: 600;
+                transition: all 0.3s ease;
+            }
+            
+            .btn-save:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            }
+            
+            .alert {
+                border-radius: 10px;
+                border: none;
+            }
+            
+            .form-control {
+                border-radius: 10px;
+                border: 2px solid #e9ecef;
+                padding: 0.75rem 1rem;
+                transition: all 0.3s ease;
+            }
+            
+            .form-control:focus {
+                border-color: #667eea;
+                box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            }
+            
+            .form-label {
+                font-weight: 600;
+                color: #333;
+                margin-bottom: 0.5rem;
+            }
+            
+            .status-badge {
+                padding: 0.25rem 0.75rem;
+                border-radius: 15px;
+                font-size: 0.8rem;
+                font-weight: 600;
+            }
+            
+            .status-active {
+                background-color: #d4edda;
+                color: #155724;
+            }
+            
+            .status-inactive {
+                background-color: #f8d7da;
+                color: #721c24;
+            }
+            
+            .status-verified {
+                background-color: #d1ecf1;
+                color: #0c5460;
+            }
+            
+            .status-unverified {
+                background-color: #fff3cd;
+                color: #856404;
+            }
+        </style>
+    </th:block>
+</head>
+<body>
+    <div layout:fragment="content">
+        <div class="container my-5">
+            <!-- Alert Messages -->
+            <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <span th:text="${success}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            
+            <div class="row">
+                <!-- Profile Information Card -->
+                <div class="col-lg-4 mb-4">
+                    <div class="card profile-card">
+                        <div class="profile-header">
+                            <img th:src="${profile.avatarUrl ?: 'https://via.placeholder.com/120x120/667eea/ffffff?text=' + profile.username}" 
+                                 th:alt="${profile.fullName}" 
+                                 class="profile-avatar">
+                            <h4 th:text="${profile.fullName}"></h4>
+                            <p class="mb-0" th:text="'@' + ${profile.username}"></p>
+                        </div>
+                        <div class="profile-info">
+                            <div class="info-item">
+                                <span class="info-label">Tên đăng nhập:</span>
+                                <span class="info-value" th:text="${profile.username}"></span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Email:</span>
+                                <span class="info-value" th:text="${profile.email}"></span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Số điện thoại:</span>
+                                <span class="info-value" th:text="${profile.phoneNumber ?: 'Chưa cập nhật'}"></span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Trạng thái:</span>
+                                <span class="info-value">
+                                    <span th:class="'status-badge ' + (${profile.isActive} ? 'status-active' : 'status-inactive')"
+                                          th:text="${profile.isActive ? 'Hoạt động' : 'Bị khóa'}"></span>
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Xác thực email:</span>
+                                <span class="info-value">
+                                    <span th:class="'status-badge ' + (${profile.isEmailVerified} ? 'status-verified' : 'status-unverified')"
+                                          th:text="${profile.isEmailVerified ? 'Đã xác thực' : 'Chưa xác thực'}"></span>
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Đăng nhập cuối:</span>
+                                <span class="info-value" th:text="${#temporals.format(profile.lastLogin, 'dd/MM/yyyy HH:mm')}"></span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Ngày tạo:</span>
+                                <span class="info-value" th:text="${#temporals.format(profile.createdAt, 'dd/MM/yyyy')}"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Update Forms -->
+                <div class="col-lg-8">
+                    <!-- Update Profile Information -->
+                    <div class="card profile-card">
+                        <div class="card-body">
+                            <h5 class="section-title">
+                                <i class="fas fa-user-edit me-2"></i>Cập nhật thông tin cá nhân
+                            </h5>
+                            
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Hướng dẫn:</strong> Bạn có thể sửa từng trường thông tin độc lập. Để trống các trường không muốn thay đổi. 
+                                Để trống số điện thoại hoặc URL avatar sẽ xóa thông tin đó.
+                            </div>
+                            
+                            <form th:action="@{/profile/update}" method="post" th:object="${updateProfileDTO}">
+                                <div class="form-section">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="fullName" class="form-label">Họ và tên</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="fullName" 
+                                                   th:field="*{fullName}"
+                                                   th:value="${profile.fullName}"
+                                                   th:class="${#fields.hasErrors('fullName')} ? 'form-control is-invalid' : 'form-control'"
+                                                   placeholder="Nhập họ và tên mới (để trống nếu không thay đổi)">
+                                            <div th:if="${#fields.hasErrors('fullName')}" class="invalid-feedback">
+                                                <span th:errors="*{fullName}"></span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="email" class="form-label">Email</label>
+                                            <input type="email" 
+                                                   class="form-control" 
+                                                   id="email" 
+                                                   th:field="*{email}"
+                                                   th:value="${profile.email}"
+                                                   th:class="${#fields.hasErrors('email')} ? 'form-control is-invalid' : 'form-control'"
+                                                   placeholder="Nhập email mới (để trống nếu không thay đổi)">
+                                            <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback">
+                                                <span th:errors="*{email}"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="phoneNumber" class="form-label">Số điện thoại</label>
+                                            <input type="tel" 
+                                                   class="form-control" 
+                                                   id="phoneNumber" 
+                                                   th:field="*{phoneNumber}"
+                                                   th:value="${profile.phoneNumber}"
+                                                   th:class="${#fields.hasErrors('phoneNumber')} ? 'form-control is-invalid' : 'form-control'"
+                                                   placeholder="Nhập số điện thoại mới (để trống để xóa)">
+                                            <div th:if="${#fields.hasErrors('phoneNumber')}" class="invalid-feedback">
+                                                <span th:errors="*{phoneNumber}"></span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="avatarUrl" class="form-label">URL Avatar</label>
+                                            <input type="url" 
+                                                   class="form-control" 
+                                                   id="avatarUrl" 
+                                                   th:field="*{avatarUrl}"
+                                                   th:value="${profile.avatarUrl}"
+                                                   th:class="${#fields.hasErrors('avatarUrl')} ? 'form-control is-invalid' : 'form-control'"
+                                                   placeholder="Nhập URL hình ảnh mới (để trống để xóa)">
+                                            <div th:if="${#fields.hasErrors('avatarUrl')}" class="invalid-feedback">
+                                                <span th:errors="*{avatarUrl}"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <button type="submit" class="btn btn-primary btn-save">
+                                            <i class="fas fa-save me-2"></i>Cập nhật thông tin
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                            
+                            <!-- Change Password -->
+                            <h5 class="section-title">
+                                <i class="fas fa-key me-2"></i>Đổi mật khẩu
+                            </h5>
+                            
+                            <form th:action="@{/profile/change-password}" method="post" th:object="${changePasswordDTO}">
+                                <div class="form-section">
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <label for="currentPassword" class="form-label">Mật khẩu hiện tại *</label>
+                                            <input type="password" 
+                                                   class="form-control" 
+                                                   id="currentPassword" 
+                                                   th:field="*{currentPassword}"
+                                                   th:class="${#fields.hasErrors('currentPassword')} ? 'form-control is-invalid' : 'form-control'"
+                                                   placeholder="Nhập mật khẩu hiện tại">
+                                            <div th:if="${#fields.hasErrors('currentPassword')}" class="invalid-feedback">
+                                                <span th:errors="*{currentPassword}"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="newPassword" class="form-label">Mật khẩu mới *</label>
+                                            <input type="password" 
+                                                   class="form-control" 
+                                                   id="newPassword" 
+                                                   th:field="*{newPassword}"
+                                                   th:class="${#fields.hasErrors('newPassword')} ? 'form-control is-invalid' : 'form-control'"
+                                                   placeholder="Nhập mật khẩu mới">
+                                            <div th:if="${#fields.hasErrors('newPassword')}" class="invalid-feedback">
+                                                <span th:errors="*{newPassword}"></span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="confirmPassword" class="form-label">Xác nhận mật khẩu *</label>
+                                            <input type="password" 
+                                                   class="form-control" 
+                                                   id="confirmPassword" 
+                                                   th:field="*{confirmPassword}"
+                                                   th:class="${#fields.hasErrors('confirmPassword')} ? 'form-control is-invalid' : 'form-control'"
+                                                   placeholder="Nhập lại mật khẩu mới">
+                                            <div th:if="${#fields.hasErrors('confirmPassword')}" class="invalid-feedback">
+                                                <span th:errors="*{confirmPassword}"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <button type="submit" class="btn btn-warning btn-save">
+                                            <i class="fas fa-key me-2"></i>Đổi mật khẩu
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                            
+                            <!-- Notice -->
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Lưu ý:</strong> Tên đăng nhập không thể thay đổi. Nếu bạn muốn thay đổi tên đăng nhập, vui lòng liên hệ với quản trị viên.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <th:block layout:fragment="scripts">
+        <script>
+            // Auto-hide alerts after 5 seconds
+            setTimeout(function() {
+                const alerts = document.querySelectorAll('.alert');
+                alerts.forEach(function(alert) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
+            
+            // Form validation
+            document.addEventListener('DOMContentLoaded', function() {
+                // Password confirmation validation
+                const newPassword = document.getElementById('newPassword');
+                const confirmPassword = document.getElementById('confirmPassword');
+                
+                function validatePasswordMatch() {
+                    if (newPassword.value !== confirmPassword.value) {
+                        confirmPassword.setCustomValidity('Mật khẩu xác nhận không khớp');
+                    } else {
+                        confirmPassword.setCustomValidity('');
+                    }
+                }
+                
+                newPassword.addEventListener('input', validatePasswordMatch);
+                confirmPassword.addEventListener('input', validatePasswordMatch);
+            });
+        </script>
+    </th:block>
+</body>
+</html>
