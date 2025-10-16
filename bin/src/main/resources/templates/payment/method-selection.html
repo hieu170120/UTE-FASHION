@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>Chọn phương thức thanh toán</title>
+    <th:block layout:fragment="styles">
+        <style>
+            .payment-card {
+                transition: all 0.3s ease;
+                border: 2px solid #dee2e6;
+            }
+            .payment-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                border-color: #0d6efd;
+            }
+            .payment-icon {
+                font-size: 2.5rem;
+                margin-bottom: 1rem;
+            }
+        </style>
+    </th:block>
+</head>
+<body>
+
+<div class="container mt-5" layout:fragment="content">
+    <h2 class="mb-4 fw-bold">PHƯƠNG THỨC THANH TOÁN</h2>
+        
+        <!-- Success Message -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Error Message -->
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    
+    <div class="row">
+        <!-- Left: Carrier, Coupon, Payment Methods -->
+        <div class="col-md-7">
+            <!-- Chọn nhà vận chuyển -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-truck me-2"></i>Chọn nhà vận chuyển
+                    </h5>
+                    <form th:action="@{/payment/select-carrier}" method="post">
+                        <div class="row">
+                            <div class="col-md-9">
+                                <select name="carrierId" class="form-select" required>
+                                    <option value="">-- Chọn nhà vận chuyển --</option>
+                                    <option th:each="carrier : ${carriers}" 
+                                            th:value="${carrier.id}"
+                                            th:text="${carrier.carrierName + ' - ' + #numbers.formatDecimal(carrier.defaultShippingFee, 0, 'COMMA', 0, 'POINT') + '₫'}"
+                                            th:selected="${selectedCarrierId != null and selectedCarrierId == carrier.id}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-primary w-100">Chọn</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Nhập mã giảm giá -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-tag me-2"></i>Mã giảm giá
+                    </h5>
+                    
+                    <!-- Hiển thị coupon đã áp dụng -->
+                    <div th:if="${appliedCouponCode != null}" class="alert alert-success d-flex justify-content-between align-items-center">
+                        <span>
+                            <i class="fas fa-check-circle me-2"></i>
+                            Đã áp dụng: <strong th:text="${appliedCouponCode}"></strong>
+                            (Giảm <strong th:text="${#numbers.formatDecimal(discountAmount, 0, 'COMMA', 0, 'POINT')} + '₫'"></strong>)
+                        </span>
+                        <form th:action="@{/payment/remove-coupon}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                        </form>
+                    </div>
+                    
+                    <!-- Form nhập coupon -->
+                    <form th:if="${appliedCouponCode == null}" th:action="@{/payment/apply-coupon}" method="post">
+                        <div class="row">
+                            <div class="col-md-9">
+                                <input type="text" name="couponCode" class="form-control" 
+                                       placeholder="Nhập mã giảm giá" required>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-success w-100">Áp dụng</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Chọn phương thức thanh toán -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-credit-card me-2"></i>Phương thức thanh toán
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3" th:each="method : ${paymentMethods}">
+                            <div class="card payment-card h-100">
+                                <div class="card-body text-center">
+                                    <!-- Icon for COD -->
+                                    <div class="payment-icon" th:if="${method.methodCode == 'COD'}">
+                                        <i class="fas fa-money-bill-wave text-success"></i>
+                                    </div>
+                                    
+                                    <!-- Icon for SePay QR -->
+                                    <div class="payment-icon" th:if="${method.methodCode == 'SEPAY_QR'}">
+                                        <i class="fas fa-qrcode text-primary"></i>
+                                    </div>
+                                    
+                                    <h6 class="card-title" th:text="${method.methodName}"></h6>
+                                    <p class="card-text text-muted small" th:text="${method.description}"></p>
+                                    
+                                    <!-- COD Form -->
+                                    <form th:if="${method.methodCode == 'COD'}" 
+                                          th:action="@{/payment/confirm-cod}" 
+                                          method="post">
+                                        <button type="submit" class="btn btn-success w-100">
+                                            <i class="fas fa-check-circle"></i> Chọn
+                                        </button>
+                                    </form>
+                                    
+                                    <!-- SePay QR Form -->
+                                    <form th:if="${method.methodCode == 'SEPAY_QR'}" 
+                                          th:action="@{/payment/sepay-qr/create}" 
+                                          method="post">
+                                        <button type="submit" class="btn btn-primary w-100">
+                                            <i class="fas fa-qrcode"></i> Chọn
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right: Order Summary -->
+        <div class="col-md-5">
+            <div class="card shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-receipt me-2"></i>Chi tiết thanh toán
+                    </h5>
+                    
+                    <!-- Subtotal -->
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Tạm tính:</span>
+                        <span th:text="${#numbers.formatDecimal(subtotal, 0, 'COMMA', 0, 'POINT')} + '₫'"></span>
+                    </div>
+                    
+                    <!-- Shipping Fee -->
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Phí vận chuyển:</span>
+                        <span th:if="${shippingFee != null}" 
+                              th:text="${#numbers.formatDecimal(shippingFee, 0, 'COMMA', 0, 'POINT')} + '₫'"></span>
+                        <span th:if="${shippingFee == null}" class="text-muted">Chưa chọn</span>
+                    </div>
+                    
+                    <!-- Discount -->
+                    <div th:if="${discountAmount != null}" class="d-flex justify-content-between mb-2 text-success">
+                        <span>
+                            <i class="fas fa-tag me-1"></i>Giảm giá:
+                        </span>
+                        <span th:text="'-' + ${#numbers.formatDecimal(discountAmount, 0, 'COMMA', 0, 'POINT')} + '₫'"></span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Final Total -->
+                    <div class="d-flex justify-content-between">
+                        <h5 class="mb-0">Tổng cộng:</h5>
+                        <h5 class="mb-0 text-danger" th:text="${#numbers.formatDecimal(finalTotal, 0, 'COMMA', 0, 'POINT')} + '₫'"></h5>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="alert alert-info small mb-0">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Vui lòng chọn nhà vận chuyển và phương thức thanh toán để hoàn tất đơn hàng.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <!-- Back Button -->
+        <a th:href="@{/checkout}" class="btn btn-secondary mt-3">
+            <i class="fas fa-arrow-left"></i> Quay lại thông tin giao hàng
+        </a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

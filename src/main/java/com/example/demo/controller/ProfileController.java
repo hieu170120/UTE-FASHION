@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.ChangePasswordDTO;
 import com.example.demo.dto.ProfileDTO;
 import com.example.demo.dto.UpdateProfileDTO;
 import com.example.demo.service.ProfileService;

@@ -34,3 +34,6 @@ Write-Host "Kiểm tra thư mục: src/main/resources/static/uploads/avatars/" -
 Write-Host "Nếu có file mới được tạo, upload thành công!" -ForegroundColor White
 
 
+
+
+
