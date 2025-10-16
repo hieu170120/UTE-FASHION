@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title th:text="${product != null ? product.productName : 'Chi tiết sản phẩm'}"></title>
+</head>
+<body>
+
+<div class="container mt-5" layout:fragment="content">
+    <div class="row" th:if="${product != null}">
+        <div class="col-md-6">
+            <img th:src="${product.thumbnailUrl or '/images/default-product.png'}" class="img-fluid" alt="Product Image">
+        </div>
+        <div class="col-md-6">
+            <h1 th:text="${product.productName}">Tên sản phẩm</h1>
+            <p class="h3 text-danger fw-bold" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">Giá sản phẩm</p>
+            <p class="mt-3" th:text="${product.shortDescription}">Mô tả ngắn.</p>
+            <div class="mt-4">
+                <h4>Mô tả chi tiết</h4>
+                <p th:utext="${product.description}">Mô tả chi tiết sản phẩm.</p>
+            </div>
+            <!-- Form thêm vào giỏ hàng -->
+            <form th:action="@{/cart/items}" method="post" class="mt-4">
+                <input type="hidden" name="productId" th:value="${product.productId}">
+                <!-- Nếu có variant, thêm select cho size/color và set variantId -->
+                <!-- Ví dụ giả sử có sizes và colors từ model -->
+                <div th:if="${sizes != null and not #lists.isEmpty(sizes)}" class="form-group mb-3">
+                    <label for="sizeId">Kích cỡ:</label>
+                    <select id="sizeId" name="sizeId" class="form-select">
+                        <option th:each="size : ${sizes}" th:value="${size.sizeId}" th:text="${size.sizeName}"></option>
+                    </select>
+                </div>
+                <div th:if="${colors != null and not #lists.isEmpty(colors)}" class="form-group mb-3">
+                    <label for="colorId">Màu sắc:</label>
+                    <select id="colorId" name="colorId" class="form-select">
+                        <option th:each="color : ${colors}" th:value="${color.colorId}" th:text="${color.colorName}"></option>
+                    </select>
+                </div>
+                <!-- VariantId sẽ được set dựa trên size và color, nhưng có thể cần JS hoặc backend xử lý để tìm variantId -->
+                <!-- Để đơn giản, giả sử variantId được tính ở backend từ sizeId và colorId -->
+                <div class="form-group mb-3">
+                    <label for="quantity">Số lượng:</label>
+                    <input type="number" id="quantity" name="quantity" value="1" min="1" class="form-control w-25">
+                </div>
+                <button type="submit" class="btn btn-success btn-lg">Thêm vào giỏ hàng</button>
+            </form>
+            <div class="mt-4">
+                 <a href="/products" class="btn btn-secondary">Quay lại danh sách</a>
+            </div>
+        </div>
+    </div>
+    <div class="row" th:if="${product == null}">
+        <div class="col-12 text-center">
+            <h2>Sản phẩm không tồn tại</h2>
+            <p>Rất tiếc, chúng tôi không tìm thấy sản phẩm bạn yêu cầu.</p>
+            <a href="/products" class="btn btn-primary">Quay lại danh sách sản phẩm</a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

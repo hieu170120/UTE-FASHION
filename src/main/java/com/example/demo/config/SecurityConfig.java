@@ -42,6 +42,7 @@ public class SecurityConfig {
                                 "/static/**", "/css/**", "/js/**", "/images/**",
                                 "/products", "/products/**",
                                 "/cart", "/cart/**",
+                                "/api/cart/**",
                                 "/checkout", "/checkout/**",
                                 "/payment", "/payment/**",
                                 "/payment-test", "/payment-test/**",

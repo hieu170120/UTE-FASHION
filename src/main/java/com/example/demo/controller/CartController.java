@@ -10,6 +10,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import java.util.*;
+import org.springframework.http.ResponseEntity;
 
 @Controller
 @RequestMapping("/cart")
@@ -59,6 +61,40 @@ public class CartController {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi cập nhật số lượng!");
         }
         return "redirect:/cart";
+    }
+
+    @PostMapping(value = "/batch-update", produces = "application/json", consumes = "application/json")
+    @ResponseBody
+    public Map<String, Object> batchUpdateCartItems(@RequestBody(required = false) List<Map<String, Integer>> updates) {
+        Map<String, Object> response = new HashMap<>();
+        System.out.println("=== BATCH UPDATE CALLED ===");
+        System.out.println("Updates: " + updates);
+        try {
+            if (updates == null || updates.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Không có sản phẩm nào để cập nhật");
+                return response;
+            }
+            
+            int count = 0;
+            for (Map<String, Integer> update : updates) {
+                Integer itemId = update.get("cartItemId");
+                Integer quantity = update.get("quantity");
+                if (itemId != null && quantity != null && quantity > 0) {
+                    cartService.updateCartItem(itemId, quantity);
+                    count++;
+                }
+            }
+            
+            response.put("success", true);
+            response.put("message", "Cập nhật " + count + " sản phẩm thành công!");
+            response.put("updatedCount", count);
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Lỗi: " + e.getMessage());
+        }
+        return response;
     }
 
     @GetMapping("/items/{id}/delete")
