@@ -3,6 +3,7 @@ package com.example.demo.service.impl;
 import com.example.demo.dto.ProductDTO;
 import com.example.demo.dto.ProductImageDTO;
 import com.example.demo.dto.ProductSummaryDTO;
+import com.example.demo.entity.Order;
 import com.example.demo.entity.Product;
 import com.example.demo.entity.ProductImage;
 import com.example.demo.exception.ResourceNotFoundException;
@@ -29,6 +30,8 @@ public class ProductServiceImpl implements ProductService {
     private ProductImageRepository productImageRepository;
     @Autowired
     private ShopRepository shopRepository;
+    @Autowired
+    private OrderRepository orderRepository;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -149,6 +152,20 @@ public class ProductServiceImpl implements ProductService {
         return modelMapper.map(product, ProductDTO.class);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ProductDTO findProductDetailBySlug(String slug) {
+        Product product = productRepository.findBySlug(slug) // This now uses the optimized query
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with slug: " + slug));
+        return modelMapper.map(product, ProductDTO.class);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Order> findEligibleOrdersForReview(Integer userId, Integer productId) {
+        return orderRepository.findEligibleOrdersForReview(userId, productId);
+    }
+
 
     // --- CRUD Methods ---
 
@@ -192,7 +209,8 @@ public class ProductServiceImpl implements ProductService {
 
         List<Integer> productIds = products.stream().map(ProductSummaryDTO::getId).collect(Collectors.toList());
 
-        List<ProductImage> images = productImageRepository.findImagesByProductIds(productIds);
+        // Efficiently fetch top 2 images for the given product IDs in one query
+        List<ProductImage> images = productImageRepository.findTop2ImagesPerProduct(productIds);
 
         Map<Integer, List<ProductImageDTO>> imagesByProductId = images.stream()
                 .collect(Collectors.groupingBy(

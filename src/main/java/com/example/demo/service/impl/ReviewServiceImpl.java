@@ -46,7 +46,7 @@ public class ReviewServiceImpl implements ReviewService {
         }
 
         // 2. Check for duplicate review for the specific product in the specific order
-        if (reviewRepository.existsByUser_IdAndOrder_IdAndProduct_Id(userId, request.getOrderId(), request.getProductId())) {
+        if (reviewRepository.existsByUser_UserIdAndOrder_IdAndProduct_Id(userId, request.getOrderId(), request.getProductId())) {
             throw new IllegalStateException("You have already reviewed this product for this order.");
         }
 
@@ -94,7 +94,7 @@ public class ReviewServiceImpl implements ReviewService {
         ReviewDTO dto = modelMapper.map(review, ReviewDTO.class);
         if (review.getUser() != null) {
             dto.setUserFullName(review.getUser().getFullName());
-            dto.setUserAvatar(review.getUser().getAvatar());
+            dto.setUserAvatar(review.getUser().getAvatarUrl());
         }
         if (review.getImages() != null) {
             dto.setImageUrls(review.getImages().stream()

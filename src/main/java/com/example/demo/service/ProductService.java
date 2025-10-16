@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.dto.ProductDTO;
 import com.example.demo.dto.ProductSummaryDTO;
+import com.example.demo.entity.Order;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -13,6 +14,8 @@ public interface ProductService {
     ProductDTO getProductById(Integer id);
 
     ProductDTO getProductBySlug(String slug);
+
+    ProductDTO findProductDetailBySlug(String slug);
 
     Page<ProductSummaryDTO> getProductsByCategory(String slug, Pageable pageable);
 
@@ -37,4 +40,6 @@ public interface ProductService {
     Page<ProductSummaryDTO> getTopRatedProducts(Pageable pageable);
 
     Page<ProductSummaryDTO> getMostWishedProducts(Pageable pageable);
+
+    List<Order> findEligibleOrdersForReview(Integer userId, Integer productId);
 }

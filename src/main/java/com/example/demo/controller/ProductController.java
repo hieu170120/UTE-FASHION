@@ -2,15 +2,8 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.*;
 import com.example.demo.entity.Order;
-import com.example.demo.entity.ProductVariant;
 import com.example.demo.entity.User;
-import com.example.demo.repository.OrderRepository;
-import com.example.demo.repository.ProductRepository;
-import com.example.demo.repository.ProductVariantRepository;
-import com.example.demo.service.BrandService;
-import com.example.demo.service.CategoryService;
-import com.example.demo.service.ProductService;
-import com.example.demo.service.ShopService;
+import com.example.demo.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,11 +31,7 @@ public class ProductController {
     @Autowired
     private ShopService shopService;
     @Autowired
-    private ProductVariantRepository productVariantRepository;
-    @Autowired
-    private ProductRepository productRepository;
-    @Autowired
-    private OrderRepository orderRepository; 
+    private ReviewService reviewService; // Assuming you have a ReviewService
 
     private void addCommonAttributes(Model model) {
         model.addAttribute("categories", categoryService.getAllCategories());
@@ -52,9 +41,9 @@ public class ProductController {
 
     @GetMapping
     public String listAllProducts(Model model, @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "20") int size,
-            @RequestParam(name = "keyword", required = false) String keyword,
-            @RequestParam(name = "sort", defaultValue = "newest") String sort) {
+                                  @RequestParam(name = "size", defaultValue = "20") int size,
+                                  @RequestParam(name = "keyword", required = false) String keyword,
+                                  @RequestParam(name = "sort", defaultValue = "newest") String sort) {
 
         Page<ProductSummaryDTO> productPage;
         if (keyword != null && !keyword.isEmpty()) {
@@ -69,17 +58,13 @@ public class ProductController {
         model.addAttribute("productPage", productPage);
         model.addAttribute("keyword", keyword);
         model.addAttribute("sort", sort);
-        model.addAttribute("currentCategory", null);
-        model.addAttribute("currentBrand", null);
-        model.addAttribute("currentShop", null);
-
         return "product/products";
     }
 
     @GetMapping("/category/{categorySlug}")
     public String listProductsByCategory(Model model, @PathVariable String categorySlug,
-            @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "20") int size) {
+                                         @RequestParam(name = "page", defaultValue = "0") int page,
+                                         @RequestParam(name = "size", defaultValue = "20") int size) {
 
         Page<ProductSummaryDTO> productPage = productService.getProductsByCategory(categorySlug, PageRequest.of(page, size));
         CategoryDTO category = categoryService.getCategoryBySlug(categorySlug);
@@ -88,16 +73,13 @@ public class ProductController {
         model.addAttribute("productPage", productPage);
         model.addAttribute("pageTitle", "Sản phẩm thuộc danh mục '" + category.getCategoryName() + "'");
         model.addAttribute("currentCategory", categorySlug);
-        model.addAttribute("currentBrand", null);
-        model.addAttribute("currentShop", null);
-
         return "product/products";
     }
 
     @GetMapping("/brand/{brandSlug}")
     public String listProductsByBrand(Model model, @PathVariable String brandSlug,
-            @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "20") int size) {
+                                      @RequestParam(name = "page", defaultValue = "0") int page,
+                                      @RequestParam(name = "size", defaultValue = "20") int size) {
 
         Page<ProductSummaryDTO> productPage = productService.getProductsByBrand(brandSlug, PageRequest.of(page, size));
         BrandDTO brand = brandService.getBrandBySlug(brandSlug);
@@ -106,16 +88,13 @@ public class ProductController {
         model.addAttribute("productPage", productPage);
         model.addAttribute("pageTitle", "Sản phẩm thuộc thương hiệu '" + brand.getBrandName() + "'");
         model.addAttribute("currentBrand", brandSlug);
-        model.addAttribute("currentCategory", null);
-        model.addAttribute("currentShop", null);
-
         return "product/products";
     }
 
     @GetMapping("/shop/{shopId}")
     public String listProductsByShop(Model model, @PathVariable Integer shopId,
-            @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "20") int size) {
+                                     @RequestParam(name = "page", defaultValue = "0") int page,
+                                     @RequestParam(name = "size", defaultValue = "20") int size) {
 
         Page<ProductSummaryDTO> productPage = productService.getProductsByShop(shopId, PageRequest.of(page, size));
         ShopDTO shop = shopService.getShopById(shopId);
@@ -124,9 +103,6 @@ public class ProductController {
         model.addAttribute("productPage", productPage);
         model.addAttribute("pageTitle", "Sản phẩm của shop '" + shop.getShopName() + "'");
         model.addAttribute("currentShop", shopId);
-        model.addAttribute("currentCategory", null);
-        model.addAttribute("currentBrand", null);
-
         return "product/products";
     }
 
@@ -134,42 +110,32 @@ public class ProductController {
     @GetMapping("/{slug}")
     public String viewProduct(@PathVariable String slug, Model model, @AuthenticationPrincipal User currentUser) {
         try {
-            ProductDTO productDTO = productService.getProductBySlug(slug);
+            // Single, efficient call to the service layer
+            ProductDTO productDTO = productService.findProductDetailBySlug(slug);
             model.addAttribute("product", productDTO);
+            model.addAttribute("pageTitle", productDTO.getProductName());
 
-            // Fetch Brand
-            productRepository.findById(productDTO.getId()).ifPresent(product -> {
-                if (product.getBrand() != null) {
-                    model.addAttribute("brand", brandService.getBrandById(product.getBrand().getId()));
-                }
-            });
+            // The DTO from the optimized service method now contains variants, brand, etc.
+            // No need for extra repository/service calls here.
+            model.addAttribute("brand", productDTO.getBrandId());
+            model.addAttribute("variants", productDTO.getVariants());
 
-            // Fetch Variants and eagerly load related entities
-            List<ProductVariant> variants = productVariantRepository.findByProductId(productDTO.getId());
-            variants.forEach(variant -> {
-                if (variant.getColor() != null) {
-                    variant.getColor().getColorName(); // Eagerly load color name
-                }
-                if (variant.getSize() != null) {
-                    variant.getSize().getSizeName(); // Eagerly load size name
-                }
-            });
-            model.addAttribute("variants", variants);
-
-            // Fetch eligible orders for review
+            // Fetch eligible orders for review (this logic is separate and okay to keep)
             List<Order> eligibleOrders = Collections.emptyList();
             if (currentUser != null) {
-                eligibleOrders = orderRepository.findEligibleOrdersForReview(currentUser.getId(), productDTO.getId());
+                // Pass the user ID and product ID to the service
+                eligibleOrders = productService.findEligibleOrdersForReview(currentUser.getUserId(), productDTO.getId());
             }
             model.addAttribute("eligibleOrders", eligibleOrders);
 
-            model.addAttribute("pageTitle", productDTO.getProductName());
+            // Fetch reviews for the product
+            Page<ReviewDTO> reviewPage = reviewService.getReviewsByProductId(productDTO.getId(), PageRequest.of(0, 5)); // Example: get first 5 reviews
+            model.addAttribute("reviewPage", reviewPage);
 
             return "product/product-detail";
         } catch (Exception e) {
-            // Log the exception for debugging
+            // Proper logging should be implemented here
             e.printStackTrace();
-            // Redirect to a general error page or product list
             return "redirect:/products?error=notfound";
         }
     }

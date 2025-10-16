@@ -12,7 +12,7 @@ import java.util.List;
 public interface OrderRepository extends JpaRepository<Order, Integer> {
     List<Order> findByUser_UserId(Integer userId);
 
-    @Query("SELECT COUNT(o) > 0 FROM Order o JOIN o.orderItems oi WHERE o.user.id = :userId AND oi.product.id = :productId AND o.orderStatus = :orderStatus")
+    @Query("SELECT COUNT(o) > 0 FROM Order o JOIN o.orderItems oi WHERE o.user.userId = :userId AND oi.product.id = :productId AND o.orderStatus = :orderStatus")
     boolean hasUserPurchasedProduct(@Param("userId") Integer userId, @Param("productId") Integer productId, @Param("orderStatus") String orderStatus);
 
     /**
@@ -28,10 +28,10 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * @return A list of eligible Order entities.
      */
     @Query("SELECT o FROM Order o JOIN o.orderItems oi " +
-           "WHERE o.user.id = :userId " +
-           "AND oi.product.id = :productId " +
-           "AND o.orderStatus = 'Delivered' " +
-           "AND NOT EXISTS (SELECT r FROM Review r WHERE r.order.id = o.id AND r.product.id = :productId AND r.user.id = :userId)")
+            "WHERE o.user.userId = :userId " +
+            "AND oi.product.id = :productId " +
+            "AND o.orderStatus = 'Delivered' " +
+            "AND NOT EXISTS (SELECT r FROM Review r WHERE r.order.id = o.id AND r.product.id = :productId AND r.user.userId = :userId)")
     List<Order> findEligibleOrdersForReview(@Param("userId") Integer userId, @Param("productId") Integer productId);
 
 

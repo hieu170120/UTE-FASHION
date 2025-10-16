@@ -15,13 +15,30 @@ import java.util.Optional;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Integer> {
 
-    // --- Methods for Detailed Product View (Keep full entity) ---
+    // --- Methods for Detailed Product View (Optimized with JOIN FETCH) ---
 
+    /**
+     * Optimized query to fetch a product and all its necessary associations for the detail page.
+     * This includes brand, images, variants, and the color/size for each variant.
+     * Using LEFT JOIN FETCH and DISTINCT helps to solve the N+1 query problem.
+     */
     @Override
-    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.images WHERE p.id = :id")
+    @Query("SELECT DISTINCT p FROM Product p " +
+            "LEFT JOIN FETCH p.brand " +
+            "LEFT JOIN FETCH p.images " +
+            "LEFT JOIN FETCH p.variants v " +
+            "LEFT JOIN FETCH v.color " +
+            "LEFT JOIN FETCH v.size " +
+            "WHERE p.id = :id")
     Optional<Product> findById(@Param("id") Integer id);
 
-    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.images WHERE p.slug = :slug")
+    @Query("SELECT DISTINCT p FROM Product p " +
+            "LEFT JOIN FETCH p.brand " +
+            "LEFT JOIN FETCH p.images " +
+            "LEFT JOIN FETCH p.variants v " +
+            "LEFT JOIN FETCH v.color " +
+            "LEFT JOIN FETCH v.size " +
+            "WHERE p.slug = :slug")
     Optional<Product> findBySlug(@Param("slug") String slug);
 
 

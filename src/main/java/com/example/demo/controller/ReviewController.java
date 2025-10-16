@@ -39,7 +39,7 @@ public class ReviewController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required to post a review.");
         }
         try {
-            ReviewDTO createdReview = reviewService.createReview(request, user.getId());
+            ReviewDTO createdReview = reviewService.createReview(request, user.getUserId());
             return new ResponseEntity<>(createdReview, HttpStatus.CREATED);
         } catch (Exception e) {
             // It's good practice to return a structured error response
