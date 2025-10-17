@@ -44,12 +44,28 @@ public class CartController {
     }
 
     @PostMapping("/items")
-    public String addToCart(@ModelAttribute CartItemDTO cartItemDTO, HttpSession session, RedirectAttributes redirectAttributes) {
-        User currentUser = (User) session.getAttribute("currentUser");
-        String sessionId = session.getId();
-        cartService.addToCart(cartItemDTO, currentUser != null ? currentUser.getUserId() : null, sessionId);
-        redirectAttributes.addFlashAttribute("successMessage", "Đã thêm sản phẩm vào giỏ hàng!");
-        return "redirect:/cart";
+    public ResponseEntity<?> addToCart(@ModelAttribute CartItemDTO cartItemDTO, 
+                           @RequestParam(value = "buyNow", required = false) String buyNow,
+                           HttpSession session, 
+                           RedirectAttributes redirectAttributes) {
+        try {
+            User currentUser = (User) session.getAttribute("currentUser");
+            String sessionId = session.getId();
+            cartService.addToCart(cartItemDTO, currentUser != null ? currentUser.getUserId() : null, sessionId);
+            
+            // Nếu là "Mua ngay" thì redirect đến checkout
+            if ("true".equals(buyNow)) {
+                // Trả về redirect URL cho frontend
+                Map<String, String> response = new HashMap<>();
+                response.put("redirect", "/checkout");
+                return ResponseEntity.ok(response);
+            }
+            
+            // Ngược lại trả về success cho AJAX request
+            return ResponseEntity.ok(Map.of("message", "Đã thêm sản phẩm vào giỏ hàng!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PostMapping("/items/{id}/update")

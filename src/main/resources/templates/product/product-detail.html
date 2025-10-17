@@ -383,7 +383,8 @@ body {
 				<div class="d-grid gap-2 mt-4 action-buttons">
 					<button class="btn btn-add-to-cart" type="button"
 						onclick="addToCart()">THÊM VÀO GIỎ</button>
-					<button class="btn btn-buy-now" type="button">MUA NGAY</button>
+					<button class="btn btn-buy-now" type="button"
+						onclick="buyNow()">MUA NGAY</button>
 				</div>
 
 				<div class="mt-4 product-description"
@@ -495,6 +496,8 @@ body {
 		<script th:inline="javascript">
         /*<![CDATA[*/
         const productId = /*[[${product.id}]]*/ null;
+        const csrfToken = /*[[${_csrf.token}]]*/ '';
+        const csrfHeader = /*[[${_csrf.headerName}]]*/ '';
         // Biến toàn cục để lưu trữ tất cả biến thể đã tải
         let productVariants = [];
         let uniqueSizes = [];
@@ -758,8 +761,125 @@ body {
         };
         
         const addToCart = () => {
-             // Logic thêm vào giỏ hàng: cần lấy productId, selectedSize, selectedColor, và quantity
-             alert(`Thêm vào giỏ: Sản phẩm ${productId}, Size: ${selectedSize}, Color: ${selectedColor}, SL: ${document.getElementById('quantity').value}`);
+            // 1. Kiểm tra xem đã chọn đủ size và color chưa
+            const isSizeRequired = uniqueSizes.length > 0;
+            const isColorRequired = uniqueColors.length > 0;
+            
+            if ((isSizeRequired && !selectedSize) || (isColorRequired && !selectedColor)) {
+                alert('Vui lòng chọn đủ Kích thước và Màu sắc!');
+                return;
+            }
+            
+            // 2. Tìm variant ID
+            const selectedVariant = productVariants.find(v => 
+                (v.sizeName === selectedSize || !isSizeRequired) &&
+                (v.colorName === selectedColor || !isColorRequired)
+            );
+            
+            if (!selectedVariant) {
+                alert('Không tìm thấy sản phẩm với lựa chọn này!');
+                return;
+            }
+            
+            if (selectedVariant.stock <= 0) {
+                alert('Sản phẩm đã hết hàng!');
+                return;
+            }
+            
+            // 3. Lấy số lượng
+            const quantity = parseInt(document.getElementById('quantity').value) || 1;
+            
+            if (quantity > selectedVariant.stock) {
+                alert(`Chỉ còn ${selectedVariant.stock} sản phẩm trong kho!`);
+                return;
+            }
+            
+            // 4. Gửi AJAX request để thêm vào giỏ (không redirect)
+            const contextPath = /*[[@{/}]]*/ '/';
+            const formData = new FormData();
+            formData.append('productId', productId);
+            formData.append('variantId', selectedVariant.id);
+            formData.append('quantity', quantity);
+            formData.append('_csrf', csrfToken);
+            
+            fetch(contextPath + 'cart/items', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    
+                    // Có thể cập nhật số lượng giỏ hàng trên header nếu có
+                } else {
+                    alert('Có lỗi xảy ra, vui lòng thử lại!');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra, vui lòng thử lại!');
+            });
+        };
+        
+        const buyNow = () => {
+            // 1. Kiểm tra xem đã chọn đủ size và color chưa
+            const isSizeRequired = uniqueSizes.length > 0;
+            const isColorRequired = uniqueColors.length > 0;
+            
+            if ((isSizeRequired && !selectedSize) || (isColorRequired && !selectedColor)) {
+                alert('Vui lòng chọn đủ Kích thước và Màu sắc!');
+                return;
+            }
+            
+            // 2. Tìm variant ID
+            const selectedVariant = productVariants.find(v => 
+                (v.sizeName === selectedSize || !isSizeRequired) &&
+                (v.colorName === selectedColor || !isColorRequired)
+            );
+            
+            if (!selectedVariant) {
+                alert('Không tìm thấy sản phẩm với lựa chọn này!');
+                return;
+            }
+            
+            if (selectedVariant.stock <= 0) {
+                alert('Sản phẩm đã hết hàng!');
+                return;
+            }
+            
+            // 3. Lấy số lượng
+            const quantity = parseInt(document.getElementById('quantity').value) || 1;
+            
+            if (quantity > selectedVariant.stock) {
+                alert(`Chỉ còn ${selectedVariant.stock} sản phẩm trong kho!`);
+                return;
+            }
+            
+            // 4. Gửi AJAX request và redirect đến checkout
+            const contextPath = /*[[@{/}]]*/ '/';
+            const formData = new FormData();
+            formData.append('productId', productId);
+            formData.append('variantId', selectedVariant.id);
+            formData.append('quantity', quantity);
+            formData.append('buyNow', 'true');
+            formData.append('_csrf', csrfToken);
+            
+            fetch(contextPath + 'cart/items', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.redirect) {
+                    // Redirect đến checkout
+                    window.location.href = contextPath.replace(/\/$/, '') + data.redirect;
+                } else {
+                    alert('Có lỗi xảy ra, vui lòng thử lại!');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra, vui lòng thử lại!');
+            });
         }
         
         // --- DOMContentLoaded ---

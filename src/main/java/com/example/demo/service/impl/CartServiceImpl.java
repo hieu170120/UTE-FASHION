@@ -61,20 +61,46 @@ public class CartServiceImpl implements CartService {
         Product product = productRepository.findById(cartItemDTO.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + cartItemDTO.getProductId()));
 
-        CartItem cartItem = new CartItem();
-        cartItem.setCart(cart);
-        cartItem.setProduct(product);
-        cartItem.setQuantity(cartItemDTO.getQuantity());
-        cartItem.setPrice(product.getPrice());
+        // Kiểm tra xem sản phẩm với variant này đã có trong giỏ chưa
+        CartItem existingItem = cart.getCartItems().stream()
+                .filter(item -> item.getProduct().getId().equals(cartItemDTO.getProductId()))
+                .filter(item -> {
+                    // Nếu cả hai đều không có variant (sản phẩm đơn giản)
+                    if (cartItemDTO.getVariantId() == null && item.getVariant() == null) {
+                        return true;
+                    }
+                    // Nếu cả hai đều có variant và variant giống nhau
+                    if (cartItemDTO.getVariantId() != null && item.getVariant() != null) {
+                        return item.getVariant().getId().equals(cartItemDTO.getVariantId());
+                    }
+                    return false;
+                })
+                .findFirst()
+                .orElse(null);
 
-        if (cartItemDTO.getVariantId() != null) {
-            ProductVariant variant = variantRepository.findById(cartItemDTO.getVariantId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Variant not found: " + cartItemDTO.getVariantId()));
-            cartItem.setVariant(variant);
-            cartItem.setPrice(variant.getPriceAdjustment().add(product.getPrice()));
+        if (existingItem != null) {
+            // Nếu đã có, tăng số lượng
+            existingItem.setQuantity(existingItem.getQuantity() + cartItemDTO.getQuantity());
+            cartItemRepository.save(existingItem);
+        } else {
+            // Nếu chưa có, tạo mới
+            CartItem cartItem = new CartItem();
+            cartItem.setCart(cart);
+            cartItem.setProduct(product);
+            cartItem.setQuantity(cartItemDTO.getQuantity());
+            cartItem.setPrice(product.getPrice());
+
+            if (cartItemDTO.getVariantId() != null) {
+                ProductVariant variant = variantRepository.findById(cartItemDTO.getVariantId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Variant not found: " + cartItemDTO.getVariantId()));
+                cartItem.setVariant(variant);
+                cartItem.setPrice(variant.getPriceAdjustment().add(product.getPrice()));
+            }
+
+            cart.getCartItems().add(cartItem);
+            cartItemRepository.save(cartItem);
         }
 
-        cart.getCartItems().add(cartItem);
         cartRepository.save(cart);
         return mapToCartDTO(cart);
     }
