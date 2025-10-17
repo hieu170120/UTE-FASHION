@@ -1,69 +1,138 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Quản lý đơn hàng - UTE Fashion</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Đơn Hàng - UTE Fashion Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f8f9fa; }
+        .navbar-custom { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card { border: none; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 13px; }
+        .status-processing { background: #ffc107; color: #000; }
+        .status-confirmed { background: #17a2b8; color: #fff; }
+        .status-shipping { background: #007bff; color: #fff; }
+        .status-delivered { background: #28a745; color: #fff; }
+        .status-cancelled { background: #dc3545; color: #fff; }
+    </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <h1 class="mb-4">Quản lý đơn hàng</h1>
+    <nav class="navbar navbar-custom navbar-dark mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" th:href="@{/admin/dashboard}">
+                <i class="fas fa-shopping-bag"></i> UTE Fashion Admin
+            </a>
+            <div>
+                <a th:href="@{/admin/carriers}" class="btn btn-light btn-sm me-2">
+                    <i class="fas fa-shipping-fast"></i> Nhà Vận Chuyển
+                </a>
+                <a th:href="@{/admin/shippers}" class="btn btn-light btn-sm me-2">
+                    <i class="fas fa-user-tie"></i> Shipper
+                </a>
+                <a th:href="@{/admin/orders/pending}" class="btn btn-warning btn-sm me-2">
+                    <i class="fas fa-clock"></i> Đơn Chờ Xử Lý
+                </a>
+                <a th:href="@{/admin/orders/returns}" class="btn btn-info btn-sm">
+                    <i class="fas fa-undo"></i> Yêu Cầu Trả Hàng
+                </a>
+            </div>
+        </div>
+    </nav>
 
-        <!-- Success Message -->
-        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>
-            <span th:text="${successMessage}"></span>
+    <div class="container">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3><i class="fas fa-list"></i> Danh Sách Tất Cả Đơn Hàng</h3>
+            </div>
+        </div>
+
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
-        <!-- Error Message -->
-        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-circle me-2"></i>
-            <span th:text="${errorMessage}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Mã Đơn</th>
+                                <th>Khách Hàng</th>
+                                <th>Tổng Tiền</th>
+                                <th>Trạng Thái</th>
+                                <th>Ngày Đặt</th>
+                                <th>Hành Động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="order : ${orderPage.content}">
+                                <td><strong th:text="${order.orderNumber}"></strong></td>
+                                <td th:text="${order.recipientName}"></td>
+                                <td><span class="text-danger fw-bold" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span></td>
+                                <td>
+                                    <span class="status-badge" 
+                                          th:classappend="${order.orderStatus == 'Processing' ? 'status-processing' : 
+                                                         (order.orderStatus == 'Confirmed' ? 'status-confirmed' : 
+                                                         (order.orderStatus == 'Shipping' ? 'status-shipping' : 
+                                                         (order.orderStatus == 'Delivered' ? 'status-delivered' : 'status-cancelled')))}"
+                                          th:text="${order.orderStatus == 'Processing' ? 'Đang Xử Lý' : 
+                                                  (order.orderStatus == 'Confirmed' ? 'Đã Xác Nhận' : 
+                                                  (order.orderStatus == 'Shipping' ? 'Đang Giao' : 
+                                                  (order.orderStatus == 'Delivered' ? 'Đã Giao' : 'Đã Hủy')))}"></span>
+                                </td>
+                                <td th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
+                                <td>
+                                    <a th:href="@{/admin/orders/{id}(id=${order.id})}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-eye"></i> Chi Tiết
+                                    </a>
+                                    
+                                    <!-- Nút chuyển trạng thái nhanh -->
+                                    <span th:if="${order.orderStatus == 'Processing'}">
+                                        <a th:href="@{/admin/orders/{id}(id=${order.id})}" class="btn btn-sm btn-warning" title="Chọn Shipper">
+                                            <i class="fas fa-user-check"></i>
+                                        </a>
+                                    </span>
+                                    <span th:if="${order.orderStatus == 'Confirmed'}">
+                                        <form th:action="@{/admin/orders/{id}/quick-update(id=${order.id})}" method="post" style="display:inline;">
+                                            <input type="hidden" name="status" value="Shipping">
+                                            <button type="submit" class="btn btn-sm btn-info" title="Chuyển sang Đang Giao">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+                                    </span>
+                                    <span th:if="${order.orderStatus == 'Shipping'}">
+                                        <form th:action="@{/admin/orders/{id}/quick-update(id=${order.id})}" method="post" style="display:inline;">
+                                            <input type="hidden" name="status" value="Delivered">
+                                            <button type="submit" class="btn btn-sm btn-success" title="Đánh dấu Đã Giao">
+                                                <i class="fas fa-check-circle"></i>
+                                            </button>
+                                        </form>
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <nav th:if="${orderPage.totalPages > 1}">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item" th:classappend="${orderPage.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/orders(page=${orderPage.number - 1})}">Trước</a>
+                        </li>
+                        <li class="page-item" th:each="i : ${#numbers.sequence(0, orderPage.totalPages - 1)}"
+                            th:classappend="${i == orderPage.number} ? 'active'">
+                            <a class="page-link" th:href="@{/admin/orders(page=${i})}" th:text="${i + 1}"></a>
+                        </li>
+                        <li class="page-item" th:classappend="${orderPage.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/orders(page=${orderPage.number + 1})}">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
         </div>
-
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Mã đơn hàng</th>
-                    <th>Khách hàng</th>
-                    <th>Ngày đặt</th>
-                    <th>Tổng tiền</th>
-                    <th>Trạng thái</th>
-                    <th>Thao tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="order : ${orderPage.content}">
-                    <td th:text="${order.orderNumber}"></td>
-                    <td th:text="${order.recipientName}"></td>
-                    <td th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
-                    <td th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
-                    <td th:text="${order.orderStatus}"></td>
-                    <td>
-                        <a th:href="@{/admin/orders/{id}(id=${order.id})}" class="btn btn-sm btn-primary">Chi tiết</a>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-
-        <!-- Pagination -->
-        <nav aria-label="Page navigation" th:if="${orderPage.totalPages > 1}">
-            <ul class="pagination justify-content-center">
-                <li class="page-item" th:classappend="${orderPage.first} ? 'disabled'">
-                    <a class="page-link" th:href="@{/admin/orders(page=${orderPage.number - 1}, size=${orderPage.size})}">&laquo;</a>
-                </li>
-                <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, orderPage.totalPages - 1)}"
-                    th:classappend="${pageNumber == orderPage.number} ? 'active'">
-                    <a class="page-link" th:href="@{/admin/orders(page=${pageNumber}, size=${orderPage.size})}" th:text="${pageNumber + 1}"></a>
-                </li>
-                <li class="page-item" th:classappend="${orderPage.last} ? 'disabled'">
-                    <a class="page-link" th:href="@{/admin/orders(page=${orderPage.number + 1}, size=${orderPage.size})}">&raquo;</a>
-                </li>
-            </ul>
-        </nav>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

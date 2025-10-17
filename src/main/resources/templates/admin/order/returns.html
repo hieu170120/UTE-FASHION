@@ -1,67 +1,92 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Quản lý yêu cầu trả hàng - UTE Fashion</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yêu Cầu Trả Hàng - UTE Fashion Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f8f9fa; }
+        .navbar-custom { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card { border: none; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .return-card { padding: 20px; transition: transform 0.2s; }
+        .return-card:hover { transform: translateY(-5px); }
+    </style>
 </head>
 <body>
-<div class="container mt-5">
-    <h1 class="mb-4">Quản lý yêu cầu trả hàng</h1>
-
-    <!-- Success/Error Messages -->
-    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
-        <span th:text="${successMessage}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
-        <span th:text="${errorMessage}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-
-    <table class="table table-bordered align-middle">
-        <thead class="table-light">
-        <tr>
-            <th>Mã đơn hàng</th>
-            <th>Khách hàng</th>
-            <th>Ngày yêu cầu</th>
-            <th>Lý do</th>
-            <th class="text-center">Thao tác</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:if="${#lists.isEmpty(returnRequests)}">
-            <td colspan="5" class="text-center">Không có yêu cầu trả hàng nào.</td>
-        </tr>
-        <tr th:each="request : ${returnRequests}">
-            <td th:text="${request.orderCode}"></td>
-            <td th:text="${request.userName}"></td>
-            <td th:text="${#temporals.format(request.requestDate, 'dd/MM/yyyy HH:mm')}"></td>
-            <td th:text="${request.reason}"></td>
-            <td class="text-center">
-                <form th:action="@{/admin/orders/returns/{id}/approve(id=${request.orderId})}" method="post" class="d-inline">
-                    <button type="submit" class="btn btn-sm btn-success">
-                        <i class="fas fa-check"></i> Duyệt
-                    </button>
-                </form>
-                <form th:action="@{/admin/orders/returns/{id}/reject(id=${request.orderId})}" method="post" class="d-inline">
-                    <button type="submit" class="btn btn-sm btn-danger"
-                            onclick="return confirm('Bạn có chắc chắn từ chối yêu cầu này?')">
-                        <i class="fas fa-times"></i> Từ chối
-                    </button>
-                </form>
-                 <a th:href="@{/admin/orders/{id}(id=${request.orderId})}" class="btn btn-sm btn-info text-white">
-                    <i class="fas fa-eye"></i> Chi tiết
+    <nav class="navbar navbar-custom navbar-dark mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" th:href="@{/admin/dashboard}">
+                <i class="fas fa-shopping-bag"></i> UTE Fashion Admin
+            </a>
+            <div>
+                <a th:href="@{/admin/orders}" class="btn btn-light btn-sm me-2">
+                    <i class="fas fa-list"></i> Tất Cả Đơn
                 </a>
-            </td>
-        </tr>
-        </tbody>
-    </table>
+                <a th:href="@{/admin/orders/pending}" class="btn btn-warning btn-sm">
+                    <i class="fas fa-clock"></i> Đơn Chờ Xử Lý
+                </a>
+            </div>
+        </div>
+    </nav>
 
-    <a th:href="@{/admin/orders}" class="btn btn-secondary mt-3">
-        <i class="fas fa-arrow-left me-2"></i>Quay lại quản lý đơn hàng
-    </a>
-</div>
+    <div class="container">
+        <div class="card">
+            <div class="card-body">
+                <h2><i class="fas fa-undo text-info"></i> Yêu Cầu Trả Hàng</h2>
+            </div>
+        </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div th:if="${#lists.isEmpty(returnRequests)}" class="text-center py-5">
+            <div class="card">
+                <div class="card-body">
+                    <i class="fas fa-inbox fa-5x text-muted mb-3"></i>
+                    <h4 class="text-muted">Không có yêu cầu trả hàng nào</h4>
+                </div>
+            </div>
+        </div>
+
+        <div th:each="request : ${returnRequests}" class="card return-card">
+            <div class="row">
+                <div class="col-md-8">
+                    <h5><i class="fas fa-receipt text-primary"></i> Đơn hàng: <span th:text="${request.orderCode}"></span></h5>
+                    <hr>
+                    <p><strong><i class="fas fa-user"></i> Khách hàng:</strong> <span th:text="${request.userName}"></span></p>
+                    <p><strong><i class="fas fa-envelope"></i> Email:</strong> <span th:text="${request.userEmail}"></span></p>
+                    <p><strong><i class="fas fa-comment"></i> Lý do:</strong> <span th:text="${request.reason}"></span></p>
+                    <p class="text-muted small">
+                        <i class="far fa-clock"></i> Yêu cầu lúc: <span th:text="${#temporals.format(request.requestDate, 'dd/MM/yyyy HH:mm')}"></span>
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="badge bg-warning text-dark mb-3" style="font-size: 16px;">Chờ Xử Lý</span>
+                    <div class="d-grid gap-2">
+                        <form th:action="@{/admin/orders/returns/{id}/approve(id=${request.id})}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-check"></i> Chấp Nhận
+                            </button>
+                        </form>
+                        <form th:action="@{/admin/orders/returns/{id}/reject(id=${request.id})}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-danger w-100">
+                                <i class="fas fa-times"></i> Từ Chối
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -6,209 +6,747 @@
     <title>Lịch Sử Giao Hàng - UTE Fashion Shipper</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-blue: #3B82F6;
+            --text-primary: #1E293B;
+            --text-secondary: #64748B;
+            --border-color: #E2E8F0;
+            --hover-bg: #F1F5F9;
+            --success-color: #10B981;
+            --danger-color: #EF4444;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', sans-serif;
+            background: #F8FAFC;
+            color: var(--text-primary);
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 240px;
+            background: white;
+            border-right: 1px solid var(--border-color);
+            padding: 24px 0;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .sidebar-logo {
+            padding: 0 24px 24px;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-blue);
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 16px;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0 12px;
+        }
+        
+        .sidebar-menu li { margin-bottom: 4px; }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        
+        .sidebar-menu a:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+        
+        .sidebar-menu a.active {
+            background: var(--primary-blue);
+            color: white;
+        }
+        
+        .sidebar-menu a i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+            font-size: 18px;
+        }
+        
+        .sidebar-footer {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            padding: 0 12px;
+        }
+        
+        /* Main Content */
+        .main-content {
+            margin-left: 240px;
             min-height: 100vh;
         }
-        .navbar-custom {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-        .history-card {
+        
+        /* Header */
+        .top-header {
             background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 999;
         }
-        .status-badge {
-            padding: 8px 16px;
-            border-radius: 20px;
+        
+        .header-greeting {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .header-search {
+            flex: 0 0 400px;
+            position: relative;
+        }
+        
+        .header-search input {
+            width: 100%;
+            padding: 10px 16px 10px 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .header-search i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .header-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: var(--hover-bg);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 18px;
+        }
+        
+        .header-icon:hover {
+            background: var(--primary-blue);
+            color: white;
+        }
+        
+        /* Content Area */
+        .content-area {
+            padding: 32px;
+        }
+        
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .page-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+        
+        /* Filter Card */
+        .filter-card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .filter-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-card-history {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            padding: 28px;
+            text-align: center;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card-history::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+        
+        .stat-card-history.success::before {
+            background: linear-gradient(90deg, var(--success-color) 0%, #34D399 100%);
+        }
+        
+        .stat-card-history.danger::before {
+            background: linear-gradient(90deg, var(--danger-color) 0%, #F87171 100%);
+        }
+        
+        .stat-card-history.warning::before {
+            background: linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%);
+        }
+        
+        .stat-card-history:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-icon-history {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin: 0 auto 16px;
+        }
+        
+        .stat-icon-history.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+        
+        .stat-icon-history.danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .stat-icon-history.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: #F59E0B;
+        }
+        
+        .stat-number-history {
+            font-size: 40px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .stat-label-history {
+            font-size: 14px;
+            color: var(--text-secondary);
             font-weight: 600;
         }
-        .badge-delivered {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            color: white;
-        }
-        .badge-cancelled {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-            color: white;
-        }
-        .filter-section {
+        
+        /* History Cards */
+        .history-card {
             background: white;
-            border-radius: 15px;
-            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            margin-bottom: 16px;
+            transition: all 0.3s;
+        }
+        
+        .history-card:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transform: translateX(4px);
+        }
+        
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .history-order-number {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .status-badge-history {
+            padding: 8px 20px;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-badge-history.delivered {
+            background: linear-gradient(135deg, var(--success-color) 0%, #34D399 100%);
+            color: white;
+        }
+        
+        .status-badge-history.cancelled {
+            background: linear-gradient(135deg, var(--danger-color) 0%, #F87171 100%);
+            color: white;
+        }
+        
+        .history-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+        
+        .history-details {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .history-detail-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .history-detail-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--hover-bg);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-blue);
+            font-size: 16px;
+        }
+        
+        .history-detail-text {
+            flex: 1;
+        }
+        
+        .history-detail-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .history-detail-value {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        .history-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .cancel-reason-box {
+            background: #FEF2F2;
+            border: 1px solid #FEE2E2;
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        
+        .cancel-reason-box .label {
+            font-size: 12px;
+            color: var(--danger-color);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .cancel-reason-box .reason {
+            font-size: 14px;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            background: white;
+            border-radius: 20px;
+            border: 2px dashed var(--border-color);
+        }
+        
+        .empty-state i {
+            font-size: 100px;
+            color: var(--border-color);
+            margin-bottom: 24px;
+        }
+        
+        .empty-state h4 {
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            font-size: 24px;
+        }
+        
+        .empty-state p {
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            font-size: 16px;
+        }
+        
+        /* Pagination */
+        .pagination {
+            margin-top: 32px;
+        }
+        
+        .pagination .page-link {
+            border-radius: 8px;
+            margin: 0 4px;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        .pagination .page-item.active .page-link {
+            background: var(--primary-blue);
+            border-color: var(--primary-blue);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .header-search {
+                display: none;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .history-content {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-custom mb-4">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/shipper">
-                <i class="fas fa-shipping-fast text-primary"></i> UTE Fashion Shipper
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/shipper"><i class="fas fa-home"></i> Trang chủ</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/shipper/orders/assigned"><i class="fas fa-box"></i> Đơn được giao</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/shipper/orders/delivering"><i class="fas fa-truck"></i> Đang giao</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/shipper/history"><i class="fas fa-history"></i> Lịch sử</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-danger" href="/logout"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container">
-        <div class="bg-white rounded p-3 mb-4">
-            <h2><i class="fas fa-history text-primary"></i> Lịch Sử Giao Hàng</h2>
-            <p class="text-muted mb-0">Xem lại các đơn hàng đã giao và đã hủy</p>
-        </div>
-
-        <!-- Filter Section -->
-        <div class="filter-section">
-            <form method="get" action="/shipper/history" class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label"><i class="fas fa-filter"></i> Trạng thái</label>
-                    <select name="status" class="form-select">
-                        <option value="">Tất cả</option>
-                        <option value="DA_GIAO" th:selected="${param.status != null && param.status[0] == 'DA_GIAO'}">Đã giao</option>
-                        <option value="HUY_DON" th:selected="${param.status != null && param.status[0] == 'HUY_DON'}">Đã hủy</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label"><i class="fas fa-calendar"></i> Từ ngày</label>
-                    <input type="date" name="fromDate" class="form-control" th:value="${param.fromDate}">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label"><i class="fas fa-calendar"></i> Đến ngày</label>
-                    <input type="date" name="toDate" class="form-control" th:value="${param.toDate}">
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-search"></i> Lọc
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Statistics Summary -->
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="history-card text-center">
-                    <i class="fas fa-check-circle fa-3x text-success mb-2"></i>
-                    <h3 th:text="${totalDelivered}">0</h3>
-                    <p class="text-muted mb-0">Đơn đã giao</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="history-card text-center">
-                    <i class="fas fa-times-circle fa-3x text-danger mb-2"></i>
-                    <h3 th:text="${totalCancelled}">0</h3>
-                    <p class="text-muted mb-0">Đơn đã hủy</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="history-card text-center">
-                    <i class="fas fa-dollar-sign fa-3x text-warning mb-2"></i>
-                    <h3 th:text="${#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</h3>
-                    <p class="text-muted mb-0">Tổng giá trị giao</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Empty State -->
-        <div th:if="${#lists.isEmpty(orders)}" class="text-center py-5">
-            <div class="bg-white rounded p-5">
-                <i class="fas fa-clipboard-list fa-5x text-muted mb-3"></i>
-                <h4 class="text-muted">Chưa có lịch sử giao hàng</h4>
-                <p class="text-muted">Các đơn đã giao và đã hủy sẽ hiển thị ở đây</p>
-            </div>
-        </div>
-
-        <!-- History List -->
-        <div th:each="order : ${orders}" class="history-card">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h5 class="mb-2">
-                        <i class="fas fa-receipt text-primary"></i> 
-                        <span th:text="${order.orderNumber}"></span>
-                    </h5>
-                    <p class="mb-1">
-                        <i class="fas fa-user"></i> <strong>Khách hàng:</strong> <span th:text="${order.recipientName}"></span>
-                    </p>
-                    <p class="mb-1">
-                        <i class="fas fa-map-marker-alt"></i> <strong>Địa chỉ:</strong> 
-                        <span th:text="${order.shippingAddress + ', ' + order.ward + ', ' + order.district + ', ' + order.city}"></span>
-                    </p>
-                    <p class="mb-1">
-                        <i class="fas fa-money-bill-wave"></i> <strong>Tổng tiền:</strong> 
-                        <span class="text-danger fw-bold" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
-                    </p>
-                    <p class="mb-0 text-muted small">
-                        <i class="fas fa-clock"></i> 
-                        <span th:text="${order.orderStatus == 'DA_GIAO' ? 'Đã giao lúc' : 'Hủy lúc'}"></span>: 
-                        <span th:text="${#temporals.format(order.updatedAt, 'dd/MM/yyyy HH:mm')}"></span>
-                    </p>
-                </div>
-                <div class="col-md-4 text-end">
-                    <div th:if="${order.orderStatus == 'DA_GIAO'}" class="status-badge badge-delivered mb-2">
-                        <i class="fas fa-check-circle"></i> Đã giao thành công
-                    </div>
-                    <div th:if="${order.orderStatus == 'HUY_DON'}" class="status-badge badge-cancelled mb-2">
-                        <i class="fas fa-ban"></i> Đã hủy
-                    </div>
-                    <div th:if="${order.cancelReason}" class="mt-2">
-                        <small class="text-muted">
-                            <i class="fas fa-info-circle"></i> <strong>Lý do:</strong><br>
-                            <span th:text="${order.cancelReason}"></span>
-                        </small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pagination -->
-        <div th:if="${totalPages > 1}" class="d-flex justify-content-center mt-4">
-            <nav>
-                <ul class="pagination">
-                    <li class="page-item" th:classappend="${currentPage == 0 ? 'disabled' : ''}">
-                        <a class="page-link" th:href="@{/shipper/history(page=${currentPage - 1}, status=${param.status}, fromDate=${param.fromDate}, toDate=${param.toDate})}">
-                            <i class="fas fa-chevron-left"></i>
-                        </a>
-                    </li>
-                    <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}" 
-                        th:classappend="${i == currentPage ? 'active' : ''}">
-                        <a class="page-link" th:href="@{/shipper/history(page=${i}, status=${param.status}, fromDate=${param.fromDate}, toDate=${param.toDate})}" 
-                           th:text="${i + 1}"></a>
-                    </li>
-                    <li class="page-item" th:classappend="${currentPage == totalPages - 1 ? 'disabled' : ''}">
-                        <a class="page-link" th:href="@{/shipper/history(page=${currentPage + 1}, status=${param.status}, fromDate=${param.fromDate}, toDate=${param.toDate})}">
-                            <i class="fas fa-chevron-right"></i>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-logo">LOGO</div>
+        
+        <ul class="sidebar-menu">
+            <li>
+                <a th:href="@{/shipper}">
+                    <i class="fas fa-th-large"></i>
+                    <span>Overview</span>
+                </a>
+            </li>
+            <li>
+                <a th:href="@{/shipper/orders/assigned}">
+                    <i class="fas fa-inbox"></i>
+                    <span>Đơn được giao</span>
+                </a>
+            </li>
+            <li>
+                <a th:href="@{/shipper/orders/delivering}">
+                    <i class="fas fa-shipping-fast"></i>
+                    <span>Đang giao</span>
+                </a>
+            </li>
+            <li>
+                <a th:href="@{/shipper/history}" class="active">
+                    <i class="fas fa-history"></i>
+                    <span>Lịch sử</span>
+                </a>
+            </li>
+            <li>
+                <a th:href="@{/shipper/profile}">
+                    <i class="fas fa-wallet"></i>
+                    <span>Thu nhập</span>
+                </a>
+            </li>
+        </ul>
+        
+        <div class="sidebar-footer">
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="#"><i class="fas fa-question-circle"></i><span>Help</span></a>
+                </li>
+                <li>
+                    <a href="#"><i class="fas fa-users"></i><span>Community</span></a>
+                </li>
+                <li>
+                    <a href="#"><i class="fas fa-cog"></i><span>Settings</span></a>
+                </li>
+                <li>
+                    <a th:href="@{/logout}" class="text-danger">
+                        <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+                    </a>
+                </li>
+            </ul>
         </div>
     </div>
-
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="top-header">
+            <div class="header-greeting">Lịch sử giao hàng</div>
+            
+            <div class="header-search">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search">
+            </div>
+            
+            <div class="header-actions">
+                <div class="header-icon"><i class="far fa-envelope"></i></div>
+                <div class="header-icon"><i class="far fa-bell"></i></div>
+                <div class="header-icon"><i class="far fa-user-circle"></i></div>
+            </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="content-area">
+            <h1 class="page-title">Lịch Sử Giao Hàng</h1>
+            <p class="page-subtitle">Xem lại các đơn hàng đã giao và đã hủy</p>
+            
+            <!-- Statistics Summary -->
+            <div class="stats-grid">
+                <div class="stat-card-history success">
+                    <div class="stat-icon-history success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-number-history" th:text="${totalDelivered}">0</div>
+                    <div class="stat-label-history">Đơn đã giao</div>
+                </div>
+                
+                <div class="stat-card-history danger">
+                    <div class="stat-icon-history danger">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="stat-number-history" th:text="${totalCancelled}">0</div>
+                    <div class="stat-label-history">Đơn đã hủy</div>
+                </div>
+                
+                <div class="stat-card-history warning">
+                    <div class="stat-icon-history warning">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="stat-number-history" th:text="${#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</div>
+                    <div class="stat-label-history">Tổng giá trị giao</div>
+                </div>
+            </div>
+            
+            <!-- Filter Section -->
+            <div class="filter-card">
+                <div class="filter-title">
+                    <i class="fas fa-filter me-2"></i>Lọc lịch sử
+                </div>
+                <form method="get" th:action="@{/shipper/history}" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Trạng thái</label>
+                        <select name="status" class="form-select">
+                            <option value="">Tất cả</option>
+                            <option value="Delivered" th:selected="${param.status != null && param.status[0] == 'Delivered'}">Đã giao</option>
+                            <option value="Cancelled" th:selected="${param.status != null && param.status[0] == 'Cancelled'}">Đã hủy</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Từ ngày</label>
+                        <input type="date" name="fromDate" class="form-control" th:value="${param.fromDate}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Đến ngày</label>
+                        <input type="date" name="toDate" class="form-control" th:value="${param.toDate}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search me-2"></i>Lọc
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Empty State -->
+            <div th:if="${#lists.isEmpty(orders)}" class="empty-state">
+                <i class="fas fa-clipboard-list"></i>
+                <h4>Chưa có lịch sử giao hàng</h4>
+                <p>Các đơn đã giao và đã hủy sẽ hiển thị ở đây</p>
+            </div>
+            
+            <!-- History List -->
+            <div th:each="order : ${orders}" class="history-card">
+                <div class="history-header">
+                    <div>
+                        <div class="history-order-number">
+                            <i class="fas fa-receipt text-primary me-2"></i>
+                            <span th:text="${order.orderNumber}">ORD-12345</span>
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>
+                            <span th:text="${order.orderStatus == 'Delivered' ? 'Đã giao lúc' : 'Hủy lúc'}"></span>: 
+                            <span th:text="${#temporals.format(order.updatedAt, 'dd/MM/yyyy HH:mm')}"></span>
+                        </small>
+                    </div>
+                    <div>
+                        <div th:if="${order.orderStatus == 'Delivered'}" class="status-badge-history delivered">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Đã giao thành công</span>
+                        </div>
+                        <div th:if="${order.orderStatus == 'Cancelled'}" class="status-badge-history cancelled">
+                            <i class="fas fa-ban"></i>
+                            <span>Đã hủy</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="history-content">
+                    <div class="history-details">
+                        <div class="history-detail-item">
+                            <div class="history-detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="history-detail-text">
+                                <div class="history-detail-label">Khách hàng</div>
+                                <div class="history-detail-value" th:text="${order.recipientName}">Nguyễn Văn A</div>
+                            </div>
+                        </div>
+                        
+                        <div class="history-detail-item">
+                            <div class="history-detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="history-detail-text">
+                                <div class="history-detail-label">Địa chỉ</div>
+                                <div class="history-detail-value" 
+                                     th:text="${order.shippingAddress + ', ' + order.ward + ', ' + order.district + ', ' + order.city}">
+                                    123 Đường ABC, Quận 1, TP.HCM
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="history-detail-item">
+                            <div class="history-detail-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div class="history-detail-text">
+                                <div class="history-detail-label">Số điện thoại</div>
+                                <div class="history-detail-value" th:text="${order.phoneNumber}">0901234567</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="history-meta">
+                        <div class="history-detail-item">
+                            <div class="history-detail-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <div class="history-detail-text">
+                                <div class="history-detail-label">Tổng tiền</div>
+                                <div class="history-detail-value text-danger fw-bold fs-5" 
+                                     th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'">
+                                    500,000 ₫
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="history-detail-item">
+                            <div class="history-detail-icon">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                            <div class="history-detail-text">
+                                <div class="history-detail-label">Thanh toán</div>
+                                <div class="history-detail-value" th:text="${order.paymentMethod}">COD</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Cancel Reason -->
+                <div th:if="${order.cancelReason}" class="cancel-reason-box">
+                    <div class="label">
+                        <i class="fas fa-info-circle"></i>
+                        Lý do hủy đơn
+                    </div>
+                    <div class="reason" th:text="${order.cancelReason}">
+                        Khách hàng không liên lạc được
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pagination -->
+            <div th:if="${totalPages > 1}" class="d-flex justify-content-center">
+                <nav>
+                    <ul class="pagination">
+                        <li class="page-item" th:classappend="${currentPage == 0 ? 'disabled' : ''}">
+                            <a class="page-link" th:href="@{/shipper/history(page=${currentPage - 1}, status=${param.status}, fromDate=${param.fromDate}, toDate=${param.toDate})}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}" 
+                            th:classappend="${i == currentPage ? 'active' : ''}">
+                            <a class="page-link" th:href="@{/shipper/history(page=${i}, status=${param.status}, fromDate=${param.fromDate}, toDate=${param.toDate})}" 
+                               th:text="${i + 1}"></a>
+                        </li>
+                        <li class="page-item" th:classappend="${currentPage == totalPages - 1 ? 'disabled' : ''}">
+                            <a class="page-link" th:href="@{/shipper/history(page=${currentPage + 1}, status=${param.status}, fromDate=${param.fromDate}, toDate=${param.toDate})}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

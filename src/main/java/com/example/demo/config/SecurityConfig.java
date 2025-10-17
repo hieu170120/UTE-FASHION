@@ -49,10 +49,12 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/verify-email", "/verify-email/**",
                                 "/resend-otp",
-                                "/api/**")//TODO config later
+                                "/api/**",
+                                "/admin/**",  // TODO: TEMPORARY - Remove this line in production
+                                "/shipper/**")  // TODO: TEMPORARY - Remove this line in production
                         .permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN") // Admin only
-                        .requestMatchers("/shipper/**").hasRole("SHIPPER") // Shipper only
+                        // .requestMatchers("/admin/**").hasRole("ADMIN") // Admin only - COMMENTED FOR TESTING
+                        // .requestMatchers("/shipper/**").hasRole("SHIPPER") // Shipper only - COMMENTED FOR TESTING
                         .requestMatchers("/profile", "/profile/**", "/orders", "/orders/**")
                         .authenticated()
                         .anyRequest().authenticated())
