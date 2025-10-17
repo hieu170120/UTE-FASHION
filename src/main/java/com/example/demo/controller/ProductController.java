@@ -108,7 +108,6 @@ public class ProductController {
 
 			return "product/product-detail";
 		} catch (Exception e) {
-			e.printStackTrace();
 			return "redirect:/products?error=notfound";
 		}
 	}
