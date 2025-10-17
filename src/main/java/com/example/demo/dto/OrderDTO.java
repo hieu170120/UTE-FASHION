@@ -26,6 +26,10 @@ public class OrderDTO {
     private String city;
     private String postalCode;
     private Integer carrierId;
+    private String carrierName; // Tên nhà vận chuyển
+    private Integer shipperId;
+    private String shipperName; // Tên shipper
+    private String shipperPhone; // SĐT shipper
     private BigDecimal subtotal;
     private BigDecimal shippingFee;
     private BigDecimal discountAmount;
@@ -36,5 +40,12 @@ public class OrderDTO {
     private String customerNotes;
     private String adminNotes;
     private LocalDateTime orderDate;
+    private LocalDateTime confirmedAt; // Admin xác nhận
+    private LocalDateTime acceptedAt; // Shipper xác nhận
+    private LocalDateTime shippedAt;
+    private LocalDateTime estimatedDeliveryTime; // Thời gian dự kiến giao
+    private Integer shippingTime; // Thời gian giao (phút)
+    private LocalDateTime deliveredAt;
+    private LocalDateTime cancelledAt;
     private List<OrderItemDTO> orderItems;
 }
