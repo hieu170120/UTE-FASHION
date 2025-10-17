@@ -125,6 +125,13 @@
     <version>3.2.0</version> <!-- Sử dụng phiên bản mới nhất -->
 </dependency>
         
+        <!-- Cloudinary -->
+        <dependency>
+            <groupId>com.cloudinary</groupId>
+            <artifactId>cloudinary-http44</artifactId>
+            <version>1.36.0</version>
+        </dependency>
+        
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
