@@ -211,14 +211,14 @@ public class OrderServiceImpl implements OrderService {
     }
 
     public List<OrderDTO> getOrdersByShipper(Integer shipperId) {
-        return orderRepository.findByUser_UserId(shipperId).stream()
+        return orderRepository.findByShipperId(shipperId).stream()
                 .map(this::mapToOrderDTO)
                 .collect(Collectors.toList());
     }
 
     public Map<String, Object> getShipperOrderStats(Integer shipperId) {
         // Example stats: count by status
-        List<Order> orders = orderRepository.findByUser_UserId(shipperId);
+        List<Order> orders = orderRepository.findByShipperId(shipperId);
         long total = orders.size();
         long delivered = orders.stream().filter(o -> o.getOrderStatus().equals(OrderStatus.DELIVERED.getValue())).count();
         long cancelled = orders.stream().filter(o -> o.getOrderStatus().equals(OrderStatus.CANCELLED.getValue())).count();
@@ -284,7 +284,7 @@ public class OrderServiceImpl implements OrderService {
         if (!order.getOrderStatus().equals("Return Requested")) {
             throw new RuntimeException("No return requested");
         }
-        updateOrderStatus(orderId, OrderStatus.REFUNDED.getValue(), notes, adminId);
+        updateOrderStatus(orderId, OrderStatus.RETURNED.getValue(), notes, adminId);
         // Additional refund logic if needed
     }
 
@@ -314,10 +314,10 @@ public class OrderServiceImpl implements OrderService {
                 .map(item -> modelMapper.map(item, OrderItemDTO.class))
                 .collect(Collectors.toList()));
         if (order.getCarrier() != null) {
-            orderDTO.setUserId(order.getCarrier().getId());
+            orderDTO.setCarrierId(order.getCarrier().getId());
         }
         if (order.getShipper() != null) {
-            orderDTO.setUserId(order.getShipper().getId());
+            orderDTO.setShipperId(order.getShipper().getId());
         }
         return orderDTO;
     }

@@ -1,10 +1,12 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.CartDTO;
+import com.example.demo.dto.CarrierDTO;
 import com.example.demo.dto.OrderDTO;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.CartService;
+import com.example.demo.service.CarrierService;
 import com.example.demo.service.OrderService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -31,6 +33,9 @@ public class CheckoutController {
 
     @Autowired
     private OrderService orderService;
+    
+    @Autowired
+    private CarrierService carrierService;
     
     @Autowired
     private UserRepository userRepository;
@@ -86,6 +91,8 @@ public class CheckoutController {
             orderDTO.setPhoneNumber(currentUser.getPhoneNumber());
             orderDTO.setEmail(currentUser.getEmail());
             
+            // Lấy danh sách carriers để khách hàng chọn
+            model.addAttribute("carriers", carrierService.getActiveCarriers());
             model.addAttribute("cart", cart);
             model.addAttribute("currentUser", currentUser);
             model.addAttribute("orderDTO", orderDTO);

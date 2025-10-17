@@ -117,6 +117,63 @@
                     <li class="nav-item">
                         <a class="nav-link" href="#">Liên hệ</a>
                     </li>
+                    <!-- Admin Menu - chỉ hiện với ADMIN -->
+                    <li class="nav-item dropdown" th:if="${session.currentUser != null}">
+                        <th:block th:each="role : ${session.currentUser.roles}">
+                            <th:block th:if="${role.roleName == 'ADMIN'}">
+                                <a class="nav-link dropdown-toggle text-danger fw-bold" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-shield-alt me-1"></i> Admin
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" th:href="@{/admin/orders/pending}">
+                                        <i class="fas fa-clock me-2"></i>Đơn chờ xử lý
+                                    </a></li>
+                                    <li><a class="dropdown-item" th:href="@{/admin/orders}">
+                                        <i class="fas fa-shopping-bag me-2"></i>Tất cả đơn hàng
+                                    </a></li>
+                                    <li><a class="dropdown-item" th:href="@{/admin/orders/returns}">
+                                        <i class="fas fa-undo me-2"></i>Yêu cầu trả hàng
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" th:href="@{/admin/carriers}">
+                                        <i class="fas fa-truck me-2"></i>Nhà vận chuyển
+                                    </a></li>
+                                    <li><a class="dropdown-item" th:href="@{/admin/products}">
+                                        <i class="fas fa-box me-2"></i>Sản phẩm
+                                    </a></li>
+                                    <li><a class="dropdown-item" th:href="@{/admin/shippers}">
+                                        <i class="fas fa-motorcycle me-2"></i>Shipper
+                                    </a></li>
+                                </ul>
+                            </th:block>
+                        </th:block>
+                    </li>
+                    
+                    <!-- Shipper Menu - chỉ hiện với SHIPPER -->
+                    <li class="nav-item dropdown" th:if="${session.currentUser != null}">
+                        <th:block th:each="role : ${session.currentUser.roles}">
+                            <th:block th:if="${role.roleName == 'SHIPPER'}">
+                                <a class="nav-link dropdown-toggle text-success fw-bold" href="#" id="shipperDropdown" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-motorcycle me-1"></i> Shipper
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" th:href="@{/shipper}">
+                                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                                    </a></li>
+                                    <li><a class="dropdown-item" th:href="@{/shipper/orders/assigned}">
+                                        <i class="fas fa-clipboard-list me-2"></i>Đơn được giao
+                                    </a></li>
+                                    <li><a class="dropdown-item" th:href="@{/shipper/orders/delivering}">
+                                        <i class="fas fa-shipping-fast me-2"></i>Đơn đang giao
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" th:href="@{/shipper/history}">
+                                        <i class="fas fa-history me-2"></i>Lịch sử
+                                    </a></li>
+                                </ul>
+                            </th:block>
+                        </th:block>
+                    </li>
                     <li class="nav-item ms-3" th:if="${session.currentUser == null}">
                         <a class="btn btn-outline-primary btn-sm" th:href="@{/login}">
                             <i class="fas fa-sign-in-alt me-1"></i> Đăng nhập
@@ -129,7 +186,7 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" th:href="@{/profile}"><i class="fas fa-user me-2"></i>Thông tin cá nhân</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-shopping-cart me-2"></i>Đơn hàng</a></li>
+                            <li><a class="dropdown-item" th:href="@{/orders}"><i class="fas fa-shopping-bag me-2"></i>Đơn hàng của tôi</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" th:href="@{/logout}"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
                         </ul>

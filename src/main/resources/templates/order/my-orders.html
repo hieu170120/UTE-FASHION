@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>Đơn Hàng Của Tôi</title>
+    <th:block layout:fragment="styles">
+        <style>
+            .order-timeline {
+                position: relative;
+                padding-left: 30px;
+            }
+            .order-timeline::before {
+                content: '';
+                position: absolute;
+                left: 8px;
+                top: 0;
+                bottom: 0;
+                width: 2px;
+                background: #dee2e6;
+            }
+            .timeline-step {
+                position: relative;
+                padding: 15px 0;
+            }
+            .timeline-step::before {
+                content: '';
+                position: absolute;
+                left: -26px;
+                top: 20px;
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                background: #dee2e6;
+                border: 3px solid white;
+                box-shadow: 0 0 0 2px #dee2e6;
+            }
+            .timeline-step.active::before {
+                background: #28a745;
+                box-shadow: 0 0 0 2px #28a745;
+            }
+            .order-card {
+                border: 2px solid #e9ecef;
+                border-radius: 15px;
+                padding: 25px;
+                margin-bottom: 30px;
+                transition: all 0.3s;
+            }
+            .order-card:hover {
+                border-color: #667eea;
+                box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
+            }
+            .status-DON_DANG_XU_LY { background: #ffc107; color: #000; }
+            .status-DA_XU_LY_DON_HANG { background: #17a2b8; color: #fff; }
+            .status-DANG_GIAO { background: #007bff; color: #fff; }
+            .status-DA_GIAO { background: #28a745; color: #fff; }
+            .status-TRA_HANG { background: #6c757d; color: #fff; }
+            .status-HUY_DON { background: #dc3545; color: #fff; }
+        </style>
+    </th:block>
+</head>
+<body>
+<div layout:fragment="content" class="container my-5">
+    <h2 class="mb-4"><i class="fas fa-history"></i> Đơn Hàng Của Tôi</h2>
+
+    <!-- Flash Messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Empty State -->
+    <div th:if="${#lists.isEmpty(orders)}" class="text-center py-5">
+        <i class="fas fa-shopping-bag fa-5x text-muted mb-3"></i>
+        <h4 class="text-muted">Bạn chưa có đơn hàng nào</h4>
+        <a href="/products" class="btn btn-primary mt-3">
+            <i class="fas fa-shopping-cart"></i> Mua Sắm Ngay
+        </a>
+    </div>
+
+    <!-- Order List -->
+    <div th:each="order : ${orders}" class="order-card">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+                <h5><span th:text="${order.orderNumber}"></span></h5>
+                <small class="text-muted">
+                    <i class="far fa-clock"></i> 
+                    <span th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></span>
+                </small>
+            </div>
+            <span class="badge px-3 py-2" 
+                  th:classappend="'status-' + ${order.orderStatus}"
+                  th:text="${order.orderStatus == 'DON_DANG_XU_LY' ? 'Đơn Đang Xử Lý' :
+                            order.orderStatus == 'DA_XU_LY_DON_HANG' ? 'Đã Xử Lý Đơn Hàng' :
+                            order.orderStatus == 'DANG_GIAO' ? 'Đang Giao' :
+                            order.orderStatus == 'DA_GIAO' ? 'Đã Giao' :
+                            order.orderStatus == 'TRA_HANG' ? 'Trả Hàng' : 'Hủy Đơn'}"></span>
+        </div>
+
+        <hr>
+
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Người nhận:</strong> <span th:text="${order.recipientName}"></span></p>
+                <p><strong>Địa chỉ:</strong> <span th:text="${order.shippingAddress}"></span></p>
+                <p><strong>SĐT:</strong> <span th:text="${order.phoneNumber}"></span></p>
+            </div>
+            <div class="col-md-6 text-end">
+                <p><strong>Tổng tiền:</strong></p>
+                <h4 class="text-danger" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></h4>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-3">
+            <!-- Nút Hủy Đơn (chỉ hiện khi DON_DANG_XU_LY hoặc DA_XU_LY_DON_HANG) -->
+            <form th:if="${order.orderStatus == 'DON_DANG_XU_LY' || order.orderStatus == 'DA_XU_LY_DON_HANG'}"
+                  th:action="@{/orders/{id}/cancel(id=${order.id})}" method="post" class="d-inline">
+                <button type="submit" class="btn btn-danger" 
+                        onclick="return confirm('Bạn có chắc muốn hủy đơn hàng này?')">
+                    <i class="fas fa-times-circle"></i> Hủy Đơn
+                </button>
+            </form>
+
+            <!-- Nút Trả Hàng (chỉ hiện khi DA_GIAO) -->
+            <button th:if="${order.orderStatus == 'DA_GIAO'}" 
+                    type="button" class="btn btn-warning" 
+                    data-bs-toggle="modal" 
+                    th:data-bs-target="'#returnModal' + ${order.id}">
+                <i class="fas fa-undo"></i> Yêu Cầu Trả Hàng
+            </button>
+
+            <a th:href="@{/orders/{id}/detail(id=${order.id})}" class="btn btn-outline-primary">
+                <i class="fas fa-eye"></i> Chi Tiết
+            </a>
+        </div>
+
+        <!-- Modal Trả Hàng -->
+        <div class="modal fade" th:id="'returnModal' + ${order.id}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Yêu Cầu Trả Hàng</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form th:action="@{/orders/{id}/request-return(id=${order.id})}" method="post">
+                        <div class="modal-body">
+                            <p>Đơn hàng: <strong th:text="${order.orderNumber}"></strong></p>
+                            <div class="mb-3">
+                                <label class="form-label">Lý do trả hàng: <span class="text-danger">*</span></label>
+                                <textarea name="reason" class="form-control" rows="4" 
+                                          placeholder="Vui lòng cho biết lý do bạn muốn trả hàng..." required></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-paper-plane"></i> Gửi Yêu Cầu
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

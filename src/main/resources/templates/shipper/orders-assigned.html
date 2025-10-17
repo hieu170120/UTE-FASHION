@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đơn Được Giao - UTE Fashion Shipper</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .navbar-custom {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        .order-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+        }
+        .order-card:hover {
+            transform: translateY(-5px);
+        }
+        .order-header {
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+        .info-row {
+            margin-bottom: 10px;
+        }
+        .info-label {
+            color: #6c757d;
+            font-weight: 600;
+        }
+        .cancel-modal .modal-content {
+            border-radius: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/shipper">
+                <i class="fas fa-shipping-fast text-primary"></i> UTE Fashion Shipper
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/shipper"><i class="fas fa-home"></i> Trang chủ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/shipper/orders/assigned"><i class="fas fa-box"></i> Đơn được giao</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/shipper/orders/delivering"><i class="fas fa-truck"></i> Đang giao</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/shipper/history"><i class="fas fa-history"></i> Lịch sử</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-danger" href="/logout"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="bg-white rounded p-3 mb-4">
+            <h2><i class="fas fa-box text-primary"></i> Đơn Được Giao Cho Bạn</h2>
+            <p class="text-muted mb-0">Danh sách các đơn hàng đã được admin phân công</p>
+        </div>
+
+        <!-- Alert messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Empty State -->
+        <div th:if="${#lists.isEmpty(assignedOrders)}" class="text-center py-5">
+            <div class="bg-white rounded p-5">
+                <i class="fas fa-box-open fa-5x text-muted mb-3"></i>
+                <h4 class="text-muted">Chưa có đơn nào được giao</h4>
+                <p class="text-muted">Khi admin phân công đơn cho bạn, nó sẽ hiển thị ở đây</p>
+                <a href="/shipper" class="btn btn-primary mt-3">
+                    <i class="fas fa-home"></i> Về Trang Chủ
+                </a>
+            </div>
+        </div>
+
+        <!-- Orders List -->
+        <div th:each="order, iterStat : ${assignedOrders}" class="order-card">
+            <div class="order-header">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4 class="mb-0">
+                            <i class="fas fa-receipt text-primary"></i> 
+                            Đơn hàng <span th:text="${order.orderNumber}"></span>
+                        </h4>
+                        <small class="text-muted">Được giao lúc: <span th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></span></small>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <span class="badge bg-info fs-6">Chưa xác nhận</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-user"></i> Khách hàng:</span>
+                        <span th:text="${order.recipientName}"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-phone"></i> SĐT:</span>
+                        <span th:text="${order.phoneNumber}"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-map-marker-alt"></i> Địa chỉ:</span>
+                        <span th:text="${order.shippingAddress + ', ' + order.ward + ', ' + order.district + ', ' + order.city}"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-money-bill-wave"></i> Tổng tiền:</span>
+                        <span class="text-danger fw-bold fs-5" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-credit-card"></i> Thanh toán:</span>
+                        <span th:text="${order.paymentMethod}"></span>
+                    </div>
+                    <div class="info-row" th:if="${order.note}">
+                        <span class="info-label"><i class="fas fa-sticky-note"></i> Ghi chú:</span>
+                        <span class="text-muted" th:text="${order.note}"></span>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="d-flex justify-content-end gap-2">
+                <form th:action="@{/shipper/orders/{orderId}/confirm(orderId=${order.id})}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-check"></i> Xác nhận đi giao
+                    </button>
+                </form>
+                <button type="button" class="btn btn-danger btn-lg" data-bs-toggle="modal" th:data-bs-target="'#cancelModal' + ${order.id}">
+                    <i class="fas fa-times"></i> Hủy đơn
+                </button>
+            </div>
+
+            <!-- Cancel Modal -->
+            <div class="modal fade cancel-modal" th:id="'cancelModal' + ${order.id}" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Xác nhận hủy đơn</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form th:action="@{/shipper/orders/{orderId}/cancel(orderId=${order.id})}" method="post">
+                            <div class="modal-body">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-info-circle"></i> 
+                                    <strong>Lưu ý:</strong> Bạn chỉ được hủy tối đa 3 đơn. Hiện tại: <span th:text="${cancelCount}">0</span>/3
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Lý do hủy đơn <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" name="reason" rows="4" required 
+                                              placeholder="Vui lòng nhập lý do cụ thể..."></textarea>
+                                </div>
+                                <p class="text-muted small">
+                                    <i class="fas fa-lightbulb"></i> 
+                                    Một số lý do thường gặp: Địa chỉ quá xa, khách hàng không liên lạc được, không đủ thời gian...
+                                </p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-arrow-left"></i> Quay lại
+                                </button>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-ban"></i> Xác nhận hủy
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

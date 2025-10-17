@@ -34,5 +34,12 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             "AND NOT EXISTS (SELECT r FROM Review r WHERE r.order.id = o.id AND r.product.id = :productId AND r.user.userId = :userId)")
     List<Order> findEligibleOrdersForReview(@Param("userId") Integer userId, @Param("productId") Integer productId);
 
-
+    // Methods for order management
+    List<Order> findByOrderStatus(String orderStatus);
+    
+    List<Order> findByShipperIdAndOrderStatus(Integer shipperId, String orderStatus);
+    
+    List<Order> findByShipperId(Integer shipperId);
+    
+    List<Order> findByUserUserId(Integer userId);
 }

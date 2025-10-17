@@ -2,7 +2,7 @@ package com.example.demo.controller.shipper;
 
 import com.example.demo.dto.OrderDTO;
 import com.example.demo.entity.User;
-import com.example.demo.service.OrderService;
+import com.example.demo.service.OrderManagementService;
 import com.example.demo.service.ShipperService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,14 +12,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/shipper/orders")
 public class ShipperOrderController {
 
     @Autowired
-    private OrderService orderService;
+    private OrderManagementService orderManagementService;
 
     @Autowired
     private ShipperService shipperService;
@@ -31,8 +30,11 @@ public class ShipperOrderController {
             return "redirect:/login";
         }
         Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
-        List<OrderDTO> orders = orderService.getOrdersByShipper(shipperId);
-        model.addAttribute("orders", orders);
+        List<OrderDTO> assignedOrders = orderManagementService.getShipperAssignedOrders(shipperId);
+        List<OrderDTO> deliveringOrders = orderManagementService.getShipperDeliveringOrders(shipperId);
+        model.addAttribute("assignedOrders", assignedOrders);
+        model.addAttribute("deliveringOrders", deliveringOrders);
+        model.addAttribute("cancelCount", orderManagementService.getShipperCancelCount(shipperId));
         return "shipper/order/list";
     }
 
@@ -43,7 +45,12 @@ public class ShipperOrderController {
             return "redirect:/login";
         }
         Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
-        model.addAttribute("stats", orderService.getShipperOrderStats(shipperId));
+        long assignedCount = orderManagementService.getShipperAssignedOrders(shipperId).size();
+        long deliveringCount = orderManagementService.getShipperDeliveringOrders(shipperId).size();
+        long cancelCount = orderManagementService.getShipperCancelCount(shipperId);
+        model.addAttribute("assignedCount", assignedCount);
+        model.addAttribute("deliveringCount", deliveringCount);
+        model.addAttribute("cancelCount", cancelCount);
         return "shipper/order/stats";
     }
 
@@ -55,23 +62,26 @@ public class ShipperOrderController {
         }
         try {
             Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
-            orderService.shipperConfirmOrder(id, shipperId);
+            orderManagementService.shipperConfirmOrder(id, shipperId);
             redirectAttributes.addFlashAttribute("successMessage", "Xác nhận giao hàng thành công!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi xác nhận giao hàng!");
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
         }
         return "redirect:/shipper/orders";
     }
 
     @PostMapping("/{id}/cancel")
-    public String cancelOrder(@PathVariable Integer id, HttpSession session, RedirectAttributes redirectAttributes) {
+    public String cancelOrder(@PathVariable Integer id, 
+                             @RequestParam(required = false, defaultValue = "Shipper cancel") String reason,
+                             HttpSession session, 
+                             RedirectAttributes redirectAttributes) {
         User currentUser = (User) session.getAttribute("currentUser");
         if (currentUser == null || currentUser.getRoles() == null || currentUser.getRoles().stream().noneMatch(role -> "SHIPPER".equals(role.getRoleName()))) {
             return "redirect:/login";
         }
         try {
             Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
-            orderService.shipperCancelOrder(id, shipperId);
+            orderManagementService.shipperCancelOrder(id, shipperId, reason);
             redirectAttributes.addFlashAttribute("successMessage", "Hủy giao hàng thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -86,10 +96,10 @@ public class ShipperOrderController {
             return "redirect:/login";
         }
         try {
-            orderService.completeDelivery(id);
+            orderManagementService.markOrderAsDelivered(id);
             redirectAttributes.addFlashAttribute("successMessage", "Hoàn thành giao hàng!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi hoàn thành giao hàng!");
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
         }
         return "redirect:/shipper/orders";
     }
