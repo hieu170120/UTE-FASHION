@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.OrderDTO;
 import com.example.demo.entity.User;
+import com.example.demo.service.OrderManagementService;
 import com.example.demo.service.OrderService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,9 @@ public class OrderController {
 
     @Autowired
     private OrderService orderService;
+    
+    @Autowired
+    private OrderManagementService orderManagementService;
 
     @GetMapping
     public String listOrders(Model model, HttpSession session) {
@@ -26,8 +30,9 @@ public class OrderController {
         if (currentUser == null) {
             return "redirect:/login";
         }
-        model.addAttribute("orders", orderService.getUserOrders(currentUser.getUserId()));
-        return "order/list";
+        // Sử dụng method mới với JOIN FETCH để tránh lazy loading
+        model.addAttribute("orders", orderManagementService.getCustomerOrders(currentUser.getUserId()));
+        return "order/my-orders";
     }
 
     @GetMapping("/{id}")

@@ -6,202 +6,826 @@
     <title>Shipper Dashboard - UTE Fashion</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #667eea;
-            --secondary-color: #764ba2;
-            --success-color: #38ef7d;
-            --danger-color: #ff6b6b;
+            --primary-blue: #3B82F6;
+            --sidebar-bg: #F8FAFC;
+            --sidebar-active: #3B82F6;
+            --text-primary: #1E293B;
+            --text-secondary: #64748B;
+            --border-color: #E2E8F0;
+            --hover-bg: #F1F5F9;
+            --success-color: #10B981;
+            --warning-color: #F59E0B;
+            --danger-color: #EF4444;
+            --purple-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            font-family: 'Inter', sans-serif;
+            background: #F8FAFC;
+            color: var(--text-primary);
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 240px;
+            background: white;
+            border-right: 1px solid var(--border-color);
+            padding: 24px 0;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .sidebar-logo {
+            padding: 0 24px 24px;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-blue);
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 16px;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0 12px;
+        }
+        
+        .sidebar-menu li {
+            margin-bottom: 4px;
+        }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        
+        .sidebar-menu a:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+        
+        .sidebar-menu a.active {
+            background: var(--primary-blue);
+            color: white;
+        }
+        
+        .sidebar-menu a i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+            font-size: 18px;
+        }
+        
+        .sidebar-footer {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            padding: 0 12px;
+        }
+        
+        /* Main Content */
+        .main-content {
+            margin-left: 240px;
             min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .navbar-custom {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        
+        /* Header */
+        .top-header {
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 999;
         }
+        
+        .header-greeting {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .header-greeting .wave {
+            display: inline-block;
+            animation: wave 0.6s ease-in-out;
+        }
+        
+        @keyframes wave {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(20deg); }
+            75% { transform: rotate(-15deg); }
+        }
+        
+        .header-search {
+            flex: 0 0 400px;
+            position: relative;
+        }
+        
+        .header-search input {
+            width: 100%;
+            padding: 10px 16px 10px 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .header-search i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .header-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: var(--hover-bg);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 18px;
+        }
+        
+        .header-icon:hover {
+            background: var(--primary-blue);
+            color: white;
+        }
+        
+        /* Content Area */
+        .content-area {
+            padding: 32px;
+        }
+        
+        /* Analytics Cards */
+        .analytics-section {
+            margin-bottom: 32px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .view-all-link {
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .analytics-card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .analytics-card.primary {
+            background: var(--purple-gradient);
+            color: white;
+            border: none;
+        }
+        
+        .analytics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        
+        .analytics-title {
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0.8;
+        }
+        
+        .analytics-period {
+            font-size: 12px;
+            opacity: 0.6;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+        
+        .analytics-chart {
+            height: 120px;
+            margin-bottom: 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: end;
+            justify-content: space-around;
+            padding: 8px;
+        }
+        
+        .chart-bar {
+            width: 8px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 4px;
+            min-height: 20px;
+        }
+        
+        .analytics-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .analytics-meta {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        
         .stat-card {
             background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-        }
-        .stat-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
-        }
-        .stat-number {
-            font-size: 36px;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        .stat-label {
-            color: #6c757d;
-            font-size: 16px;
-        }
-        .action-btn {
-            width: 100%;
-            padding: 15px;
-            font-size: 18px;
-            border-radius: 10px;
-            margin-bottom: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
             transition: all 0.3s;
         }
-        .action-btn:hover {
-            transform: scale(1.05);
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
         }
-        .welcome-card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
         }
-        .warning-badge {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+        
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .stat-icon.blue { background: rgba(59, 130, 246, 0.1); color: #3B82F6; }
+        .stat-icon.yellow { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
+        .stat-icon.green { background: rgba(16, 185, 129, 0.1); color: #10B981; }
+        .stat-icon.red { background: rgba(239, 68, 68, 0.1); color: #EF4444; }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .stat-badge {
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .stat-badge.danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #EF4444;
+        }
+        
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 32px;
+        }
+        
+        /* Reminder Card */
+        .reminder-card {
+            background: var(--primary-blue);
+            border-radius: 16px;
+            padding: 24px;
             color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            display: inline-block;
-            animation: pulse 2s infinite;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
         }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+        
+        .reminder-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+        
+        .reminder-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 32px;
+        }
+        
+        .reminder-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .reminder-subtitle {
+            opacity: 0.8;
+            margin-bottom: 16px;
+        }
+        
+        .reminder-btn {
+            background: white;
+            color: var(--primary-blue);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .reminder-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Earnings Card */
+        .earnings-card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            padding: 24px;
+        }
+        
+        .earnings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .earnings-amount {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .earnings-period {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .earnings-chart {
+            height: 80px;
+            background: var(--hover-bg);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: end;
+            justify-content: space-around;
+            padding: 8px;
+        }
+        
+        .earnings-bar {
+            width: 12px;
+            background: var(--primary-blue);
+            border-radius: 2px;
+            min-height: 8px;
+        }
+        
+        /* Recent Transactions */
+        .transactions-section {
+            margin-top: 32px;
+        }
+        
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .transaction-item:last-child {
+            border-bottom: none;
+        }
+        
+        .transaction-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--hover-bg);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            color: var(--primary-blue);
+        }
+        
+        .transaction-details h6 {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .transaction-details small {
+            color: var(--text-secondary);
+        }
+        
+        .transaction-amount {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .header-search {
+                display: none;
+            }
+            
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-custom mb-4">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/shipper">
-                <i class="fas fa-shipping-fast text-primary"></i> UTE Fashion Shipper
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/shipper"><i class="fas fa-home"></i> Trang chủ</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/shipper/orders/assigned"><i class="fas fa-box"></i> Đơn được giao</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/shipper/orders/delivering"><i class="fas fa-truck"></i> Đang giao</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/shipper/history"><i class="fas fa-history"></i> Lịch sử</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-danger" href="/logout"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
-                    </li>
-                </ul>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            LOGO
+        </div>
+        
+        <ul class="sidebar-menu">
+            <li>
+                <a href="#" class="active">
+                    <i class="fas fa-th-large"></i>
+                    <span>Overview</span>
+                </a>
+            </li>
+            <li>
+                <a th:href="@{/shipper/orders/assigned}">
+                    <i class="fas fa-inbox"></i>
+                    <span>Đơn được giao</span>
+                </a>
+            </li>
+            <li>
+                <a th:href="@{/shipper/orders/delivering}">
+                    <i class="fas fa-shipping-fast"></i>
+                    <span>Đang giao</span>
+                </a>
+            </li>
+            <li>
+                <a th:href="@{/shipper/history}">
+                    <i class="fas fa-history"></i>
+                    <span>Lịch sử</span>
+                </a>
+            </li>
+            <li>
+                <a th:href="@{/shipper/profile}">
+                    <i class="fas fa-wallet"></i>
+                    <span>Thu nhập</span>
+                </a>
+            </li>
+        </ul>
+        
+        <div class="sidebar-footer">
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="#">
+                        <i class="fas fa-question-circle"></i>
+                        <span>Help</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <i class="fas fa-users"></i>
+                        <span>Community</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+                <li>
+                    <a th:href="@{/logout}" class="text-danger">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="top-header">
+            <div class="header-greeting">
+                Hello, <span th:text="${shipperName} ?: 'John'">John</span> <span class="wave">👋</span>
+            </div>
+            
+            <div class="header-search">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search">
+            </div>
+            
+            <div class="header-actions">
+                <div class="header-icon">
+                    <i class="far fa-envelope"></i>
+                </div>
+                <div class="header-icon">
+                    <i class="far fa-bell"></i>
+                </div>
+                <div class="header-icon">
+                    <i class="far fa-user-circle"></i>
+                </div>
             </div>
         </div>
-    </nav>
-
-    <div class="container">
-        <!-- Welcome Card -->
-        <div class="welcome-card">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h2><i class="fas fa-hand-wave text-warning"></i> Xin chào, <span th:text="${shipperName}">Shipper</span>!</h2>
-                    <p class="text-muted mb-0">Chúc bạn một ngày làm việc hiệu quả và an toàn!</p>
+        
+        <!-- Content -->
+        <div class="content-area">
+            <!-- Analytics Section -->
+            <div class="analytics-section">
+                <div class="section-header">
+                    <h2 class="section-title">Analytics</h2>
+                    <a href="#" class="view-all-link">View all</a>
                 </div>
-                <div class="col-md-4 text-end">
-                    <div th:if="${cancelCount >= 2}" class="warning-badge">
-                        <i class="fas fa-exclamation-triangle"></i> 
-                        Đã hủy <span th:text="${cancelCount}">0</span>/3 lần
+                
+                <div class="analytics-grid">
+                    <div class="analytics-card primary">
+                        <div class="analytics-header">
+                            <div class="analytics-title">Tổng số đơn hàng</div>
+                            <div class="analytics-period">Month</div>
+                        </div>
+                        <div class="analytics-chart">
+                            <div class="chart-bar" style="height: 60%;"></div>
+                            <div class="chart-bar" style="height: 80%;"></div>
+                            <div class="chart-bar" style="height: 40%;"></div>
+                            <div class="chart-bar" style="height: 90%;"></div>
+                            <div class="chart-bar" style="height: 70%;"></div>
+                            <div class="chart-bar" style="height: 50%;"></div>
+                            <div class="chart-bar" style="height: 85%;"></div>
+                        </div>
+                        <div class="analytics-value" th:text="${assignedCount + deliveringCount + deliveredCount}">15</div>
+                        <div class="analytics-meta">Tăng 12% so với tháng trước</div>
+                    </div>
+                    
+                    <div class="analytics-card">
+                        <div class="analytics-header">
+                            <div class="analytics-title">Đơn thành công</div>
+                            <div class="analytics-period">Month</div>
+                        </div>
+                        <div class="analytics-chart" style="background: #F3F4F6;">
+                            <div class="chart-bar" style="height: 70%; background: var(--success-color);"></div>
+                            <div class="chart-bar" style="height: 50%; background: var(--success-color);"></div>
+                            <div class="chart-bar" style="height: 80%; background: var(--success-color);"></div>
+                            <div class="chart-bar" style="height: 60%; background: var(--success-color);"></div>
+                            <div class="chart-bar" style="height: 90%; background: var(--success-color);"></div>
+                            <div class="chart-bar" style="height: 75%; background: var(--success-color);"></div>
+                            <div class="chart-bar" style="height: 65%; background: var(--success-color);"></div>
+                        </div>
+                        <div class="analytics-value" th:text="${deliveredCount}" style="color: var(--success-color);">12</div>
+                        <div class="analytics-meta" style="color: var(--text-secondary);">Tỷ lệ thành công 80%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" th:text="${assignedCount}">5</div>
+                    <div class="stat-label">Đơn được giao</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon yellow">
+                            <i class="fas fa-shipping-fast"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" th:text="${deliveringCount}">3</div>
+                    <div class="stat-label">Đang giao</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon green">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" th:text="${deliveredCount}">12</div>
+                    <div class="stat-label">Đã giao hôm nay</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon red">
+                            <i class="fas fa-ban"></i>
+                        </div>
+                        <div th:if="${cancelCount >= 2}" class="stat-badge danger">
+                            Cảnh báo!
+                        </div>
+                    </div>
+                    <div class="stat-value" th:text="${cancelCount} + '/3'">0/3</div>
+                    <div class="stat-label">Đã hủy</div>
+                </div>
+            </div>
+
+            <!-- Main Dashboard Grid -->
+            <div class="dashboard-grid">
+                <!-- Left Column -->
+                <div>
+                    <!-- Reminder Card -->
+                    <div class="reminder-card">
+                        <div class="reminder-icon">
+                            <i class="fas fa-figma"></i>
+                        </div>
+                        <div class="reminder-title">Agency Design Kit</div>
+                        <div class="reminder-subtitle">Will be published<br>Nov 25, 2022</div>
+                        <button class="reminder-btn" onclick="window.location.href='/shipper/orders/assigned'">Set as Reminder</button>
+                    </div>
+                    
+                    <!-- Recent Transactions -->
+                    <div class="transactions-section">
+                        <div class="section-header">
+                            <h3 class="section-title">Recent Transactions</h3>
+                        </div>
+                        
+                        <div class="card-modern">
+                            <div th:if="${#lists.isEmpty(recentOrders)}" class="text-center py-4 text-muted">
+                                <i class="fas fa-inbox fa-2x mb-3"></i>
+                                <p>Chưa có đơn hàng mới</p>
+                            </div>
+                            
+                            <div th:each="order : ${recentOrders}" class="transaction-item">
+                                <div class="d-flex align-items-center">
+                                    <div class="transaction-icon">
+                                        <i class="fas fa-box"></i>
+                                    </div>
+                                    <div class="transaction-details">
+                                        <h6 th:text="'Đơn ' + ${order.orderNumber}">Đơn #12345</h6>
+                                        <small th:text="${order.recipientName}">Khách hàng</small>
+                                    </div>
+                                </div>
+                                <div class="transaction-amount" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + '₫'">
+                                    $15
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column -->
+                <div>
+                    <!-- Earnings Card -->
+                    <div class="earnings-card">
+                        <div class="earnings-header">
+                            <h3 class="section-title">Earnings</h3>
+                        </div>
+                        
+                        <div class="earnings-amount">$12,281</div>
+                        <div class="earnings-period">Total revenue collected by the system</div>
+                        
+                        <div class="earnings-chart">
+                            <div class="earnings-bar" style="height: 40%;"></div>
+                            <div class="earnings-bar" style="height: 70%;"></div>
+                            <div class="earnings-bar" style="height: 30%;"></div>
+                            <div class="earnings-bar" style="height: 90%;"></div>
+                            <div class="earnings-bar" style="height: 60%;"></div>
+                            <div class="earnings-bar" style="height: 80%;"></div>
+                            <div class="earnings-bar" style="height: 50%;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Transactions Summary -->
+                    <div class="card-modern mt-4">
+                        <div class="section-header">
+                            <h4 class="section-title">Recent Transactions</h4>
+                        </div>
+                        
+                        <div class="analytics-value" style="color: var(--text-secondary);">11,756</div>
+                        <div class="analytics-meta">Account received</div>
+                        
+                        <div class="earnings-chart mt-3" style="background: #F3F4F6;">
+                            <div class="earnings-bar" style="height: 60%; background: var(--primary-blue);"></div>
+                            <div class="earnings-bar" style="height: 80%; background: var(--primary-blue);"></div>
+                            <div class="earnings-bar" style="height: 40%; background: var(--primary-blue);"></div>
+                            <div class="earnings-bar" style="height: 90%; background: var(--primary-blue);"></div>
+                            <div class="earnings-bar" style="height: 70%; background: var(--primary-blue);"></div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="analytics-value" style="color: var(--text-secondary); font-size: 24px;">$450</div>
+                            <button class="btn btn-primary">Transfer</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Statistics -->
-        <div class="row">
-            <div class="col-md-3">
-                <div class="stat-card text-center text-primary">
-                    <i class="fas fa-inbox stat-icon"></i>
-                    <div class="stat-number" th:text="${assignedCount}">0</div>
-                    <div class="stat-label">Đơn được giao</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card text-center text-warning">
-                    <i class="fas fa-shipping-fast stat-icon"></i>
-                    <div class="stat-number" th:text="${deliveringCount}">0</div>
-                    <div class="stat-label">Đang giao</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card text-center text-success">
-                    <i class="fas fa-check-circle stat-icon"></i>
-                    <div class="stat-number" th:text="${deliveredCount}">0</div>
-                    <div class="stat-label">Đã giao hôm nay</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card text-center text-danger">
-                    <i class="fas fa-ban stat-icon"></i>
-                    <div class="stat-number" th:text="${cancelCount}">0</div>
-                    <div class="stat-label">Đã hủy</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <a href="/shipper/orders/assigned" class="btn btn-primary action-btn">
-                    <i class="fas fa-list"></i> Xem Đơn Được Giao
-                </a>
-                <a href="/shipper/orders/delivering" class="btn btn-warning action-btn text-white">
-                    <i class="fas fa-truck-loading"></i> Đơn Đang Giao
-                </a>
-            </div>
-            <div class="col-md-6">
-                <a href="/shipper/history" class="btn btn-success action-btn">
-                    <i class="fas fa-clock-rotate-left"></i> Lịch Sử Giao Hàng
-                </a>
-                <a href="/shipper/profile" class="btn btn-secondary action-btn">
-                    <i class="fas fa-user"></i> Thông Tin Cá Nhân
-                </a>
-            </div>
-        </div>
-
-        <!-- Recent Orders Section -->
-        <div class="welcome-card mt-4">
-            <h4><i class="fas fa-bell text-info"></i> Thông báo gần đây</h4>
-            <hr>
-            <div th:if="${#lists.isEmpty(recentOrders)}" class="text-center text-muted py-4">
-                <i class="fas fa-inbox fa-3x mb-3"></i>
-                <p>Chưa có thông báo mới</p>
-            </div>
-            <div th:each="order : ${recentOrders}" class="d-flex justify-content-between align-items-center border-bottom py-3">
-                <div>
-                    <i class="fas fa-box text-primary"></i>
-                    <strong>Đơn <span th:text="${order.orderNumber}"></span></strong>
-                    <span class="badge bg-info ms-2" th:text="${order.orderStatus}"></span>
-                </div>
-                <a th:href="@{/shipper/orders/{id}(id=${order.id})}" class="btn btn-sm btn-outline-primary">
-                    <i class="fas fa-eye"></i> Chi tiết
-                </a>
-            </div>
-        </div>
     </div>
-
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

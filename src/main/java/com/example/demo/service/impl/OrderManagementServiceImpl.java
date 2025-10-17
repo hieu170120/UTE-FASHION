@@ -6,6 +6,7 @@ import com.example.demo.entity.*;
 import com.example.demo.enums.OrderStatus;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.*;
+import com.example.demo.service.NotificationService;
 import com.example.demo.service.OrderManagementService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,9 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     
     @Autowired
     private ModelMapper modelMapper;
+    
+    @Autowired
+    private NotificationService notificationService;
     
     private static final int MAX_SHIPPER_CANCEL_COUNT = 3;
     private static final Random random = new Random();
@@ -68,6 +72,9 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         order.setConfirmedAt(LocalDateTime.now());
         
         orderRepository.save(order);
+        
+        // Gửi thông báo cho shipper
+        notificationService.notifyShipperNewOrder(shipper, order);
     }
 
     @Override
@@ -261,8 +268,9 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrderDTO> getCustomerOrders(Integer userId) {
-        List<Order> orders = orderRepository.findByUserUserId(userId);
+        List<Order> orders = orderRepository.findByUserUserIdWithDetails(userId);
         return orders.stream()
                 .map(order -> modelMapper.map(order, OrderDTO.class))
                 .collect(Collectors.toList());

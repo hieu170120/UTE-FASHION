@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.dto.OrderDTO;
 import com.example.demo.entity.User;
 import com.example.demo.service.OrderManagementService;
+import com.example.demo.service.OrderService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -18,6 +19,9 @@ public class CustomerOrderController {
 
     @Autowired
     private OrderManagementService orderManagementService;
+    
+    @Autowired
+    private OrderService orderService;
 
     /**
      * Trang lịch sử đơn hàng của khách hàng
@@ -52,8 +56,15 @@ public class CustomerOrderController {
         }
         
         try {
-            // TODO: Cần thêm method getOrderById và kiểm tra ownership
-            model.addAttribute("orderId", orderId);
+            OrderDTO order = orderService.getOrderById(orderId);
+            
+            // Kiểm tra ownership
+            if (!order.getUserId().equals(currentUser.getUserId())) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền xem đơn hàng này");
+                return "redirect:/orders/my-orders";
+            }
+            
+            model.addAttribute("order", order);
             return "order/detail";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy đơn hàng");
