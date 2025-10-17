@@ -15,7 +15,7 @@ public class ReviewCreationRequest {
     @NotNull(message = "Product ID cannot be null")
     private Integer productId;
 
-    @NotNull(message = "Order ID cannot be null")
+    // Optional: Only required if reviewing from order
     private Integer orderId;
 
     @Min(value = 1, message = "Rating must be at least 1")

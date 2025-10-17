@@ -35,7 +35,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-//                .csrf(csrf -> csrf.disable())
+                //.csrf(csrf -> csrf.disable())  
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/login", "/register", "/logout",
                                 "/forgot-password", "/reset-password",
@@ -47,12 +47,14 @@ public class SecurityConfig {
                                 "/payment", "/payment/**",
                                 "/payment-test", "/payment-test/**",
                                 "/api/auth/**",
+                                "/api/products/**",  // Public product APIs
                                 "/verify-email", "/verify-email/**",
                                 "/resend-otp",
-                                "/api/**",
+                                "/error",  // Allow error page
                                 "/admin/**",  // TODO: TEMPORARY - Remove this line in production
                                 "/shipper/**")  // TODO: TEMPORARY - Remove this line in production
                         .permitAll()
+                        .requestMatchers("/api/v1/reviews/**").authenticated()  // Review APIs need auth
                         // .requestMatchers("/admin/**").hasRole("ADMIN") // Admin only - COMMENTED FOR TESTING
                         // .requestMatchers("/shipper/**").hasRole("SHIPPER") // Shipper only - COMMENTED FOR TESTING
                         .requestMatchers("/profile", "/profile/**", "/orders", "/orders/**")
