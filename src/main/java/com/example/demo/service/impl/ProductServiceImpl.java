@@ -64,12 +64,17 @@ public class ProductServiceImpl implements ProductService {
 
 	private Sort getSortOrder(String sort) {
 		switch (sort) {
+		case "newest":
+			return Sort.by("createdAt").descending();
 		case "bestseller":
 			return Sort.by("soldCount").descending();
 		case "toprated":
 			return Sort.by("averageRating").descending();
-		case "newest":
-			return Sort.by("createdAt").descending();
+		case "price-asc":
+			return Sort.by("salePrice").ascending();
+		case "price-desc":
+			return Sort.by("salePrice").descending();
+		case "wishList":
 		default:
 			return Sort.by("createdAt").descending();
 		}
