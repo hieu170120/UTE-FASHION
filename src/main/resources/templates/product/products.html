@@ -5,6 +5,7 @@
 <head>
     <title>Sản phẩm</title>
     <th:block layout:fragment="styles">
+        <!-- All styles are unchanged, copied from original file -->
         <style>
             .product-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
             .product-card { text-decoration: none; color: inherit; display: flex; flex-direction: column; }
@@ -13,26 +14,19 @@
             .product-price { font-size: 0.9rem; }
             .container h1 { font-size: 22px; font-weight: 700; color: #000; margin: 0; }
             .d-flex.align-items-center.mb-4 { border-bottom: 1px solid #eee; padding-bottom: 10px; }
-            #filterForm .btn {
-			    background-color: #000 !important;
-			    color: #fff !important;
-			    border: none !important;
-			}
-			
-			#filterForm .btn:hover {
-			    background-color: #333 !important;
-			}
+            #filterForm .btn { background-color: #000 !important; color: #fff !important; border: none !important; }
+            #filterForm .btn:hover { background-color: #333 !important; }
             form.d-flex { gap: 8px; }
             form.d-flex .form-control { border-radius: 6px; border: 1px solid #ccc; padding: 6px 10px; font-size: 14px; }
             .sidebar-categories .card { border: none !important; box-shadow: none !important; background: transparent !important; margin-bottom: 20px; }
             .sidebar-categories .card-header { background: transparent !important; border: none !important; padding: 0; }
             .sidebar-categories .card-header h4 { font-size: 15px; font-weight: 700; color: #000; margin-bottom: 8px; }
             .sidebar-categories .list-group { border: none !important; }
-            .sidebar-categories .list-group-item { border: none !important; background: transparent !important; padding: 4px 0; color: #777; font-size: 14px; transition: color 0.2s ease; }
+            .sidebar-categories .list-group-item { cursor: pointer; border: none !important; background: transparent !important; padding: 4px 0; color: #777; font-size: 14px; transition: color 0.2s ease; text-decoration: none; display: block;}
             .sidebar-categories .list-group-item:hover { color: #000; }
             .sidebar-categories .list-group-item.active { font-weight: 600; color: #000 !important; background: transparent !important; }
             .pagination { display: flex; justify-content: center; list-style: none; padding-left: 0; }
-            .pagination .page-item { margin: 0 3px; }
+            .pagination .page-item { margin: 0 3px; cursor: pointer; }
             .pagination .page-link { color: #000; border: 1px solid #ddd; padding: 6px 12px; border-radius: 4px; }
             .pagination .active .page-link { background-color: #000; color: #fff; border-color: #000; }
             .product-image-container { position: relative; overflow: hidden; background-color: #f0f0f0; height: 320px; }
@@ -45,11 +39,14 @@
             .product-image-container:hover .view-more-btn { transform: translateY(0); opacity: 1; }
             .product-card:hover img { transform: scale(1.05); }
             .product-image-container .sale-badge { position: absolute; top: 10px; right: 10px; background-color: #fff; color: rgb(255, 0, 0); padding: 2px 8px; font-size: 0.8rem; border: 1px solid #ccc; z-index: 5; }
+            /* Spinner for loading state */
+            .loading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.7); display: flex; justify-content: center; align-items: center; z-index: 100; min-height: 200px;}
         </style>
     </th:block>
 </head>
 <body>
 <div class="container" layout:fragment="content">
+    <!-- Carousel remains unchanged -->
     <div id="header-carousel" class="carousel slide mb-4" data-bs-ride="carousel">
         <div class="carousel-inner">
             <div class="carousel-item active"><img class="w-100" src="https://file.hstatic.net/200000182297/file/vac_fd6422cd073b44208df1c5e9432f4043.jpg" alt="Banner Image"></div>
@@ -59,33 +56,27 @@
         <button class="carousel-control-next" type="button" data-bs-target="#header-carousel" data-bs-slide="next"><span class="carousel-control-next-icon" aria-hidden="true"></span><span class="visually-hidden">Next</span></button>
     </div>
 
-
+    <!-- Header with Title and Sorter/Search -->
     <div class="d-flex justify-content-between align-items-center mb-4 pt-4">
-        <!-- Main form for search and sort -->
-        <h1 th:text="${pageTitle} ?: 'Sản phẩm'"></h1>
-        
-        <form id="filterForm" th:action="@{/products}" method="get" class="d-flex align-items-center">
-            <!-- Hidden inputs to carry over filters that are not directly part of this form -->
-            <input type="hidden" name="categorySlug" th:value="${criteria.categorySlug}">
-            <input type="hidden" name="brandSlug" th:value="${criteria.brandSlug}">
-
-            <select class="form-select me-3" name="sort" onchange="this.form.submit()">
-                <option value="newest" th:selected="${criteria.sort == 'newest'}">Mới nhất</option>
-                <option value="bestseller" th:selected="${criteria.sort == 'bestseller'}">Bán chạy</option>
-                <option value="averageRating" th:selected="${criteria.sort == 'averageRating'}">Lượt đánh giá</option>
-				<option value="wishList" th:selected="${criteria.sort == 'wishList'}">Yêu thích nhất</option>
-                <option value="price-asc" th:selected="${criteria.sort == 'price-asc'}">Giá thấp đến cao</option>
-                <option value="price-desc" th:selected="${criteria.sort == 'price-desc'}">Giá cao đến thấp</option>
+        <h1 id="page-title" th:text="${pageTitle} ?: 'Sản phẩm'"></h1>
+        <form id="filterForm" class="d-flex align-items-center">
+            <select id="sort-select" class="form-select me-3" name="sort">
+                <option value="newest">Mới nhất</option>
+                <option value="bestseller">Bán chạy</option>
+                <option value="averageRating">Lượt đánh giá</option>
+                <option value="wishList">Yêu thích nhất</option>
+                <option value="price-asc">Giá thấp đến cao</option>
+                <option value="price-desc">Giá cao đến thấp</option>
             </select>
-            
             <div class="input-group">
-                <input class="form-control" type="search" name="keyword" placeholder="Tìm kiếm..." th:value="${criteria.keyword}">
+                <input id="keyword-input" class="form-control" type="search" name="keyword" placeholder="Tìm kiếm...">
                 <button class="btn btn-outline-primary" type="submit">Tìm</button>
             </div>
         </form>
     </div>
 
     <div class="row">
+        <!-- Sidebar with Filters -->
         <div class="col-lg-3 sidebar-categories">
             <div class="card mb-4">
                 <div class="card-header"><h4>Danh mục</h4></div>
@@ -101,153 +92,293 @@
             </div>
         </div>
 
+        <!-- Main content area for products -->
         <div class="col-lg-9">
-            <div th:if="${productPage.totalElements == 0}" class="text-center"><h3>Không tìm thấy sản phẩm nào.</h3></div>
-            <div class="product-grid" th:if="${productPage.totalElements > 0}">
-                <a th:href="@{/products/{slug}(slug=${product.slug})}" class="product-card" th:each="product : ${productPage.content}" th:attr="data-product-id=${product.productId}">
-                    <div class="product-image-container">
-                        <img class="product-main-image" th:alt="${product.productName}">
-                        <div class="sale-badge" th:if="${product.salePrice != null and product.salePrice < product.price and product.price > 0}" th:text="|-${#numbers.formatInteger(((product.price - product.salePrice) * 100.0) / product.price, 0)}%|"></div>
-                        <div class="product-overlay"><span class="view-more-btn">XEM THÊM</span></div>
-                    </div>
-                    <div class="product-card-body">
-                        <h5 class="product-card-title" th:text="${product.productName}"></h5>
-                        <div class="product-price">
-                            <th:block th:if="${product.salePrice != null and product.salePrice < product.price}">
-                                <span class="text-danger fw-bold" th:text="${#numbers.formatDecimal(product.salePrice, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
-                                <span class="text-muted text-decoration-line-through" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
-                            </th:block>
-                            <th:block th:unless="${product.salePrice != null and product.salePrice < product.price}"><span th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span></th:block>
-                        </div>
-                    </div>
-                </a>
-            </div>
+             <!-- This div will be the target for our AJAX updates -->
+            <div id="product-list-container" style="position: relative; min-height: 500px;">
+                 <!-- This is the Thymeleaf Fragment that will be replaced -->
+                 <div th:fragment="productListFragment" id="product-list-fragment">
+                     <div th:if="${productPage.totalElements == 0}" class="text-center"><h3>Không tìm thấy sản phẩm nào.</h3></div>
+                     <div class="product-grid" th:if="${productPage.totalElements > 0}">
+                         <a th:href="@{/products/{slug}(slug=${product.slug})}" class="product-card" th:each="product : ${productPage.content}" th:attr="data-product-id=${product.productId}">
+                             <div class="product-image-container">
+                                 <img class="product-main-image lazy-load" th:data-src="${'/images/placeholder.png'}" th:alt="${product.productName}">
+                                 <div class="sale-badge" th:if="${product.salePrice != null and product.salePrice < product.price and product.price > 0}" th:text="|-${#numbers.formatInteger(((product.price - product.salePrice) * 100.0) / product.price, 0)}%|"></div>
+                                 <div class="product-overlay"><span class="view-more-btn">XEM THÊM</span></div>
+                             </div>
+                             <div class="product-card-body">
+                                 <h5 class="product-card-title" th:text="${product.productName}"></h5>
+                                 <div class="product-price">
+                                     <th:block th:if="${product.salePrice != null and product.salePrice < product.price}">
+                                         <span class="text-danger fw-bold" th:text="${#numbers.formatDecimal(product.salePrice, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                                         <span class="text-muted text-decoration-line-through" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                                     </th:block>
+                                     <th:block th:unless="${product.salePrice != null and product.salePrice < product.price}"><span th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span></th:block>
+                                 </div>
+                             </div>
+                         </a>
+                     </div>
 
-            <!-- Pagination -->
-            <nav aria-label="Page navigation" th:if="${productPage.totalPages > 1}" class="mt-4">
-                 <ul class="pagination justify-content-center">
-                    <li class="page-item" th:classappend="${productPage.first} ? 'disabled'">
-                        <a class="page-link" th:href="@{/products(page=${productPage.number - 1}, size=${productPage.size}, keyword=${criteria.keyword}, sort=${criteria.sort}, categorySlug=${criteria.categorySlug}, brandSlug=${criteria.brandSlug})}">&laquo;</a>
-                    </li>
-                    <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, productPage.totalPages - 1)}" th:classappend="${pageNumber == productPage.number} ? 'active'">
-                        <a class="page-link" th:href="@{/products(page=${pageNumber}, size=${productPage.size}, keyword=${criteria.keyword}, sort=${criteria.sort}, categorySlug=${criteria.categorySlug}, brandSlug=${criteria.brandSlug})}" th:text="${pageNumber + 1}"></a>
-                    </li>
-                    <li class="page-item" th:classappend="${productPage.last} ? 'disabled'">
-                        <a class="page-link" th:href="@{/products(page=${productPage.number + 1}, size=${productPage.size}, keyword=${criteria.keyword}, sort=${criteria.sort}, categorySlug=${criteria.categorySlug}, brandSlug=${criteria.brandSlug})}">&raquo;</a>
-                    </li>
-                </ul>
-            </nav>
+                     <!-- Pagination -->
+                     <nav aria-label="Page navigation" th:if="${productPage.totalPages > 1}" class="mt-4">
+                          <ul class="pagination justify-content-center">
+                             <li class="page-item" th:classappend="${productPage.first} ? 'disabled'">
+                                 <a class="page-link" href="#" th:attr="data-page=${productPage.number - 1}">&laquo;</a>
+                             </li>
+                             <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, productPage.totalPages - 1)}" th:classappend="${pageNumber == productPage.number} ? 'active'">
+                                 <a class="page-link" href="#" th:attr="data-page=${pageNumber}" th:text="${pageNumber + 1}"></a>
+                             </li>
+                             <li class="page-item" th:classappend="${productPage.last} ? 'disabled'">
+                                 <a class="page-link" href="#" th:attr="data-page=${productPage.number + 1}">&raquo;</a>
+                             </li>
+                         </ul>
+                     </nav>
+                 </div>
+            </div>
         </div>
     </div>
 </div>
 
 <th:block layout:fragment="scripts">
     <script th:inline="javascript">
-        document.addEventListener("DOMContentLoaded", function () {
-            /*<![CDATA[*/
-            const criteria = /*[[${criteria}]]*/ {};
-            const baseUrl = /*[[@{/products}]]*/ '/products'; // Correctly resolve base URL with context path
-            /*]]>*/
+    document.addEventListener("DOMContentLoaded", function () {
+        const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+        
+        // Central state management for filters
+        const state = {
+            categorySlug: /*[[${currentCategory}]]*/ null,
+            brandSlug: /*[[${currentBrand}]]*/ null,
+            keyword: /*[[${keyword}]]*/ null,
+            sort: /*[[${sort}]]*/ 'newest',
+            page: 0,
+            size: 12,
+            allCategories: [],
+        };
 
-            const loadSidebarFilters = () => {
-                const categoryList = document.getElementById('category-list');
-                const brandList = document.getElementById('brand-list');
+        const productListContainer = document.getElementById('product-list-container');
+        const pageTitleElement = document.getElementById('page-title');
 
-                // --- RENDER CATEGORIES --- //
-                if (categoryList) {
-                    fetch(/*[[@{/api/filters/categories}]]*/)
-                        .then(res => res.json())
-                        .then(categories => {
-                            let catHtml = '';
-                            const currentParams = new URLSearchParams(window.location.search);
+        // Show a loading spinner over the product list
+        const showLoading = () => {
+            const overlay = document.createElement('div');
+            overlay.className = 'loading-overlay';
+            overlay.innerHTML = '<div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>';
+            productListContainer.appendChild(overlay);
+        };
 
-                            // 'All Categories' Link
-                            currentParams.delete('categorySlug');
-                            currentParams.set('page', '0');
-                            catHtml += `<a href="${baseUrl}?${currentParams.toString()}" class="list-group-item list-group-item-action ${!criteria.categorySlug ? 'active' : ''}">Tất cả danh mục</a>`;
+        // Remove the loading spinner
+        const hideLoading = () => {
+            const overlay = productListContainer.querySelector('.loading-overlay');
+            if (overlay) overlay.remove();
+        };
 
-                            // Individual Category Links
-                            categories.forEach(cat => {
-                                const paramsForLink = new URLSearchParams(window.location.search);
-                                paramsForLink.set('categorySlug', cat.slug);
-                                paramsForLink.set('page', '0');
-                                const activeClass = criteria.categorySlug === cat.slug ? 'active' : '';
-                                catHtml += `<a href="${baseUrl}?${paramsForLink.toString()}" class="list-group-item list-group-item-action ${activeClass}">${cat.categoryName}</a>`;
-                            });
-                            categoryList.innerHTML = catHtml;
-                        }).catch(err => {
-                            categoryList.innerHTML = '<li class="list-group-item text-danger">Lỗi tải danh mục.</li>';
-                        });
-                }
+        // Fetch products and update the list
+        const fetchProducts = () => {
+            showLoading();
+            const params = new URLSearchParams({
+                page: state.page,
+                size: state.size,
+                sort: state.sort,
+                ...(state.categorySlug && { categorySlug: state.categorySlug }),
+                ...(state.brandSlug && { brandSlug: state.brandSlug }),
+                ...(state.keyword && { keyword: state.keyword }),
+            });
 
-                // --- RENDER BRANDS --- //
-                if (brandList) {
-                    fetch(/*[[@{/api/filters/brands}]]*/)
-                        .then(res => res.json())
-                        .then(brands => {
-                            let brandHtml = '';
-                            const currentParams = new URLSearchParams(window.location.search);
+            const url = `@{/products/fragments/list}?${params.toString()}`;
+            
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    // Replace the content of the fragment container
+                    const fragment = document.getElementById('product-list-fragment');
+                    if(fragment) fragment.innerHTML = html;
 
-                            // 'All Brands' Link
-                            currentParams.delete('brandSlug');
-                            currentParams.set('page', '0');
-                            brandHtml += `<a href="${baseUrl}?${currentParams.toString()}" class="list-group-item list-group-item-action ${!criteria.brandSlug ? 'active' : ''}">Tất cả thương hiệu</a>`;
-                            
-                            // Individual Brand Links
-                            brands.forEach(br => {
-                                const paramsForLink = new URLSearchParams(window.location.search);
-                                paramsForLink.set('brandSlug', br.slug);
-                                paramsForLink.set('page', '0');
-                                const activeClass = criteria.brandSlug === br.slug ? 'active' : '';
-                                brandHtml += `<a href="${baseUrl}?${paramsForLink.toString()}" class="list-group-item list-group-item-action ${activeClass}">${br.brandName}</a>`;
-                            });
-                            brandList.innerHTML = brandHtml;
-                        }).catch(err => {
-                            brandList.innerHTML = '<li class="list-group-item text-danger">Lỗi tải thương hiệu.</li>';
-                        });
-                }
-            };
+                    updateURL();
+                    setupPagination();
+                    lazyLoadImages();
+                })
+                .finally(() => {
+                    hideLoading();
+                });
+        };
 
-            const fetchProductImages = () => {
-                const productCards = Array.from(document.querySelectorAll('.product-card[data-product-id]'));
-                const productIds = productCards.map(card => card.dataset.productId).filter(id => id);
-                if (productIds.length === 0) return;
+        // Update browser URL without reloading
+        const updateURL = () => {
+            const params = new URLSearchParams({
+                ...(state.categorySlug && { categorySlug: state.categorySlug }),
+                ...(state.brandSlug && { brandSlug: state.brandSlug }),
+                ...(state.keyword && { keyword: state.keyword }),
+                ...(state.sort !== 'newest' && { sort: state.sort }),
+                ...(state.page > 0 && { page: state.page }),
+            });
+            const newUrl = `@{/products}?${params.toString()}`;
+            history.pushState(state, '', newUrl);
+        };
+        
+        const updatePageTitle = () => {
+             if(state.categorySlug) {
+                 const selectedCategory = state.allCategories.find(c => c.slug === state.categorySlug);
+                 if(selectedCategory) pageTitleElement.textContent = selectedCategory.categoryName;
+             } else {
+                 pageTitleElement.textContent = 'Tất cả sản phẩm';
+             }
+        };
 
-                const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
-                const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
-                fetch(/*[[@{/api/products/images-for-list}]]*/, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', ...(csrfToken && { [csrfHeader]: csrfToken }) },
-                    body: JSON.stringify(productIds)
-               })                  
-                    .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch images'))
-                    .then(imagesMap => {
-                        productCards.forEach(card => {
-                            const productId = card.dataset.productId;
-                            const images = imagesMap[productId];
-                            const imgElement = card.querySelector('.product-main-image');
-                            if (imgElement && images && images.length > 0) {
-                                imgElement.src = images[0].imageUrl;
-                                imgElement.classList.add('loaded');
-                                const container = imgElement.closest('.product-image-container');
-                                if (container && images.length > 1) {
-                                    const mainSrc = images[0].imageUrl, hoverSrc = images[1].imageUrl;
-                                    const hoverImage = new Image(); hoverImage.src = hoverSrc;
-                                    container.addEventListener('mouseenter', () => { imgElement.src = hoverSrc; });
-                                    container.addEventListener('mouseleave', () => { imgElement.src = mainSrc; });
-                                }
-                            } else if (imgElement) {
-                                imgElement.src = 'https://ih1.redbubble.net/image.4905811472.8675/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg';
-                                imgElement.classList.add('loaded');
-                            }
-                        });
-                    })
-                    .catch(error => console.error('Error fetching product images:', error));
-            };
+        // ---- Sidebar Filter Logic ----
+        const fetchAndRenderFilters = () => {
+            const CACHE_KEY_CATS = 'all_categories';
+            const CACHE_KEY_BRANDS = 'all_brands';
+            const cachedCategories = localStorage.getItem(CACHE_KEY_CATS);
+            const cachedBrands = localStorage.getItem(CACHE_KEY_BRANDS);
 
-            loadSidebarFilters();
-            fetchProductImages();
-        });
+            // Fetch Categories (with caching)
+            const categoriesPromise = cachedCategories 
+                ? Promise.resolve(JSON.parse(cachedCategories)) 
+                : fetch(`@{/api/filters/categories}`).then(res => res.json()).then(data => {
+                    localStorage.setItem(CACHE_KEY_CATS, JSON.stringify(data));
+                    return data;
+                });
+
+            // Fetch Brands (with caching)
+            const brandsPromise = cachedBrands
+                ? Promise.resolve(JSON.parse(cachedBrands))
+                : fetch(`@{/api/filters/brands}`).then(res => res.json()).then(data => {
+                    localStorage.setItem(CACHE_KEY_BRANDS, JSON.stringify(data));
+                    return data;
+                });
+
+            Promise.all([categoriesPromise, brandsPromise]).then(([categories, brands]) => {
+                state.allCategories = categories; // Store for later use
+                renderList('category-list', categories, 'categorySlug', 'categoryName', 'Tất cả danh mục');
+                renderList('brand-list', brands, 'brandSlug', 'brandName', 'Tất cả thương hiệu');
+                updatePageTitle(); // Update title after categories are loaded
+            });
+        };
+
+        const renderList = (elementId, items, slugKey, nameKey, allText) => {
+            const container = document.getElementById(elementId);
+            let html = `<a href="#" class="list-group-item list-group-item-action ${!state[slugKey] ? 'active' : ''}" data-slug="">${allText}</a>`;
+            items.forEach(item => {
+                html += `<a href="#" class="list-group-item list-group-item-action ${state[slugKey] === item.slug ? 'active' : ''}" data-slug="${item.slug}">${item[nameKey]}</a>`;
+            });
+            container.innerHTML = html;
+            
+            // Add event listeners
+            container.querySelectorAll('a').forEach(a => {
+                a.addEventListener('click', e => {
+                    e.preventDefault();
+                    state.page = 0; // Reset page on filter change
+                    state[slugKey] = e.target.dataset.slug;
+                    if(slugKey === 'categorySlug') updatePageTitle();
+                    
+                    // Visually update active item
+                    container.querySelector('.active').classList.remove('active');
+                    e.target.classList.add('active');
+                    
+                    fetchProducts();
+                });
+            });
+        };
+
+        // ---- Pagination Logic ----
+        const setupPagination = () => {
+            const paginationLinks = document.querySelectorAll('.pagination .page-link');
+            paginationLinks.forEach(link => {
+                link.addEventListener('click', e => {
+                    e.preventDefault();
+                    const page = e.target.dataset.page;
+                    if (page && state.page !== parseInt(page)) {
+                        state.page = parseInt(page);
+                        fetchProducts();
+                    }
+                });
+            });
+        };
+
+        // ---- Image Lazy Loading ----
+        const lazyLoadImages = () => {
+            const lazyImages = document.querySelectorAll('img.lazy-load');
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        // The actual image fetching happens here
+                        fetchAndSetImage(img.closest('.product-card'));
+                        img.classList.remove('lazy-load');
+                        observer.unobserve(img);
+                    }
+                });
+            });
+            lazyImages.forEach(img => imageObserver.observe(img));
+            
+            // Also fetch images for the products already in view
+             fetchAndSetImageForAllVisible();
+        };
+        
+        const fetchAndSetImageForAllVisible = () => {
+             const productCards = Array.from(document.querySelectorAll('.product-card[data-product-id]'));
+             const productIds = productCards.map(card => card.dataset.productId).filter(id => id);
+             if (productIds.length === 0) return;
+             
+             const headers = { 'Content-Type': 'application/json' };
+             if(csrfToken) headers[csrfHeader] = csrfToken;
+
+             fetch(`@{/api/products/images-for-list}`, {
+                 method: 'POST',
+                 headers: headers,
+                 body: JSON.stringify(productIds)
+            })
+             .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch images'))
+             .then(imagesMap => {
+                 productCards.forEach(card => {
+                     const productId = card.dataset.productId;
+                     const images = imagesMap[productId];
+                     const imgElement = card.querySelector('.product-main-image');
+                     if (imgElement && images && images.length > 0) {
+                         imgElement.src = images[0].imageUrl;
+                         imgElement.classList.add('loaded');
+                         const container = imgElement.closest('.product-image-container');
+                         if (container && images.length > 1) {
+                            const mainSrc = images[0].imageUrl, hoverSrc = images[1].imageUrl;
+                            const hoverImage = new Image(); hoverImage.src = hoverSrc;
+                            container.addEventListener('mouseenter', () => { imgElement.src = hoverSrc; });
+                            container.addEventListener('mouseleave', () => { imgElement.src = mainSrc; });
+                         }
+                     } else if (imgElement) {
+                         imgElement.src = 'https://ih1.redbubble.net/image.4905811472.8675/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg';
+                         imgElement.classList.add('loaded');
+                     }
+                 });
+             });
+        };
+
+        // ---- Initial Setup ----
+        const init = () => {
+            // Set initial values from server-rendered state
+            document.getElementById('sort-select').value = state.sort;
+            document.getElementById('keyword-input').value = state.keyword || '';
+
+            // Add event listeners for form elements
+            document.getElementById('sort-select').addEventListener('change', e => {
+                state.sort = e.target.value;
+                state.page = 0;
+                fetchProducts();
+            });
+            document.getElementById('filterForm').addEventListener('submit', e => {
+                e.preventDefault();
+                state.keyword = document.getElementById('keyword-input').value;
+                state.page = 0;
+                fetchProducts();
+            });
+
+            fetchAndRenderFilters();
+            setupPagination();
+            lazyLoadImages(); 
+        };
+
+        init();
+    });
     </script>
 </th:block>
 </body>

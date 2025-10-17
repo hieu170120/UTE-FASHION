@@ -30,12 +30,15 @@ public class ProductController {
 	@Autowired
 	private ReviewService reviewService;
 
+	private void loadProductPage(ProductSearchCriteria criteria, int page, int size, Model model) {
+		Page<ProductSummaryDTO> productPage = productService.searchAndFilterProducts(criteria, PageRequest.of(page, size));
+		model.addAttribute("productPage", productPage);
+		model.addAttribute("criteria", criteria);
+	}
+
 	@GetMapping("/products")
 	public String listAndFilterProducts(@ModelAttribute ProductSearchCriteria criteria, Model model,
 			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "12") int size) {
-
-		Page<ProductSummaryDTO> productPage = productService.searchAndFilterProducts(criteria,
-				PageRequest.of(page, size));
 
 		String pageTitle = "Tất cả sản phẩm";
 		if (StringUtils.hasText(criteria.getCategorySlug())) {
@@ -43,15 +46,14 @@ public class ProductController {
 				CategoryDTO category = categoryService.getCategoryBySlug(criteria.getCategorySlug());
 				pageTitle = category.getCategoryName();
 			} catch (Exception e) {
-				// Log the exception, but don't break the page. Fallback to slug.
 				pageTitle = "Danh mục: " + criteria.getCategorySlug();
 			}
 		}
 
-		model.addAttribute("productPage", productPage);
+		loadProductPage(criteria, page, size, model);
 		model.addAttribute("pageTitle", pageTitle);
-		model.addAttribute("criteria", criteria);
 
+		// These are needed for the initial state of the JS
 		model.addAttribute("currentCategory", criteria.getCategorySlug());
 		model.addAttribute("currentBrand", criteria.getBrandSlug());
 		model.addAttribute("keyword", criteria.getKeyword());
@@ -59,6 +61,15 @@ public class ProductController {
 
 		return "product/products";
 	}
+    
+    @GetMapping("/products/fragments/list")
+    public String getProductListFragment(@ModelAttribute ProductSearchCriteria criteria, Model model,
+                                         @RequestParam(defaultValue = "0") int page, 
+                                         @RequestParam(defaultValue = "12") int size) {
+        loadProductPage(criteria, page, size, model);
+        // Return the fragment that contains the product grid and pagination
+        return "product/products :: productListFragment";
+    }
 
 	@GetMapping("/products/{slug}")
 	public String viewProduct(@PathVariable String slug, Model model) {
