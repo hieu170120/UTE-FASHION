@@ -44,7 +44,8 @@
     </th:block>
 </head>
 <body>
-<div class="container" layout:fragment="content">
+<!-- Container for server-generated URLs -->
+<div id="main-content-container" class="container" layout:fragment="content">
     <!-- Carousel remains unchanged -->
     <div id="header-carousel" class="carousel slide mb-4" data-bs-ride="carousel">
         <div class="carousel-inner">
@@ -155,7 +156,7 @@
         // --- DOM ELEMENTS ---
         const productListContainer = document.getElementById('product-list-container');
         const pageTitleElement = document.getElementById('page-title');
-        const mainContentContainer = document.querySelector('.container[layout:fragment="content"]');
+        const mainContentContainer = document.getElementById('main-content-container'); // CORRECTED SELECTOR
 
         // --- UI & LOADING ---
         const showLoading = () => {
@@ -183,9 +184,13 @@
                 ...(state.keyword && { keyword: state.keyword }),
             });
 
-            const url = /*[[@{/products/fragments/list}]]*/ '' + `?${params.toString()}`;
+            // CORRECT & RELIABLE WAY to get the URL
 
-            fetch(url)
+            const url = /*[[@{/products/fragments/list}]]*/ + `?${params.toString()}`;
+            const queryString = params.toString();
+            const finalUrl = url + (queryString ? `?${queryString}` : '');
+			console.log("Fetching products from URL:", finalUrl);
+            fetch(finalUrl)
                 .then(response => {
                     if (!response.ok) throw new Error('Network response was not ok.');
                     return response.text();
@@ -211,7 +216,6 @@
             if (state.sort !== 'newest') params.set('sort', state.sort);
             if (state.page > 0) params.set('page', state.page);
             
-            // Only push state if the query string is different
             const newQueryString = params.toString();
             const oldQueryString = window.location.search.substring(1);
             if (newQueryString !== oldQueryString) {
@@ -251,7 +255,6 @@
                         state[slugKey] = newSlug;
                         state.page = 0; // Reset to first page
                         
-                        // Update active state visuals
                         filterLink.parentElement.querySelector('.active')?.classList.remove('active');
                         filterLink.classList.add('active');
                         
@@ -293,13 +296,13 @@
         };
 
         const fetchAndRenderFilters = () => {
-            const fetchData = (url, cacheKey) => {
+            const fetchData = (url) => {
                 return fetch(url).then(res => res.ok ? res.json() : Promise.reject(`Failed: ${url}`));
             };
 
             Promise.all([
-                fetchData(/*[[@{/api/filters/categories}]]*/'', 'cats'),
-                fetchData(/*[[@{/api/filters/brands}]]*/'', 'brands')
+                fetchData(/*[[@{/api/filters/categories}]]*/''),
+                fetchData(/*[[@{/api/filters/brands}]]*/'')
             ])
             .then(([categories, brands]) => {
                 state.allCategories = Array.isArray(categories) ? categories : [];
