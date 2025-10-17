@@ -3,6 +3,7 @@ package com.example.demo.service.impl;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -81,15 +83,17 @@ public class ProductServiceImpl implements ProductService {
 	}
 
 	@Override
+	@Async
 	@Transactional(readOnly = true)
-	public List<ProductSummaryDTO> getBestsellerProducts() {
-		return productRepository.findSummaryBestsellers(PageRequest.of(0, 8));
+	public CompletableFuture<List<ProductSummaryDTO>> getBestsellerProducts() {
+		return CompletableFuture.completedFuture(productRepository.findSummaryBestsellers(PageRequest.of(0, 8)));
 	}
 
 	@Override
+	@Async
 	@Transactional(readOnly = true)
-	public List<ProductSummaryDTO> getNewestProducts() {
-		return productRepository.findSummaryNewest(PageRequest.of(0, 8));
+	public CompletableFuture<List<ProductSummaryDTO>> getNewestProducts() {
+		return CompletableFuture.completedFuture(productRepository.findSummaryNewest(PageRequest.of(0, 8)));
 	}
 
 	@Override

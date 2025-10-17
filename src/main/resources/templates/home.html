@@ -124,39 +124,38 @@
 <th:block layout:fragment="scripts">
     <script th:inline="javascript">
         document.addEventListener("DOMContentLoaded", function() {
-            // --- RESTORED: Script for the main header banner ---
+            // --- Script for the main header banner ---
             var headerCarouselEl = document.querySelector('#header-carousel');
             if (headerCarouselEl) {
                 new bootstrap.Carousel(headerCarouselEl, { interval: 3000, wrap: true });
             }
 
-            // --- RESTORED: Original script for product carousel "paging" ---
+            // --- Script for product carousel "paging" ---
             function setupProductCarousel(carouselId, prevBtnId, nextBtnId) {
                 const carousel = document.getElementById(carouselId);
                 const nextBtn = document.getElementById(nextBtnId);
                 const prevBtn = document.getElementById(prevBtnId);
                 if (!carousel || !nextBtn || !prevBtn) return;
+                
                 function updateCarouselScroll() {
-                    // Wait for images to potentially load and cards to have width
                     if (!carousel.querySelector('.new-product-card')) return;
                     const card = carousel.querySelector('.new-product-card');
                     const cardWidth = card.offsetWidth;
-                    const gap = parseInt(window.getComputedStyle(carousel).gap) || 16; // 1rem fallback
+                    const gap = parseInt(window.getComputedStyle(carousel).gap) || 16;
                     const scrollAmount = cardWidth + gap;
                     nextBtn.onclick = () => carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                     prevBtn.onclick = () => carousel.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
                 }
-                // Use a timeout to ensure cards are rendered before calculating width
-                setTimeout(() => { updateCarouselScroll(); }, 500); // Increased timeout for safety
+                setTimeout(() => { updateCarouselScroll(); }, 500);
                 window.addEventListener('resize', updateCarouselScroll);
             }
 
             setupProductCarousel('newArrivalsCarousel', 'prevBtnNew', 'nextBtnNew');
             setupProductCarousel('bestsellerCarousel', 'prevBtnBestseller', 'nextBtnBestseller');
 
-            // --- AJAX Lazy Loading Logic for Product Images ---
-            const fetchAndDisplayImages = () => {
-                const productCards = Array.from(document.querySelectorAll('.product-card[data-product-id], .new-product-card[data-product-id]'));
+            // --- OPTIMIZED: Lazy Loading Logic for Product Images using Intersection Observer ---
+            const lazyLoadCarouselImages = (carouselElement) => {
+                const productCards = Array.from(carouselElement.querySelectorAll('.new-product-card[data-product-id]'));
                 const productIds = productCards.map(card => card.dataset.productId).filter(id => id);
 
                 if (productIds.length === 0) return;
@@ -168,9 +167,8 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', ...(csrfToken && { [csrfHeader]: csrfToken }) },
                     body: JSON.stringify(productIds)
-               })
-
-                .then(response => response.ok ? response.json() : Promise.reject('Failed to fetch images'))
+                })
+                .then(response => response.ok ? response.json() : Promise.reject('Failed to fetch images for carousel'))
                 .then(imagesMap => {
                     productCards.forEach(card => {
                         const productId = card.dataset.productId;
@@ -186,7 +184,7 @@
                                 if (container && images.length > 1) {
                                     const mainSrc = images[0].imageUrl;
                                     const hoverSrc = images[1].imageUrl;
-                                    // Preload hover image
+                                    // Preload hover image to avoid flash on hover
                                     const hoverImage = new Image();
                                     hoverImage.src = hoverSrc;
 
@@ -194,6 +192,7 @@
                                     container.addEventListener('mouseleave', () => { imgElement.src = mainSrc; });
                                 }
                             } else {
+                                // Fallback image if a product has no images
                                 imgElement.src = 'https://ih1.redbubble.net/image.4905811472.8675/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg';
                                 imgElement.classList.add('loaded');
                             }
@@ -203,7 +202,33 @@
                 .catch(error => console.error('Error fetching homepage product images:', error));
             };
 
-            fetchAndDisplayImages();
+            const setupIntersectionObserver = (carouselId) => {
+                const carousel = document.getElementById(carouselId);
+                if (!carousel) return;
+
+                // Create an observer to detect when the carousel is visible
+                const observer = new IntersectionObserver((entries, observerInstance) => {
+                    entries.forEach(entry => {
+                        // If the carousel is in the viewport
+                        if (entry.isIntersecting) {
+                            // Load images for that carousel
+                            lazyLoadCarouselImages(entry.target);
+                            // Stop observing it to ensure we only load images once
+                            observerInstance.unobserve(entry.target);
+                        }
+                    });
+                }, { 
+                    // Start loading images when the carousel is 100px away from the viewport
+                    rootMargin: '100px' 
+                });
+
+                // Start observing the carousel
+                observer.observe(carousel);
+            };
+
+            // Setup lazy loading for both carousels
+            setupIntersectionObserver('newArrivalsCarousel');
+            setupIntersectionObserver('bestsellerCarousel');
         });
     </script>
 </th:block>
