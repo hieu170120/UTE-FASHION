@@ -129,6 +129,7 @@
 <th:block layout:fragment="scripts">
     <script th:inline="javascript">
         /*<![CDATA[*/
+        const imageApiUrl = /*[[@{/api/products/images-for-list}]]*/ "";
         const currentCategory = /*[[${currentCategory}]]*/ null;
         const currentBrand = /*[[${currentBrand}]]*/ null;
         /*]]>*/
@@ -171,7 +172,7 @@
 
                 const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
                 const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
-                fetch(/*[[@{/api/products/images-for-list}]]*/, { method: 'POST', headers: {'Content-Type': 'application/json', ...(csrfToken && { [csrfHeader]: csrfToken })}, body: JSON.stringify(productIds) })
+                fetch(imageApiUrl, { method: 'POST', headers: {'Content-Type': 'application/json', ...(csrfToken && { [csrfHeader]: csrfToken })}, body: JSON.stringify(productIds) })
                     .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch images'))
                     .then(imagesMap => {
                         productCards.forEach(card => {
