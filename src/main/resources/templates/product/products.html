@@ -39,7 +39,6 @@
             .product-image-container:hover .view-more-btn { transform: translateY(0); opacity: 1; }
             .product-card:hover img { transform: scale(1.05); }
             .product-image-container .sale-badge { position: absolute; top: 10px; right: 10px; background-color: #fff; color: rgb(255, 0, 0); padding: 2px 8px; font-size: 0.8rem; border: 1px solid #ccc; z-index: 5; }
-            /* Spinner for loading state */
             .loading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.7); display: flex; justify-content: center; align-items: center; z-index: 100; min-height: 200px;}
         </style>
     </th:block>
@@ -59,7 +58,7 @@
     <!-- Header with Title and Sorter/Search -->
     <div class="d-flex justify-content-between align-items-center mb-4 pt-4">
         <h1 id="page-title" th:text="${pageTitle} ?: 'Sản phẩm'"></h1>
-        <form id="filterForm" class="d-flex align-items-center">
+        <form id="filterForm" class="d-flex align-items-center" onsubmit="return false;">
             <select id="sort-select" class="form-select me-3" name="sort">
                 <option value="newest">Mới nhất</option>
                 <option value="bestseller">Bán chạy</option>
@@ -94,15 +93,13 @@
 
         <!-- Main content area for products -->
         <div class="col-lg-9">
-             <!-- This div will be the target for our AJAX updates -->
             <div id="product-list-container" style="position: relative; min-height: 500px;">
-                 <!-- This is the Thymeleaf Fragment that will be replaced -->
                  <div th:fragment="productListFragment" id="product-list-fragment">
                      <div th:if="${productPage.totalElements == 0}" class="text-center"><h3>Không tìm thấy sản phẩm nào.</h3></div>
                      <div class="product-grid" th:if="${productPage.totalElements > 0}">
                          <a th:href="@{/products/{slug}(slug=${product.slug})}" class="product-card" th:each="product : ${productPage.content}" th:attr="data-product-id=${product.productId}">
                              <div class="product-image-container">
-                                 <img class="product-main-image lazy-load" th:data-src="${'/images/placeholder.png'}" th:alt="${product.productName}">
+                                 <img class="product-main-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" th:alt="${product.productName}">
                                  <div class="sale-badge" th:if="${product.salePrice != null and product.salePrice < product.price and product.price > 0}" th:text="|-${#numbers.formatInteger(((product.price - product.salePrice) * 100.0) / product.price, 0)}%|"></div>
                                  <div class="product-overlay"><span class="view-more-btn">XEM THÊM</span></div>
                              </div>
@@ -119,7 +116,6 @@
                          </a>
                      </div>
 
-                     <!-- Pagination -->
                      <nav aria-label="Page navigation" th:if="${productPage.totalPages > 1}" class="mt-4">
                           <ul class="pagination justify-content-center">
                              <li class="page-item" th:classappend="${productPage.first} ? 'disabled'">
@@ -144,36 +140,38 @@
     document.addEventListener("DOMContentLoaded", function () {
         const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
         const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
-        
-        // Central state management for filters
+
+        // --- STATE MANAGEMENT ---
         const state = {
             categorySlug: /*[[${currentCategory}]]*/ null,
             brandSlug: /*[[${currentBrand}]]*/ null,
             keyword: /*[[${keyword}]]*/ null,
             sort: /*[[${sort}]]*/ 'newest',
-            page: 0,
+            page: /*[[${currentPage}]]*/ 0,
             size: 12,
-            allCategories: [],
+            allCategories: [], // Cache for categories
         };
 
+        // --- DOM ELEMENTS ---
         const productListContainer = document.getElementById('product-list-container');
         const pageTitleElement = document.getElementById('page-title');
+        const mainContentContainer = document.querySelector('.container[layout:fragment="content"]');
 
-        // Show a loading spinner over the product list
+        // --- UI & LOADING ---
         const showLoading = () => {
+            if (productListContainer.querySelector('.loading-overlay')) return;
             const overlay = document.createElement('div');
             overlay.className = 'loading-overlay';
             overlay.innerHTML = '<div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>';
             productListContainer.appendChild(overlay);
         };
 
-        // Remove the loading spinner
         const hideLoading = () => {
             const overlay = productListContainer.querySelector('.loading-overlay');
             if (overlay) overlay.remove();
         };
 
-        // Fetch products and update the list
+        // --- CORE DATA FETCHING ---
         const fetchProducts = () => {
             showLoading();
             const params = new URLSearchParams({
@@ -185,37 +183,106 @@
                 ...(state.keyword && { keyword: state.keyword }),
             });
 
-            const url = `@{/products/fragments/list}?${params.toString()}`;
-            
+            const url = /*[[@{/products/fragments/list}]]*/ '' + `?${params.toString()}`;
+
             fetch(url)
-                .then(response => response.text())
-                .then(html => {
-                    // Replace the content of the fragment container
-                    const fragment = document.getElementById('product-list-fragment');
-                    if(fragment) fragment.innerHTML = html;
-
-                    updateURL();
-                    setupPagination();
-                    lazyLoadImages();
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok.');
+                    return response.text();
                 })
-                .finally(() => {
-                    hideLoading();
-                });
-        };
-
-        // Update browser URL without reloading
-        const updateURL = () => {
-            const params = new URLSearchParams({
-                ...(state.categorySlug && { categorySlug: state.categorySlug }),
-                ...(state.brandSlug && { brandSlug: state.brandSlug }),
-                ...(state.keyword && { keyword: state.keyword }),
-                ...(state.sort !== 'newest' && { sort: state.sort }),
-                ...(state.page > 0 && { page: state.page }),
-            });
-            const newUrl = `@{/products}?${params.toString()}`;
-            history.pushState(state, '', newUrl);
+                .then(html => {
+                    productListContainer.innerHTML = html;
+                    updateURL();
+                    setupImageLazyLoading(); // Re-run for new content
+                })
+                .catch(error => {
+                    console.error("Error fetching products:", error);
+                    productListContainer.innerHTML = '<div class="text-center text-danger">Đã xảy ra lỗi khi tải sản phẩm. Vui lòng thử lại.</div>';
+                })
+                .finally(hideLoading);
         };
         
+        // --- URL & HISTORY ---
+        const updateURL = () => {
+            const params = new URLSearchParams();
+            if (state.categorySlug) params.set('categorySlug', state.categorySlug);
+            if (state.brandSlug) params.set('brandSlug', state.brandSlug);
+            if (state.keyword) params.set('keyword', state.keyword);
+            if (state.sort !== 'newest') params.set('sort', state.sort);
+            if (state.page > 0) params.set('page', state.page);
+            
+            // Only push state if the query string is different
+            const newQueryString = params.toString();
+            const oldQueryString = window.location.search.substring(1);
+            if (newQueryString !== oldQueryString) {
+                const newUrl = window.location.pathname + (newQueryString ? '?' + newQueryString : '');
+                history.pushState(state, '', newUrl);
+            }
+        };
+
+        // --- EVENT HANDLING (DELEGATION) ---
+        const setupEventListeners = () => {
+            // Main container for delegated events
+            mainContentContainer.addEventListener('click', e => {
+                const link = e.target.closest('a');
+                if (!link) return;
+
+                // --- Pagination Clicks ---
+                const pageLink = link.closest('.pagination a');
+                if (pageLink && !pageLink.parentElement.classList.contains('disabled')) {
+                    e.preventDefault();
+                    const newPage = parseInt(pageLink.dataset.page);
+                    if (state.page !== newPage) {
+                        state.page = newPage;
+                        fetchProducts();
+                    }
+                    return; // Stop further processing
+                }
+
+                // --- Filter Clicks (Category & Brand) ---
+                const filterLink = link.closest('#category-list a, #brand-list a');
+                if (filterLink) {
+                    e.preventDefault();
+                    const listId = filterLink.parentElement.id;
+                    const slugKey = listId === 'category-list' ? 'categorySlug' : 'brandSlug';
+                    const newSlug = filterLink.dataset.slug || null; // Treat empty string as null
+
+                    if (state[slugKey] !== newSlug) {
+                        state[slugKey] = newSlug;
+                        state.page = 0; // Reset to first page
+                        
+                        // Update active state visuals
+                        filterLink.parentElement.querySelector('.active')?.classList.remove('active');
+                        filterLink.classList.add('active');
+                        
+                        if(slugKey === 'categorySlug') updatePageTitle();
+
+                        fetchProducts();
+                    }
+                }
+            });
+
+            // --- Static Element Listeners ---
+            document.getElementById('sort-select').addEventListener('change', e => {
+                if (state.sort !== e.target.value) {
+                    state.sort = e.target.value;
+                    state.page = 0;
+                    fetchProducts();
+                }
+            });
+
+            document.getElementById('filterForm').addEventListener('submit', e => {
+                e.preventDefault();
+                const newKeyword = document.getElementById('keyword-input').value;
+                if (state.keyword !== newKeyword) {
+                    state.keyword = newKeyword;
+                    state.page = 0;
+                    fetchProducts();
+                }
+            });
+        };
+
+        // --- FILTER RENDERING ---
         const updatePageTitle = () => {
              if(state.categorySlug) {
                  const selectedCategory = state.allCategories.find(c => c.slug === state.categorySlug);
@@ -225,156 +292,122 @@
              }
         };
 
-        // ---- Sidebar Filter Logic ----
         const fetchAndRenderFilters = () => {
-            const CACHE_KEY_CATS = 'all_categories';
-            const CACHE_KEY_BRANDS = 'all_brands';
-            const cachedCategories = localStorage.getItem(CACHE_KEY_CATS);
-            const cachedBrands = localStorage.getItem(CACHE_KEY_BRANDS);
+            const fetchData = (url, cacheKey) => {
+                return fetch(url).then(res => res.ok ? res.json() : Promise.reject(`Failed: ${url}`));
+            };
 
-            // Fetch Categories (with caching)
-            const categoriesPromise = cachedCategories 
-                ? Promise.resolve(JSON.parse(cachedCategories)) 
-                : fetch(`@{/api/filters/categories}`).then(res => res.json()).then(data => {
-                    localStorage.setItem(CACHE_KEY_CATS, JSON.stringify(data));
-                    return data;
-                });
-
-            // Fetch Brands (with caching)
-            const brandsPromise = cachedBrands
-                ? Promise.resolve(JSON.parse(cachedBrands))
-                : fetch(`@{/api/filters/brands}`).then(res => res.json()).then(data => {
-                    localStorage.setItem(CACHE_KEY_BRANDS, JSON.stringify(data));
-                    return data;
-                });
-
-            Promise.all([categoriesPromise, brandsPromise]).then(([categories, brands]) => {
-                state.allCategories = categories; // Store for later use
-                renderList('category-list', categories, 'categorySlug', 'categoryName', 'Tất cả danh mục');
-                renderList('brand-list', brands, 'brandSlug', 'brandName', 'Tất cả thương hiệu');
-                updatePageTitle(); // Update title after categories are loaded
+            Promise.all([
+                fetchData(/*[[@{/api/filters/categories}]]*/'', 'cats'),
+                fetchData(/*[[@{/api/filters/brands}]]*/'', 'brands')
+            ])
+            .then(([categories, brands]) => {
+                state.allCategories = Array.isArray(categories) ? categories : [];
+                renderList('category-list', state.allCategories, 'categorySlug', 'categoryName', 'Tất cả danh mục');
+                renderList('brand-list', Array.isArray(brands) ? brands : [], 'brandSlug', 'brandName', 'Tất cả thương hiệu');
+                updatePageTitle(); // Ensure title is correct on initial load
+            })
+            .catch(error => {
+                console.error("Error loading filters:", error);
+                document.getElementById('category-list').innerHTML = '<div class="list-group-item text-danger">Lỗi tải danh mục.</div>';
+                document.getElementById('brand-list').innerHTML = '<div class="list-group-item text-danger">Lỗi tải thương hiệu.</div>';
             });
         };
 
         const renderList = (elementId, items, slugKey, nameKey, allText) => {
             const container = document.getElementById(elementId);
-            let html = `<a href="#" class="list-group-item list-group-item-action ${!state[slugKey] ? 'active' : ''}" data-slug="">${allText}</a>`;
-            items.forEach(item => {
-                html += `<a href="#" class="list-group-item list-group-item-action ${state[slugKey] === item.slug ? 'active' : ''}" data-slug="${item.slug}">${item[nameKey]}</a>`;
-            });
-            container.innerHTML = html;
+            if (!container) return;
             
-            // Add event listeners
-            container.querySelectorAll('a').forEach(a => {
-                a.addEventListener('click', e => {
-                    e.preventDefault();
-                    state.page = 0; // Reset page on filter change
-                    state[slugKey] = e.target.dataset.slug;
-                    if(slugKey === 'categorySlug') updatePageTitle();
-                    
-                    // Visually update active item
-                    container.querySelector('.active').classList.remove('active');
-                    e.target.classList.add('active');
-                    
-                    fetchProducts();
+            let html = `<a href="#" class="list-group-item list-group-item-action ${!state[slugKey] ? 'active' : ''}" data-slug="">${allText}</a>`;
+            if (Array.isArray(items)) {
+                items.forEach(item => {
+                    html += `<a href="#" class="list-group-item list-group-item-action ${state[slugKey] === item.slug ? 'active' : ''}" data-slug="${item.slug}">${item[nameKey]}</a>`;
                 });
-            });
+            }
+            container.innerHTML = html;
         };
 
-        // ---- Pagination Logic ----
-        const setupPagination = () => {
-            const paginationLinks = document.querySelectorAll('.pagination .page-link');
-            paginationLinks.forEach(link => {
-                link.addEventListener('click', e => {
-                    e.preventDefault();
-                    const page = e.target.dataset.page;
-                    if (page && state.page !== parseInt(page)) {
-                        state.page = parseInt(page);
-                        fetchProducts();
-                    }
-                });
-            });
-        };
+        // --- IMAGE LAZY LOADING ---
+        const setupImageLazyLoading = () => {
+             let lazyImageObserver;
+            let imagesToLoad = new Set();
+            let processingTimeout;
 
-        // ---- Image Lazy Loading ----
-        const lazyLoadImages = () => {
-            const lazyImages = document.querySelectorAll('img.lazy-load');
-            const imageObserver = new IntersectionObserver((entries, observer) => {
+            const processImageBatch = () => {
+                if (imagesToLoad.size === 0) return;
+                const productIds = [...imagesToLoad].map(id => parseInt(id));
+                imagesToLoad.clear();
+
+                const headers = { 'Content-Type': 'application/json' };
+                if (csrfToken) headers[csrfHeader] = csrfToken;
+
+                fetch(/*[[@{/api/products/images-for-list}]]*/ '', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(productIds)
+                })
+                .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch images'))
+                .then(imagesMap => {
+                    productIds.forEach(productId => {
+                        const card = productListContainer.querySelector(`.product-card[data-product-id="${productId}"]`);
+                        if (!card) return;
+
+                        const imgElement = card.querySelector('.product-main-image');
+                        const images = imagesMap[productId];
+                        
+                        if (imgElement && images && images.length > 0) {
+                            imgElement.src = images[0].imageUrl;
+                            imgElement.classList.add('loaded');
+                            
+                            const container = imgElement.closest('.product-image-container');
+                            if (container && images.length > 1) {
+                                const mainSrc = images[0].imageUrl;
+                                const hoverSrc = images[1].imageUrl;
+                                new Image().src = hoverSrc; // Preload hover image
+                                
+                                container.onmouseenter = () => { imgElement.src = hoverSrc; };
+                                container.onmouseleave = () => { imgElement.src = mainSrc; };
+                            }
+                        } else if (imgElement) {
+                            imgElement.src = 'https://ih1.redbubble.net/image.4905811472.8675/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg'; // Placeholder
+                            imgElement.classList.add('loaded');
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching product images:', error));
+            };
+
+            const lazyImages = document.querySelectorAll('.product-card[data-product-id]');
+            if (lazyImages.length === 0) return;
+
+            if(lazyImageObserver) lazyImageObserver.disconnect(); // Disconnect old observer
+
+            lazyImageObserver = new IntersectionObserver((entries, observer) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
-                        const img = entry.target;
-                        // The actual image fetching happens here
-                        fetchAndSetImage(img.closest('.product-card'));
-                        img.classList.remove('lazy-load');
-                        observer.unobserve(img);
+                        const card = entry.target;
+                        const productId = card.dataset.productId;
+                        imagesToLoad.add(productId);
+                        observer.unobserve(card);
+
+                        clearTimeout(processingTimeout);
+                        processingTimeout = setTimeout(processImageBatch, 50); // Debounce
                     }
                 });
             });
-            lazyImages.forEach(img => imageObserver.observe(img));
-            
-            // Also fetch images for the products already in view
-             fetchAndSetImageForAllVisible();
-        };
-        
-        const fetchAndSetImageForAllVisible = () => {
-             const productCards = Array.from(document.querySelectorAll('.product-card[data-product-id]'));
-             const productIds = productCards.map(card => card.dataset.productId).filter(id => id);
-             if (productIds.length === 0) return;
-             
-             const headers = { 'Content-Type': 'application/json' };
-             if(csrfToken) headers[csrfHeader] = csrfToken;
 
-             fetch(`@{/api/products/images-for-list}`, {
-                 method: 'POST',
-                 headers: headers,
-                 body: JSON.stringify(productIds)
-            })
-             .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch images'))
-             .then(imagesMap => {
-                 productCards.forEach(card => {
-                     const productId = card.dataset.productId;
-                     const images = imagesMap[productId];
-                     const imgElement = card.querySelector('.product-main-image');
-                     if (imgElement && images && images.length > 0) {
-                         imgElement.src = images[0].imageUrl;
-                         imgElement.classList.add('loaded');
-                         const container = imgElement.closest('.product-image-container');
-                         if (container && images.length > 1) {
-                            const mainSrc = images[0].imageUrl, hoverSrc = images[1].imageUrl;
-                            const hoverImage = new Image(); hoverImage.src = hoverSrc;
-                            container.addEventListener('mouseenter', () => { imgElement.src = hoverSrc; });
-                            container.addEventListener('mouseleave', () => { imgElement.src = mainSrc; });
-                         }
-                     } else if (imgElement) {
-                         imgElement.src = 'https://ih1.redbubble.net/image.4905811472.8675/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg';
-                         imgElement.classList.add('loaded');
-                     }
-                 });
-             });
+            lazyImages.forEach(img => lazyImageObserver.observe(img));
         };
 
-        // ---- Initial Setup ----
+        // --- INITIALIZATION ---
         const init = () => {
-            // Set initial values from server-rendered state
+            // Set initial form values from state
             document.getElementById('sort-select').value = state.sort;
             document.getElementById('keyword-input').value = state.keyword || '';
 
-            // Add event listeners for form elements
-            document.getElementById('sort-select').addEventListener('change', e => {
-                state.sort = e.target.value;
-                state.page = 0;
-                fetchProducts();
-            });
-            document.getElementById('filterForm').addEventListener('submit', e => {
-                e.preventDefault();
-                state.keyword = document.getElementById('keyword-input').value;
-                state.page = 0;
-                fetchProducts();
-            });
-
+            setupEventListeners();
             fetchAndRenderFilters();
-            setupPagination();
-            lazyLoadImages(); 
+            setupImageLazyLoading();
         };
 
         init();

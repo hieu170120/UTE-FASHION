@@ -1,5 +1,7 @@
 package com.example.demo.controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -7,7 +9,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -23,6 +24,9 @@ import com.example.demo.service.ReviewService;
 @Controller
 public class ProductController {
 
+	private static final List<String> ALLOWED_SORT_VALUES = List.of("newest", "bestseller", "averageRating", "wishList",
+			"price-asc", "price-desc");
+
 	@Autowired
 	private ProductService productService;
 	@Autowired
@@ -31,14 +35,33 @@ public class ProductController {
 	private ReviewService reviewService;
 
 	private void loadProductPage(ProductSearchCriteria criteria, int page, int size, Model model) {
-		Page<ProductSummaryDTO> productPage = productService.searchAndFilterProducts(criteria, PageRequest.of(page, size));
+		// Ensure sort order is valid before querying
+		if (!StringUtils.hasText(criteria.getSort()) || !ALLOWED_SORT_VALUES.contains(criteria.getSort())) {
+			criteria.setSort("newest");
+		}
+		Page<ProductSummaryDTO> productPage = productService.searchAndFilterProducts(criteria,
+				PageRequest.of(page, size));
 		model.addAttribute("productPage", productPage);
 		model.addAttribute("criteria", criteria);
 	}
 
+	private ProductSearchCriteria createCriteriaFromParams(String categorySlug, String brandSlug, String keyword,
+			String sort) {
+		ProductSearchCriteria criteria = new ProductSearchCriteria();
+		criteria.setCategorySlug(categorySlug);
+		criteria.setBrandSlug(brandSlug);
+		criteria.setKeyword(keyword);
+		criteria.setSort(sort);
+		return criteria;
+	}
+
 	@GetMapping("/products")
-	public String listAndFilterProducts(@ModelAttribute ProductSearchCriteria criteria, Model model,
-			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "12") int size) {
+	public String listAndFilterProducts(Model model, @RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size, @RequestParam(required = false) String categorySlug,
+			@RequestParam(required = false) String brandSlug, @RequestParam(required = false) String keyword,
+			@RequestParam(required = false) String sort) {
+
+		ProductSearchCriteria criteria = createCriteriaFromParams(categorySlug, brandSlug, keyword, sort);
 
 		String pageTitle = "Tất cả sản phẩm";
 		if (StringUtils.hasText(criteria.getCategorySlug())) {
@@ -53,7 +76,8 @@ public class ProductController {
 		loadProductPage(criteria, page, size, model);
 		model.addAttribute("pageTitle", pageTitle);
 
-		// These are needed for the initial state of the JS
+		// Pass initial state values to the template for JS
+		model.addAttribute("currentPage", page);
 		model.addAttribute("currentCategory", criteria.getCategorySlug());
 		model.addAttribute("currentBrand", criteria.getBrandSlug());
 		model.addAttribute("keyword", criteria.getKeyword());
@@ -61,15 +85,16 @@ public class ProductController {
 
 		return "product/products";
 	}
-    
-    @GetMapping("/products/fragments/list")
-    public String getProductListFragment(@ModelAttribute ProductSearchCriteria criteria, Model model,
-                                         @RequestParam(defaultValue = "0") int page, 
-                                         @RequestParam(defaultValue = "12") int size) {
-        loadProductPage(criteria, page, size, model);
-        // Return the fragment that contains the product grid and pagination
-        return "product/products :: productListFragment";
-    }
+
+	@GetMapping("/products/fragments/list")
+	public String getProductListFragment(Model model, @RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size, @RequestParam(required = false) String categorySlug,
+			@RequestParam(required = false) String brandSlug, @RequestParam(required = false) String keyword,
+			@RequestParam(required = false) String sort) {
+		ProductSearchCriteria criteria = createCriteriaFromParams(categorySlug, brandSlug, keyword, sort);
+		loadProductPage(criteria, page, size, model);
+		return "product/products :: productListFragment";
+	}
 
 	@GetMapping("/products/{slug}")
 	public String viewProduct(@PathVariable String slug, Model model) {
