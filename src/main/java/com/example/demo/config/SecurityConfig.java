@@ -55,7 +55,7 @@ public class SecurityConfig {
                         .permitAll()
                         // .requestMatchers("/admin/**").hasRole("ADMIN") // Admin only - COMMENTED FOR TESTING
                         // .requestMatchers("/shipper/**").hasRole("SHIPPER") // Shipper only - COMMENTED FOR TESTING
-                        .requestMatchers("/profile", "/profile/**", "/orders", "/orders/**")
+                        .requestMatchers("/profile", "/profile/**", "/orders", "/orders/**", "/vendor/**")
                         .authenticated()
                         .anyRequest().authenticated())
                 .formLogin(form -> form.disable())

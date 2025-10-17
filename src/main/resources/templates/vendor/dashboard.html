@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout/default}">
+<head>
+    <title>Bảng điều khiển - Shop</title>
+</head>
+<body>
+
+<div class="container mt-5 mb-5" layout:fragment="content">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">Bảng điều khiển của Người bán</h1>
+
+            <!-- Success/Error Messages -->
+            <div th:if="${successMessage}" class="alert alert-success" role="alert"
+                 th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}" class="alert alert-danger" role="alert"
+                 th:text="${errorMessage}"></div>
+
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Thông tin Shop</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-3 text-center">
+                            <img th:src="${shop.logoUrl != null ? shop.logoUrl : '/images/default-shop-logo.png'}" 
+                                 alt="Shop Logo" class="img-fluid rounded-circle" style="max-width: 150px;"/>
+                        </div>
+                        <div class="col-md-9">
+                            <h2 th:text="${shop.shopName}">Tên Shop</h2>
+                            <p class="text-muted" th:text="${shop.description}">Mô tả shop.</p>
+                            <hr>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Trạng thái:</strong>
+                                    <span th:if="${shop.active}" class="badge bg-success">Đang hoạt động</span>
+                                    <span th:unless="${shop.active}" class="badge bg-warning text-dark">Chờ phê duyệt</span>
+                                </div>
+                                <a th:href="@{/vendor/shop/edit}" class="btn btn-outline-secondary">Chỉnh sửa thông tin</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${!shop.active}" class="alert alert-info mt-4" role="alert">
+                <h5 class="alert-heading">Vui lòng chờ!</h5>
+                <p>Cửa hàng của bạn đang được xem xét bởi quản trị viên. Bạn sẽ có thể thêm và quản lý sản phẩm sau khi cửa hàng được phê duyệt.</p>
+            </div>
+
+            <div th:if="${shop.active}" class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-box-open fa-3x text-primary mb-3"></i>
+                            <h5 class="card-title">Quản lý Sản phẩm</h5>
+                            <p class="card-text">Thêm, sửa, xóa và xem tất cả các sản phẩm của bạn.</p>
+                            <a href="/admin/products" class="btn btn-primary">Đi đến Sản phẩm</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-chart-line fa-3x text-success mb-3"></i>
+                            <h5 class="card-title">Thống kê & Báo cáo</h5>
+                            <p class="card-text">Xem báo cáo doanh thu và hiệu suất của cửa hàng.</p>
+                            <a href="#" class="btn btn-success disabled">Sắp có</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

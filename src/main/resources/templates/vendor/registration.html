@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout/default}">
+<head>
+    <title>Đăng Ký Bán Hàng</title>
+</head>
+<body>
+
+<div class="container mt-5 mb-5" layout:fragment="content">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center">Trở thành người bán trên UTE-Fashion</h2>
+                    <p class="text-center text-muted">Điền thông tin cửa hàng của bạn bên dưới.</p>
+                </div>
+                <div class="card-body">
+
+                    <!-- Success/Error Messages -->
+                    <div th:if="${successMessage}" class="alert alert-success" role="alert"
+                         th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" role="alert"
+                         th:text="${errorMessage}"></div>
+
+                    <form th:action="@{/vendor/register}" th:object="${shopRegistrationDTO}" method="post">
+                        <div class.="mb-3">
+                            <label for="shopName" class="form-label">Tên cửa hàng</label>
+                            <input type="text" class="form-control" id="shopName" th:field="*{shopName}" required>
+                            <div class="form-text">Tên này sẽ được hiển thị công khai cho khách hàng.</div>
+                            <div th:if="${#fields.hasErrors('shopName')}" th:errors="*{shopName}" class="text-danger"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Mô tả cửa hàng</label>
+                            <textarea class="form-control" id="description" th:field="*{description}" rows="4"></textarea>
+                            <div class="form-text">Giới thiệu ngắn về cửa hàng và các sản phẩm của bạn.</div>
+                            <div th:if="${#fields.hasErrors('description')}" th:errors="*{description}" class="text-danger"></div>
+                        </div>
+
+                        <!-- Optional: Logo URL for simplicity. In a real app, this would be a file upload. -->
+                        <div class="mb-4">
+                            <label for="logoUrl" class="form-label">URL Logo</label>
+                            <input type="text" class="form-control" id="logoUrl" th:field="*{logoUrl}">
+                            <div class="form-text">Dán đường dẫn đến logo của bạn.</div>
+                            <div th:if="${#fields.hasErrors('logoUrl')}" th:errors="*{logoUrl}" class="text-danger"></div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">Hoàn tất Đăng ký</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
