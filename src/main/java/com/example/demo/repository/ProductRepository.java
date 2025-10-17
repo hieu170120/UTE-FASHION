@@ -2,59 +2,26 @@ package com.example.demo.repository;
 
 import com.example.demo.dto.ProductSummaryDTO;
 import com.example.demo.entity.Product;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ProductRepository extends JpaRepository<Product, Integer> {
+public interface ProductRepository extends JpaRepository<Product, Integer>, JpaSpecificationExecutor<Product>, CustomProductRepository {
 
-    // --- Methods for Detailed Product View (Keep full entity) ---
+    Optional<Product> findBySlug(String slug);
 
-    @Override
-    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.images WHERE p.id = :id")
-    Optional<Product> findById(@Param("id") Integer id);
-
-    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.images WHERE p.slug = :slug")
-    Optional<Product> findBySlug(@Param("slug") String slug);
-
-
-    // --- Methods for Summary/List Views (Optimized with DTO Projections) ---
-
-    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p")
-    Page<ProductSummaryDTO> findSummaryAll(Pageable pageable);
-
-    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p WHERE p.category.slug = :categorySlug")
-    Page<ProductSummaryDTO> findSummaryByCategorySlug(@Param("categorySlug") String categorySlug, Pageable pageable);
-
-    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p WHERE p.brand.slug = :brandSlug")
-    Page<ProductSummaryDTO> findSummaryByBrandSlug(@Param("brandSlug") String brandSlug, Pageable pageable);
-
-    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p WHERE lower(p.productName) LIKE lower(concat('%', :keyword, '%'))")
-    Page<ProductSummaryDTO> findSummaryByProductNameContainingIgnoreCase(@Param("keyword") String keyword, Pageable pageable);
-
-    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p WHERE p.shop.id = :shopId")
-    Page<ProductSummaryDTO> findSummaryByShopId(@Param("shopId") Integer shopId, Pageable pageable);
-
-    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p WHERE p.isActive = true ORDER BY p.soldCount DESC")
-    List<ProductSummaryDTO> findSummaryBestsellers(Pageable pageable);
-
-    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p ORDER BY p.soldCount DESC")
-    Page<ProductSummaryDTO> findSummaryByOrderBySoldCountDesc(Pageable pageable);
-
-    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p ORDER BY p.averageRating DESC")
-    Page<ProductSummaryDTO> findSummaryByOrderByAverageRatingDesc(Pageable pageable);
-
-    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p ORDER BY p.wishlistCount DESC")
-    Page<ProductSummaryDTO> findSummaryByOrderByWishlistCountDesc(Pageable pageable);
-
-    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) FROM Product p WHERE p.isActive = true ORDER BY p.createdAt DESC")
+    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) " +
+           "FROM Product p WHERE p.isActive = true ORDER BY p.createdAt DESC")
     List<ProductSummaryDTO> findSummaryNewest(Pageable pageable);
+
+    @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) " +
+           "FROM Product p WHERE p.isActive = true ORDER BY p.soldCount DESC")
+    List<ProductSummaryDTO> findSummaryBestsellers(Pageable pageable);
 
 }

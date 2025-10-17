@@ -11,6 +11,29 @@ import java.util.List;
 @Repository
 public interface ProductImageRepository extends JpaRepository<ProductImage, Integer> {
 
-    @Query("SELECT pi FROM ProductImage pi WHERE pi.product.id IN :productIds ORDER BY pi.product.id, pi.id")
+    @Query("SELECT pi FROM ProductImage pi WHERE pi.product.id IN :productIds ORDER BY pi.product.id, pi.displayOrder ASC, pi.id ASC")
     List<ProductImage> findImagesByProductIds(@Param("productIds") List<Integer> productIds);
+
+    /**
+     * Fetches all images for a specific product, ordered by their display order.
+     * @param productId The ID of the product.
+     * @return A list of ProductImage entities.
+     */
+    @Query("SELECT pi FROM ProductImage pi WHERE pi.product.id = :productId ORDER BY pi.displayOrder ASC, pi.id ASC")
+    List<ProductImage> findAllByProductId(@Param("productId") Integer productId);
+
+    /**
+     * Fetches the top 2 images for each product in a given list of product IDs.
+     * This uses a native SQL query with a window function (ROW_NUMBER) for high efficiency,
+     * avoiding the N+1 problem.
+     * The images are ranked by 'display_order' first, then by 'image_id'.
+     */
+    @Query(
+            value = "SELECT * FROM ( " +
+                    "    SELECT pi.*, ROW_NUMBER() OVER(PARTITION BY pi.product_id ORDER BY pi.display_order ASC, pi.image_id ASC) as rn " +
+                    "    FROM product_images pi WHERE pi.product_id IN (:productIds) " +
+                    ") as ranked_images WHERE rn <= 2",
+            nativeQuery = true
+    )
+    List<ProductImage> findTop2ImagesPerProduct(@Param("productIds") List<Integer> productIds);
 }

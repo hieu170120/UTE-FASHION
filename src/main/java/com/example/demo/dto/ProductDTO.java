@@ -1,7 +1,6 @@
 package com.example.demo.dto;
 
 import java.math.BigDecimal;
-import java.util.Set;
 
 import lombok.Data;
 
@@ -32,6 +31,4 @@ public class ProductDTO {
 	private Integer soldCount;
 	private BigDecimal averageRating;
 	private Integer reviewCount;
-	private Set<ProductImageDTO> images;
-	private Set<ProductVariantDTO> variants;
 }

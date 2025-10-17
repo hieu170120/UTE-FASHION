@@ -35,7 +35,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+//                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/login", "/register", "/logout",
                                 "/forgot-password", "/reset-password",
@@ -48,9 +48,12 @@ public class SecurityConfig {
                                 "/payment-test", "/payment-test/**",
                                 "/api/auth/**",
                                 "/verify-email", "/verify-email/**",
-                                "/resend-otp") // <-- Added resend-otp endpoint
+                                "/resend-otp",
+                                "/api/**")//TODO config later
                         .permitAll()
-                        .requestMatchers("/profile", "/profile/**")
+                        .requestMatchers("/admin/**").hasRole("ADMIN") // Admin only
+                        .requestMatchers("/shipper/**").hasRole("SHIPPER") // Shipper only
+                        .requestMatchers("/profile", "/profile/**", "/orders", "/orders/**")
                         .authenticated()
                         .anyRequest().authenticated())
                 .formLogin(form -> form.disable())
