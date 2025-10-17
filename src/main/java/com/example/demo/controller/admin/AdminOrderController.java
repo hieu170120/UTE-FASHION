@@ -33,8 +33,14 @@ public class AdminOrderController {
     @Autowired
     private CarrierService carrierService;
 
+    @GetMapping("/test")
+    @ResponseBody
+    public String test() {
+        return "AdminOrderController is working!";
+    }
+
     @GetMapping
-    public String listOrders(Model model, 
+    public String listOrders(Model model,
                            @RequestParam(name = "page", defaultValue = "0") int page, 
                            @RequestParam(name = "size", defaultValue = "10") int size) {
         Page<OrderDTO> orderPage = orderService.getAllOrders(PageRequest.of(page, size));
@@ -68,10 +74,13 @@ public class AdminOrderController {
         }
     }
 
+    // DISABLED: Admin không được phép cập nhật trạng thái thủ công
+    // Trạng thái đơn hàng chỉ được cập nhật tự động qua quy trình của shipper
+    /*
     @PostMapping("/{id}/status")
     public String updateOrderStatus(@PathVariable Integer id, 
                                    @RequestParam String status, 
-                                   @RequestParam String notes, 
+                                   @RequestParam(required = false, defaultValue = "") String notes, 
                                    RedirectAttributes redirectAttributes) {
         try {
             orderService.updateOrderStatus(id, status, notes, null);
@@ -81,6 +90,25 @@ public class AdminOrderController {
         }
         return "redirect:/admin/orders";
     }
+    */
+    
+    // DISABLED: Admin không được phép cập nhật trạng thái thủ công
+    // Quick update - chuyển trạng thái nhanh từ danh sách
+    /*
+    @PostMapping("/{id}/quick-update")
+    public String quickUpdateStatus(@PathVariable Integer id,
+                                    @RequestParam String status,
+                                    RedirectAttributes redirectAttributes) {
+        try {
+            String note = "Admin chuyển trạng thái nhanh từ danh sách";
+            orderService.updateOrderStatus(id, status, note, null);
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật trạng thái thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/admin/orders";
+    }
+    */
     
     // Admin xác nhận đơn và chọn shipper
     @PostMapping("/{id}/assign-shipper")

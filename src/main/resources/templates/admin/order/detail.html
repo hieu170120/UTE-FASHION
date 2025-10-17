@@ -2,52 +2,184 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Chi tiết đơn hàng - UTE Fashion</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi Tiết Đơn Hàng - UTE Fashion Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f8f9fa; }
+        .navbar-custom { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card { border: none; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .info-label { font-weight: 600; color: #6c757d; }
+        .status-badge { padding: 8px 15px; border-radius: 20px; font-size: 14px; }
+        .shipper-select-card { background: #fff3cd; border-left: 4px solid #ffc107; }
+    </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <h1 class="mb-4">Chi tiết đơn hàng #<span th:text="${order.orderNumber}"></span></h1>
-
-        <div class="row">
-            <div class="col-md-6">
-                <h4>Thông tin đơn hàng</h4>
-                <p><strong>Ngày đặt:</strong> <span th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></span></p>
-                <p><strong>Trạng thái:</strong> <span th:text="${order.orderStatus}"></span></p>
-                <p><strong>Tổng tiền:</strong> <span th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></p>
+    <nav class="navbar navbar-custom navbar-dark mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" th:href="@{/admin/dashboard}">
+                <i class="fas fa-shopping-bag"></i> UTE Fashion Admin
+            </a>
+            <div>
+                <a th:href="@{/admin/orders}" class="btn btn-light btn-sm me-2">
+                    <i class="fas fa-arrow-left"></i> Quay Lại Danh Sách
+                </a>
+                <a th:href="@{/admin/orders/pending}" class="btn btn-warning btn-sm">
+                    <i class="fas fa-clock"></i> Đơn Chờ Xử Lý
+                </a>
             </div>
-            <div class="col-md-6">
-                <h4>Thông tin giao hàng</h4>
-                <p><strong>Họ tên:</strong> <span th:text="${order.recipientName}"></span></p>
-                <p><strong>Số điện thoại:</strong> <span th:text="${order.phoneNumber}"></span></p>
-                <p><strong>Email:</strong> <span th:text="${order.email}"></span></p>
-                <p><strong>Địa chỉ:</strong> <span th:text="${order.shippingAddress + ', ' + order.ward + ', ' + order.district + ', ' + order.city}"></span></p>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-body">
+                <h2><i class="fas fa-receipt text-primary"></i> Chi Tiết Đơn Hàng #<span th:text="${order.orderNumber}"></span></h2>
             </div>
         </div>
 
-        <h4 class="mt-4">Sản phẩm</h4>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Sản phẩm</th>
-                    <th>Kích thước</th>
-                    <th>Màu sắc</th>
-                    <th>Số lượng</th>
-                    <th>Giá</th>
-                    <th>Tổng</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="item : ${order.orderItems}">
-                    <td th:text="${item.productName}"></td>
-                    <td th:text="${item.size}"></td>
-                    <td th:text="${item.color}"></td>
-                    <td th:text="${item.quantity}"></td>
-                    <td th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
-                    <td th:text="${#numbers.formatDecimal(item.totalPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
-                </tr>
-            </tbody>
-        </table>
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
 
-        <h4 class="mt-4">Cập nhật trạng thái</
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5><i class="fas fa-info-circle text-info"></i> Thông Tin Đơn Hàng</h5>
+                        <hr>
+                        <p><span class="info-label">Ngày đặt:</span> <span th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></span></p>
+                        <p><span class="info-label">Trạng thái:</span> 
+                            <span class="status-badge bg-warning text-dark" 
+                                  th:text="${order.orderStatus == 'Processing' ? 'Đang Xử Lý' : 
+                                          (order.orderStatus == 'Confirmed' ? 'Đã Xác Nhận' : 
+                                          (order.orderStatus == 'Shipping' ? 'Đang Giao' : 
+                                          (order.orderStatus == 'Delivered' ? 'Đã Giao' : 
+                                          (order.orderStatus == 'Cancelled' ? 'Đã Hủy' : 'Đã Trả Hàng'))))}"></span>
+                        </p>
+                        <p><span class="info-label">Tổng tiền:</span> 
+                            <span class="text-danger fw-bold fs-5" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                        </p>
+                        <p th:if="${order.carrierName}">
+                            <span class="info-label">Nhà vận chuyển:</span> 
+                            <span class="badge bg-info" th:text="${order.carrierName}"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5><i class="fas fa-shipping-fast text-success"></i> Thông Tin Giao Hàng</h5>
+                        <hr>
+                        <p><span class="info-label">Họ tên:</span> <span th:text="${order.recipientName}"></span></p>
+                        <p><span class="info-label">Số điện thoại:</span> <span th:text="${order.phoneNumber}"></span></p>
+                        <p><span class="info-label">Email:</span> <span th:text="${order.email}"></span></p>
+                        <p><span class="info-label">Địa chỉ:</span> <span th:text="${order.shippingAddress + ', ' + order.ward + ', ' + order.district + ', ' + order.city}"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chọn Shipper (chỉ hiện khi đơn đang Processing) -->
+        <div th:if="${order.orderStatus == 'Processing' && shippers != null}" class="card shipper-select-card">
+            <div class="card-body">
+                <h5><i class="fas fa-user-check text-warning"></i> Chọn Shipper Giao Hàng</h5>
+                <p class="text-muted">Chọn shipper từ nhà vận chuyển mà khách hàng đã chọn</p>
+                <form th:action="@{/admin/orders/{id}/assign-shipper(id=${order.id})}" method="post">
+                    <div class="row align-items-end">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Chọn Shipper:</label>
+                            <select name="shipperId" class="form-select form-select-lg" required>
+                                <option value="">-- Chọn shipper --</option>
+                                <option th:each="shipper : ${shippers}" 
+                                        th:value="${shipper.id}" 
+                                        th:text="${shipper.fullName + ' - ' + shipper.phoneNumber + ' (Hủy: ' + shipper.cancelCount + '/3)'}">
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-check-circle"></i> Xác Nhận & Giao Cho Shipper
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Hiển thị shipper đã được giao -->
+        <div th:if="${order.shipperName != null}" class="card">
+            <div class="card-body">
+                <h5><i class="fas fa-user-tie text-primary"></i> Shipper Đã Được Giao</h5>
+                <hr>
+                <p><span class="info-label">Tên shipper:</span> <span th:text="${order.shipperName}"></span></p>
+                <p><span class="info-label">SĐT shipper:</span> <span th:text="${order.shipperPhone}"></span></p>
+            </div>
+        </div>
+
+        <!-- ⚠️ TRẠNG THÁI ĐƠN HÀNG TỰ ĐỘNG - ADMIN KHÔNG ĐƯỢC SỬA THỦ CÔNG -->
+        <div class="card border-warning">
+            <div class="card-body">
+                <div class="alert alert-warning mb-0">
+                    <h5><i class="fas fa-info-circle"></i> Lưu Ý Quan Trọng</h5>
+                    <p class="mb-2"><strong>Trạng thái đơn hàng được cập nhật TỰ ĐỘNG theo quy trình:</strong></p>
+                    <ol class="mb-0">
+                        <li><strong>Đang Xử Lý:</strong> Khi khách hàng đặt hàng</li>
+                        <li><strong>Đã Xử Lý:</strong> Khi Admin chọn Shipper (tự động)</li>
+                        <li><strong>Đang Giao:</strong> Khi Shipper xác nhận giao (tự động)</li>
+                        <li><strong>Đã Giao:</strong> Khi hết thời gian countdown (tự động)</li>
+                    </ol>
+                    <p class="mt-3 mb-0"><i class="fas fa-lock text-danger"></i> Admin KHÔNG được phép thay đổi trạng thái thủ công để đảm bảo tính minh bạch!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danh sách sản phẩm -->
+        <div class="card">
+            <div class="card-body">
+                <h5><i class="fas fa-box-open text-primary"></i> Danh Sách Sản Phẩm</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sản Phẩm</th>
+                                <th>Size</th>
+                                <th>Màu</th>
+                                <th>Số Lượng</th>
+                                <th>Đơn Giá</th>
+                                <th>Thành Tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="item : ${order.orderItems}">
+                                <td><strong th:text="${item.productName}"></strong></td>
+                                <td><span class="badge bg-secondary" th:text="${item.size}"></span></td>
+                                <td><span class="badge bg-info" th:text="${item.color}"></span></td>
+                                <td class="text-center"><strong th:text="${item.quantity}"></strong></td>
+                                <td th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                                <td class="text-danger fw-bold" th:text="${#numbers.formatDecimal(item.totalPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="5" class="text-end"><strong>TỔNG CỘNG:</strong></td>
+                                <td class="text-danger fw-bold fs-5" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

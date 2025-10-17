@@ -1,100 +1,690 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đơn Đang Giao</title>
+    <title>Đơn Đang Giao - UTE Fashion Shipper</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .order-card {
+        :root {
+            --primary-blue: #3B82F6;
+            --text-primary: #1E293B;
+            --text-secondary: #64748B;
+            --border-color: #E2E8F0;
+            --hover-bg: #F1F5F9;
+            --success-color: #10B981;
+            --warning-color: #F59E0B;
+            --danger-color: #EF4444;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #F8FAFC;
+            color: var(--text-primary);
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 240px;
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-            padding: 25px;
-            margin-bottom: 20px;
+            border-right: 1px solid var(--border-color);
+            padding: 24px 0;
+            z-index: 1000;
+            overflow-y: auto;
         }
-        .countdown-timer {
-            font-size: 48px;
-            font-weight: bold;
-            color: #667eea;
+        
+        .sidebar-logo {
+            padding: 0 24px 24px;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-blue);
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 16px;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0 12px;
+        }
+        
+        .sidebar-menu li { margin-bottom: 4px; }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        
+        .sidebar-menu a:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+        
+        .sidebar-menu a.active {
+            background: var(--primary-blue);
+            color: white;
+        }
+        
+        .sidebar-menu a i {
+            margin-right: 12px;
+            width: 20px;
             text-align: center;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            margin: 20px 0;
+            font-size: 18px;
         }
-        .countdown-timer.warning { color: #ff6b6b; animation: pulse 1s infinite; }
-        @keyframes pulse {
+        
+        .sidebar-footer {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            padding: 0 12px;
+        }
+        
+        /* Main Content */
+        .main-content {
+            margin-left: 240px;
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .top-header {
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+        
+        .header-greeting {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .header-search {
+            flex: 0 0 400px;
+            position: relative;
+        }
+        
+        .header-search input {
+            width: 100%;
+            padding: 10px 16px 10px 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .header-search i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .header-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: var(--hover-bg);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 18px;
+        }
+        
+        .header-icon:hover {
+            background: var(--primary-blue);
+            color: white;
+        }
+        
+        /* Content Area */
+        .content-area {
+            padding: 32px;
+        }
+        
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .page-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+        
+        /* Delivering Order Cards */
+        .delivering-card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            padding: 28px;
+            margin-bottom: 24px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .delivering-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--warning-color) 0%, var(--primary-blue) 100%);
+        }
+        
+        .delivering-card:hover {
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            transform: translateY(-4px);
+        }
+        
+        .order-header-delivering {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .order-number-delivering {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .status-badge-delivering {
+            padding: 8px 20px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--warning-color) 0%, #FCD34D 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: pulse-badge 2s infinite;
+        }
+        
+        @keyframes pulse-badge {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        .order-content-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 32px;
+        }
+        
+        .order-details {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .detail-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 12px;
+            background: var(--hover-bg);
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+        
+        .detail-row:hover {
+            background: #E0E7FF;
+        }
+        
+        .detail-icon {
+            width: 44px;
+            height: 44px;
+            background: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-blue);
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        
+        .detail-content {
+            flex: 1;
+        }
+        
+        .detail-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        
+        .detail-value {
+            font-size: 15px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        /* Countdown Timer */
+        .timer-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .countdown-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 32px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 10px 40px rgba(102, 126, 234, 0.4);
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .countdown-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .countdown-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+            position: relative;
+        }
+        
+        .countdown-timer {
+            font-size: 72px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            font-family: 'Courier New', monospace;
+            position: relative;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .countdown-timer.warning {
+            color: #FEE2E2;
+            animation: pulse-timer 1s infinite;
+        }
+        
+        @keyframes pulse-timer {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
         }
+        
+        .countdown-sublabel {
+            font-size: 13px;
+            opacity: 0.8;
+            position: relative;
+        }
+        
+        .progress-ring {
+            margin-top: 24px;
+            position: relative;
+        }
+        
+        .progress-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: conic-gradient(white 0deg, rgba(255,255,255,0.2) 360deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .progress-circle::before {
+            content: '';
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            position: absolute;
+        }
+        
+        .progress-text {
+            position: relative;
+            z-index: 1;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        /* Delivered Badge */
         .delivered-badge {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            background: linear-gradient(135deg, var(--success-color) 0%, #34D399 100%);
             color: white;
-            padding: 15px;
-            border-radius: 10px;
+            padding: 32px;
+            border-radius: 20px;
             text-align: center;
             font-size: 24px;
+            font-weight: 700;
+            box-shadow: 0 10px 40px rgba(16, 185, 129, 0.4);
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .delivered-badge i {
+            font-size: 64px;
+            margin-bottom: 16px;
+            display: block;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            background: white;
+            border-radius: 20px;
+            border: 2px dashed var(--border-color);
+        }
+        
+        .empty-state i {
+            font-size: 100px;
+            color: var(--border-color);
+            margin-bottom: 24px;
+        }
+        
+        .empty-state h4 {
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            font-size: 24px;
+        }
+        
+        .empty-state p {
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            font-size: 16px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .header-search {
+                display: none;
+            }
+            
+            .order-content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .countdown-timer {
+                font-size: 56px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container mt-4">
-        <div class="bg-white rounded p-3 mb-4">
-            <h2><i class="fas fa-shipping-fast text-primary"></i> Đơn Đang Giao</h2>
-        </div>
-
-        <!-- Empty State -->
-        <div th:if="${#lists.isEmpty(deliveringOrders)}" class="text-center py-5">
-            <div class="bg-white rounded p-5">
-                <i class="fas fa-box-open fa-5x text-muted mb-3"></i>
-                <h4 class="text-muted">Chưa có đơn nào đang giao</h4>
-                <a href="/shipper/orders/assigned" class="btn btn-primary mt-3">
-                    <i class="fas fa-list"></i> Xem Đơn Được Giao
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-logo">LOGO</div>
+        
+        <ul class="sidebar-menu">
+            <li>
+                <a th:href="@{/shipper}">
+                    <i class="fas fa-th-large"></i>
+                    <span>Overview</span>
                 </a>
+            </li>
+            <li>
+                <a th:href="@{/shipper/orders/assigned}">
+                    <i class="fas fa-inbox"></i>
+                    <span>Đơn được giao</span>
+                </a>
+            </li>
+            <li>
+                <a th:href="@{/shipper/orders/delivering}" class="active">
+                    <i class="fas fa-shipping-fast"></i>
+                    <span>Đang giao</span>
+                </a>
+            </li>
+            <li>
+                <a th:href="@{/shipper/history}">
+                    <i class="fas fa-history"></i>
+                    <span>Lịch sử</span>
+                </a>
+            </li>
+            <li>
+                <a th:href="@{/shipper/profile}">
+                    <i class="fas fa-wallet"></i>
+                    <span>Thu nhập</span>
+                </a>
+            </li>
+        </ul>
+        
+        <div class="sidebar-footer">
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="#"><i class="fas fa-question-circle"></i><span>Help</span></a>
+                </li>
+                <li>
+                    <a href="#"><i class="fas fa-users"></i><span>Community</span></a>
+                </li>
+                <li>
+                    <a href="#"><i class="fas fa-cog"></i><span>Settings</span></a>
+                </li>
+                <li>
+                    <a th:href="@{/logout}" class="text-danger">
+                        <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="top-header">
+            <div class="header-greeting">Đơn đang giao</div>
+            
+            <div class="header-search">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search">
+            </div>
+            
+            <div class="header-actions">
+                <div class="header-icon"><i class="far fa-envelope"></i></div>
+                <div class="header-icon"><i class="far fa-bell"></i></div>
+                <div class="header-icon"><i class="far fa-user-circle"></i></div>
             </div>
         </div>
-
-        <!-- Delivering Orders -->
-        <div th:each="order : ${deliveringOrders}" class="order-card">
-            <div class="row">
-                <div class="col-md-7">
-                    <h4><i class="fas fa-receipt text-success"></i> <span th:text="${order.orderNumber}"></span></h4>
-                    <hr>
-                    <p><strong>Khách hàng:</strong> <span th:text="${order.recipientName}"></span></p>
-                    <p><strong>Địa chỉ:</strong> <span th:text="${order.shippingAddress}"></span></p>
-                    <p><strong>SĐT:</strong> <span th:text="${order.phoneNumber}"></span></p>
-                    <p><strong>Tổng tiền:</strong> 
-                        <span class="text-danger fw-bold fs-5" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
-                    </p>
-                </div>
-                <div class="col-md-5">
-                    <!-- Đồng hồ đếm ngược -->
-                    <div th:if="${order.estimatedDeliveryTime}" 
-                         class="countdown-timer"
-                         th:attr="data-target=${order.estimatedDeliveryTime}"
-                         th:data-order-id="${order.id}">
-                        <div class="countdown-display">
-                            <span class="minutes">00</span>:<span class="seconds">00</span>
+        
+        <!-- Content -->
+        <div class="content-area">
+            <h1 class="page-title">Đơn Đang Giao</h1>
+            <p class="page-subtitle">Các đơn hàng bạn đang trong quá trình giao hàng</p>
+            
+            <!-- Empty State -->
+            <div th:if="${#lists.isEmpty(deliveringOrders)}" class="empty-state">
+                <i class="fas fa-shipping-fast"></i>
+                <h4>Chưa có đơn nào đang giao</h4>
+                <p>Xác nhận đơn được giao để bắt đầu giao hàng</p>
+                <a th:href="@{/shipper/orders/assigned}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-list me-2"></i> Xem Đơn Được Giao
+                </a>
+            </div>
+            
+            <!-- Delivering Orders -->
+            <div th:each="order : ${deliveringOrders}" class="delivering-card">
+                <div class="order-header-delivering">
+                    <div>
+                        <div class="order-number-delivering">
+                            <i class="fas fa-shipping-fast text-primary me-2"></i>
+                            <span th:text="${order.orderNumber}">ORD-12345</span>
                         </div>
-                        <small class="d-block mt-2 text-muted">Thời gian giao còn lại</small>
+                        <small class="text-muted">
+                            Bắt đầu giao: <span th:text="${#temporals.format(order.updatedAt, 'dd/MM/yyyy HH:mm')}"></span>
+                        </small>
                     </div>
-
-                    <!-- Badge đã giao (sẽ hiện khi hết giờ) -->
-                    <div class="delivered-badge d-none" th:id="'delivered-' + ${order.id}">
-                        <i class="fas fa-check-circle"></i> Đã Giao Thành Công!
+                    <div class="status-badge-delivering">
+                        <i class="fas fa-truck"></i>
+                        <span>Đang giao hàng</span>
+                    </div>
+                </div>
+                
+                <div class="order-content-grid">
+                    <!-- Left: Order Details -->
+                    <div class="order-details">
+                        <div class="detail-row">
+                            <div class="detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Khách hàng</div>
+                                <div class="detail-value" th:text="${order.recipientName}">Nguyễn Văn A</div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Địa chỉ giao hàng</div>
+                                <div class="detail-value" th:text="${order.shippingAddress + ', ' + order.ward + ', ' + order.district + ', ' + order.city}">
+                                    123 Đường ABC, Quận 1, TP.HCM
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="detail-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Số điện thoại</div>
+                                <div class="detail-value" th:text="${order.phoneNumber}">0901234567</div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="detail-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Tổng tiền thu</div>
+                                <div class="detail-value text-danger" style="font-size: 20px;" 
+                                     th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'">
+                                    500,000 ₫
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="detail-icon">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Phương thức thanh toán</div>
+                                <div class="detail-value" th:text="${order.paymentMethod}">COD</div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-row" th:if="${order.note}">
+                            <div class="detail-icon">
+                                <i class="fas fa-sticky-note"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Ghi chú đặc biệt</div>
+                                <div class="detail-value text-muted" th:text="${order.note}">Gọi trước khi giao</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right: Countdown Timer -->
+                    <div class="timer-section">
+                        <!-- Countdown Timer -->
+                        <div th:if="${order.estimatedDeliveryTime}" 
+                             class="countdown-container"
+                             th:attr="data-target=${order.estimatedDeliveryTime}"
+                             th:data-order-id="${order.id}">
+                            <div class="countdown-label">Thời gian còn lại</div>
+                            <div class="countdown-timer">
+                                <span class="minutes">00</span>:<span class="seconds">00</span>
+                            </div>
+                            <div class="countdown-sublabel">Phút : Giây</div>
+                        </div>
+                        
+                        <!-- Delivered Badge (Hidden by default) -->
+                        <div class="delivered-badge d-none" th:id="'delivered-' + ${order.id}">
+                            <i class="fas fa-check-circle"></i>
+                            <div>Đã giao thành công!</div>
+                            <small style="font-size: 16px; opacity: 0.9;">Đang cập nhật trạng thái...</small>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const timers = document.querySelectorAll('.countdown-timer');
+            const timers = document.querySelectorAll('.countdown-container[data-target]');
             
             timers.forEach(timer => {
                 const targetTime = new Date(timer.dataset.target);
@@ -105,24 +695,31 @@
                     const diff = targetTime - now;
                     
                     if (diff <= 0) {
-                        // Hết giờ - Hiển thị badge đã giao
+                        // Time's up - Show delivered badge
                         timer.classList.add('d-none');
-                        document.getElementById('delivered-' + orderId).classList.remove('d-none');
-                        
-                        // Reload sau 2 giây để cập nhật trạng thái
-                        setTimeout(() => location.reload(), 2000);
+                        const deliveredBadge = document.getElementById('delivered-' + orderId);
+                        if (deliveredBadge) {
+                            deliveredBadge.classList.remove('d-none');
+                            
+                            // Reload after 3 seconds to update status
+                            setTimeout(() => location.reload(), 3000);
+                        }
                         return;
                     }
                     
                     const minutes = Math.floor(diff / 1000 / 60);
                     const seconds = Math.floor((diff / 1000) % 60);
                     
-                    timer.querySelector('.minutes').textContent = String(minutes).padStart(2, '0');
-                    timer.querySelector('.seconds').textContent = String(seconds).padStart(2, '0');
+                    const minutesEl = timer.querySelector('.minutes');
+                    const secondsEl = timer.querySelector('.seconds');
+                    const timerEl = timer.querySelector('.countdown-timer');
                     
-                    // Warning khi còn < 1 phút
-                    if (diff < 60000) {
-                        timer.classList.add('warning');
+                    if (minutesEl) minutesEl.textContent = String(minutes).padStart(2, '0');
+                    if (secondsEl) secondsEl.textContent = String(seconds).padStart(2, '0');
+                    
+                    // Warning when less than 1 minute remaining
+                    if (diff < 60000 && timerEl) {
+                        timerEl.classList.add('warning');
                     }
                 }
                 

@@ -20,6 +20,31 @@
                 font-size: 2.5rem;
                 margin-bottom: 1rem;
             }
+            
+            /* Carrier Selection Styles */
+            .carrier-option {
+                cursor: pointer;
+                display: block;
+            }
+            .carrier-radio {
+                display: none;
+            }
+            .carrier-card {
+                border: 2px solid #e0e0e0;
+                border-radius: 8px;
+                padding: 15px 20px;
+                background: #fff;
+                transition: all 0.3s ease;
+            }
+            .carrier-card:hover {
+                border-color: #0d6efd;
+                box-shadow: 0 2px 8px rgba(13, 110, 253, 0.15);
+            }
+            .carrier-radio:checked + .carrier-card {
+                border-color: #0d6efd;
+                background: #f0f7ff;
+                box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2);
+            }
         </style>
     </th:block>
 </head>
@@ -57,23 +82,34 @@
             <!-- Chọn nhà vận chuyển -->
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
-                    <h5 class="card-title mb-3">
-                        <i class="fas fa-truck me-2"></i>Chọn nhà vận chuyển
+                    <h5 class="card-title mb-3 fw-bold">
+                        <i class="fas fa-truck me-2 text-primary"></i>Chọn loại vận chuyển
                     </h5>
-                    <form th:action="@{/payment/select-carrier}" method="post">
-                        <div class="row">
-                            <div class="col-md-9">
-                                <select name="carrierId" class="form-select" required>
-                                    <option value="">-- Chọn nhà vận chuyển --</option>
-                                    <option th:each="carrier : ${carriers}" 
-                                            th:value="${carrier.id}"
-                                            th:text="${carrier.carrierName + ' - ' + #numbers.formatDecimal(carrier.defaultShippingFee, 0, 'COMMA', 0, 'POINT') + '₫'}"
-                                            th:selected="${selectedCarrierId != null and selectedCarrierId == carrier.id}">
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <button type="submit" class="btn btn-primary w-100">Chọn</button>
+                    <form th:action="@{/payment/select-carrier}" method="post" id="carrierForm">
+                        <!-- Carrier Options as Cards -->
+                        <div class="row g-3">
+                            <div class="col-12" th:each="carrier : ${carriers}">
+                                <label class="carrier-option w-100">
+                                    <input type="radio" 
+                                           name="carrierId" 
+                                           th:value="${carrier.id}"
+                                           th:checked="${selectedCarrierId != null and selectedCarrierId == carrier.id}"
+                                           class="carrier-radio"
+                                           onchange="this.form.submit()"
+                                           required>
+                                    <div class="carrier-card">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1 fw-bold" th:text="${carrier.carrierName}"></h6>
+                                                <small class="text-muted">Thời gian: 2-3 ngày</small>
+                                            </div>
+                                            <div class="text-end">
+                                                <div class="text-primary fw-bold fs-5" 
+                                                     th:text="${#numbers.formatDecimal(carrier.defaultShippingFee, 0, 'COMMA', 0, 'POINT')} + '₫'"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </label>
                             </div>
                         </div>
                     </form>

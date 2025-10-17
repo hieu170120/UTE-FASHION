@@ -2,6 +2,7 @@ package com.example.demo.controller.shipper;
 
 import com.example.demo.dto.OrderDTO;
 import com.example.demo.entity.User;
+import com.example.demo.service.NotificationService;
 import com.example.demo.service.OrderManagementService;
 import com.example.demo.service.ShipperService;
 import jakarta.servlet.http.HttpSession;
@@ -22,6 +23,9 @@ public class ShipperOrderController {
 
     @Autowired
     private ShipperService shipperService;
+    
+    @Autowired
+    private NotificationService notificationService;
 
     @GetMapping
     public String listAssignedOrders(Model model, HttpSession session) {
@@ -32,9 +36,12 @@ public class ShipperOrderController {
         Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
         List<OrderDTO> assignedOrders = orderManagementService.getShipperAssignedOrders(shipperId);
         List<OrderDTO> deliveringOrders = orderManagementService.getShipperDeliveringOrders(shipperId);
+        Long unreadNotificationCount = notificationService.getUnreadNotificationCount(shipperId);
+        
         model.addAttribute("assignedOrders", assignedOrders);
         model.addAttribute("deliveringOrders", deliveringOrders);
         model.addAttribute("cancelCount", orderManagementService.getShipperCancelCount(shipperId));
+        model.addAttribute("unreadCount", unreadNotificationCount);
         return "shipper/order/list";
     }
 

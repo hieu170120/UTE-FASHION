@@ -42,4 +42,13 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     List<Order> findByShipperId(Integer shipperId);
     
     List<Order> findByUserUserId(Integer userId);
+    
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.orderItems oi " +
+           "LEFT JOIN FETCH o.user " +
+           "LEFT JOIN FETCH o.shipper " +
+           "LEFT JOIN FETCH o.carrier " +
+           "WHERE o.user.userId = :userId " +
+           "ORDER BY o.orderDate DESC")
+    List<Order> findByUserUserIdWithDetails(@Param("userId") Integer userId);
 }

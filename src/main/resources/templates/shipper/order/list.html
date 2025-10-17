@@ -1,72 +1,201 @@
-<!-- resources/templates/shipper/order/list.html -->
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/shipper-layout}">
 <head>
-    <title>Quản lý đơn hàng được giao</title>
+    <title>Quản lý đơn hàng</title>
+    <th:block layout:fragment="styles">
+    <style>
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .order-card {
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        .order-card:hover {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transform: translateY(-3px);
+        }
+        .order-card.pending {
+            border-left: 5px solid #ffc107;
+            background: #fffbf0;
+        }
+        .order-card.delivering {
+            border-left: 5px solid #17a2b8;
+            background: #f0f9ff;
+        }
+        .btn-action {
+            border-radius: 10px;
+            padding: 10px 25px;
+            font-weight: 600;
+            margin: 5px;
+        }
+        .timer-badge {
+            background: #17a2b8;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+    </style>
+    </th:block>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="container my-4">
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <h3 class="mb-0" th:text="${assignedOrders.size()}">0</h3>
+                    <p class="mb-0"><i class="fas fa-clock"></i> Đơn chờ xác nhận</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                    <h3 class="mb-0" th:text="${deliveringOrders.size()}">0</h3>
+                    <p class="mb-0"><i class="fas fa-truck"></i> Đang giao</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card" style="background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);">
+                    <h3 class="mb-0" id="cancelCount" th:text="${cancelCount}">0</h3>
+                    <p class="mb-0"><i class="fas fa-times-circle"></i> Đã hủy (Tối đa 3)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assigned Orders (Chờ xác nhận) -->
+        <div class="mb-5">
+            <h3 class="mb-3">
+                <i class="fas fa-bell text-warning"></i> Đơn chờ xác nhận 
+                <span th:if="${assignedOrders.size() > 0}" class="badge bg-warning text-dark" th:text="${assignedOrders.size()}">0</span>
+            </h3>
+            
+            <div th:if="${assignedOrders.isEmpty()}" class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Không có đơn hàng chờ xác nhận.
+            </div>
+            
+            <div th:each="order : ${assignedOrders}" class="order-card pending">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <h5 class="mb-2"><i class="fas fa-box"></i> Đơn <span th:text="${order.orderNumber}"></span></h5>
+                        <p class="text-muted mb-1"><i class="fas fa-user"></i> <span th:text="${order.customerName}"></span></p>
+                        <p class="text-muted mb-0"><i class="fas fa-phone"></i> <span th:text="${order.customerPhone}"></span></p>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-1"><i class="fas fa-map-marker-alt text-danger"></i> <strong>Địa chỉ:</strong></p>
+                        <p class="mb-0" th:text="${order.deliveryAddress}"></p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <form th:action="@{/shipper/orders/{id}/confirm(id=${order.id})}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-success btn-action">
+                                <i class="fas fa-check"></i> Xác nhận giao
+                            </button>
+                        </form>
+                        <form th:id="'cancel-form-' + ${order.id}" th:action="@{/shipper/orders/{id}/cancel(id=${order.id})}" method="post" class="d-inline">
+                            <input type="hidden" name="reason" th:id="'cancel-reason-' + ${order.id}">
+                            <button type="button" th:onclick="'confirmCancel(' + ${order.id} + ')'" class="btn btn-warning btn-action">
+                                <i class="fas fa-times"></i> Hủy
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delivering Orders (Đang giao) -->
+        <div>
+            <h3 class="mb-3">
+                <i class="fas fa-truck-loading text-info"></i> Đơn đang giao
+                <span th:if="${deliveringOrders.size() > 0}" class="badge bg-info text-dark" th:text="${deliveringOrders.size()}">0</span>
+            </h3>
+            
+            <div th:if="${deliveringOrders.isEmpty()}" class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Không có đơn hàng đang giao.
+            </div>
+            
+            <div th:each="order : ${deliveringOrders}" class="order-card delivering">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <h5 class="mb-2"><i class="fas fa-box"></i> Đơn <span th:text="${order.orderNumber}"></span></h5>
+                        <p class="text-muted mb-1"><i class="fas fa-user"></i> <span th:text="${order.customerName}"></span></p>
+                        <p class="text-muted mb-0"><i class="fas fa-phone"></i> <span th:text="${order.customerPhone}"></span></p>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-1"><i class="fas fa-map-marker-alt text-danger"></i> <strong>Địa chỉ:</strong></p>
+                        <p class="mb-0" th:text="${order.deliveryAddress}"></p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <p class="mb-2"><i class="fas fa-clock"></i> <strong>Thời gian giao dự kiến:</strong></p>
+                        <span class="timer-badge" th:id="'timer-' + ${order.id}">--:--</span>
+                        <script th:inline="javascript">
+                            /*<![CDATA[*/
+                            startTimer(/*[[${order.id}]]*/, /*[[${order.shippingTime}]]*/); 
+                            /*]]>*/
+                        </script>
+                        <p class="text-muted mt-2 mb-0">Đơn sẽ tự động hoàn thành khi hết giờ</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     
+    <th:block layout:fragment="scripts">
     <script>
         function startTimer(orderId, duration) {
             var timer = duration * 60, minutes, seconds;
             var interval = setInterval(function () {
                 minutes = parseInt(timer / 60, 10);
                 seconds = parseInt(timer % 60, 10);
+                seconds = seconds < 10 ? "0" + seconds : seconds;
                 document.getElementById('timer-' + orderId).textContent = minutes + ":" + seconds;
                 if (--timer < 0) {
                     clearInterval(interval);
-                    // AJAX to complete
-                    fetch('/shipper/orders/' + orderId + '/complete', {method: 'POST'}).then(() => {
-                        document.getElementById('status-' + orderId).textContent = 'Đã giao';
+                    fetch('/shipper/orders/' + orderId + '/complete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        }
+                    }).then(() => {
+                        location.reload();
                     });
                 }
             }, 1000);
         }
+        
+        function confirmCancel(orderId) {
+            var reason = prompt('Đơn hàng này bạn đã hủy ' + document.getElementById('cancelCount').textContent + '/3 lần.\\nVui lòng nhập lý do hủy:');
+            if (reason && reason.trim() !== '') {
+                var form = document.getElementById('cancel-form-' + orderId);
+                document.getElementById('cancel-reason-' + orderId).value = reason;
+                form.submit();
+            }
+        }
     </script>
-</head>
-<body>
-    <div class="container">
-        <h1>Quản lý đơn hàng được giao</h1>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>ID đơn</th>
-                    <th>Trạng thái</th>
-                    <th>Thời gian</th>
-                    <th>Hành động</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="order : ${orders}">
-                    <td th:text="${order.id}"></td>
-                    <td id="status-${order.id}" th:text="${order.orderStatus}"></td>
-                    <td>
-                        <th:if test="${order.orderStatus == 'Shipping'}">
-                            <span id="timer-${order.id}"></span>
-                            <script th:inline="javascript">
-                                /*<![CDATA[*/
-                                startTimer(/*[[${order.id}]]*/ Math.floor(Math.random() * 4) + 2);
-                                /*]]>*/
-                            </script>
-                        </th:if>
-                    </td>
-                    <td>
-                        <th:if test="${order.orderStatus == 'Confirmed'}">
-                            <form th:action="@{/shipper/orders/{id}/confirm(id=${order.id})}" method="post">
-                                <button type="submit" class="btn btn-success">Xác nhận giao</button>
-                            </form>
-                            <form th:action="@{/shipper/orders/{id}/cancel(id=${order.id})}" method="post">
-                                <button type="submit" class="btn btn-warning">Hủy</button>
-                            </form>
-                        </th:if>
-                        <th:if test="${order.orderStatus == 'Cancelled'}">
-                            <span class="text-danger">X</span>
-                        </th:if>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        <!-- Flash messages -->
-        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
-        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
-    </div>
+    </th:block>
+</div>
 </body>
 </html>
