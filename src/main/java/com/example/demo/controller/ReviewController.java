@@ -41,22 +41,10 @@ public class ReviewController {
             @Valid @RequestBody ReviewCreationRequest request,
             jakarta.servlet.http.HttpSession session) {
         try {
-            System.out.println("=== REVIEW CREATE DEBUG ===");
-            System.out.println("Session ID: " + session.getId());
-            
-            // Get user from session
             com.example.demo.entity.User currentUser = 
                 (com.example.demo.entity.User) session.getAttribute("currentUser");
             
-            System.out.println("Current User: " + (currentUser != null ? currentUser.getUsername() : "NULL"));
-            
             if (currentUser == null) {
-                System.out.println("User is null, checking all session attributes:");
-                java.util.Enumeration<String> attrs = session.getAttributeNames();
-                while (attrs.hasMoreElements()) {
-                    String attr = attrs.nextElement();
-                    System.out.println("  - " + attr + " = " + session.getAttribute(attr));
-                }
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body("Bạn cần đăng nhập để đánh giá sản phẩm");
             }
@@ -64,7 +52,6 @@ public class ReviewController {
             ReviewDTO createdReview = reviewService.createReview(request, currentUser.getUserId());
             return new ResponseEntity<>(createdReview, HttpStatus.CREATED);
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
