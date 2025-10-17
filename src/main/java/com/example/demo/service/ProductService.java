@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public interface ProductService {
 
@@ -21,9 +22,9 @@ public interface ProductService {
     ProductDTO findProductDetailBySlug(String slug);
 
     // --- Homepage/Specific Lists ---
-    List<ProductSummaryDTO> getBestsellerProducts();
+    CompletableFuture<List<ProductSummaryDTO>> getBestsellerProducts();
 
-    List<ProductSummaryDTO> getNewestProducts();
+    CompletableFuture<List<ProductSummaryDTO>> getNewestProducts();
 
     // --- CRUD Operations ---
     ProductDTO createProduct(ProductDTO productDTO, Integer shopId);

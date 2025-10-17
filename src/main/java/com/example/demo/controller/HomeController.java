@@ -8,6 +8,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Controller
 public class HomeController {
@@ -17,11 +18,18 @@ public class HomeController {
 
 	@GetMapping("/")
 	public String home(Model model) {
-        List<ProductSummaryDTO> newestProducts = productService.getNewestProducts();
-        model.addAttribute("newestProducts", newestProducts);
+        CompletableFuture<List<ProductSummaryDTO>> newestProductsFuture = productService.getNewestProducts();
+        CompletableFuture<List<ProductSummaryDTO>> bestsellerProductsFuture = productService.getBestsellerProducts();
 
-		List<ProductSummaryDTO> bestsellerProducts = productService.getBestsellerProducts();
-		model.addAttribute("bestsellerProducts", bestsellerProducts);
+        CompletableFuture.allOf(newestProductsFuture, bestsellerProductsFuture).join();
+
+        try {
+            model.addAttribute("newestProducts", newestProductsFuture.get());
+            model.addAttribute("bestsellerProducts", bestsellerProductsFuture.get());
+        } catch (Exception e) {
+            // Handle exceptions, e.g., log them or add an error message to the model
+            model.addAttribute("errorMessage", "Could not load products. Please try again later.");
+        }
 
 		return "home";
 	}
