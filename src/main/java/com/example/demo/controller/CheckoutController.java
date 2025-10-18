@@ -172,14 +172,14 @@ public class CheckoutController {
             
             // Kiểm tra quyền xem order
             if (!order.getUserId().equals(currentUser.getUserId())) {
-                return "redirect:/orders";
+                return "redirect:/orders/my-orders";
             }
             
             model.addAttribute("order", order);
             return "order/success";
             
         } catch (Exception e) {
-            return "redirect:/orders";
+            return "redirect:/orders/my-orders";
         }
     }
 }

@@ -1,0 +1,200 @@
+<!-- Thống kê - Stats Content Fragment -->
+<div xmlns:th="http://www.thymeleaf.org">
+    <style>
+        .stats-container {
+            max-width: 1200px;
+        }
+        
+        .stats-big-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .big-stat-card {
+            background: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .big-stat-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .big-stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .big-stat-label {
+            color: #64748B;
+            font-size: 14px;
+        }
+        
+        .chart-section {
+            background: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+    </style>
+
+    <div class="stats-container">
+        <h2 style="margin-bottom: 24px; font-weight: 700; color: #1E293B;">📊 Thống kê đơn hàng</h2>
+
+        <!-- Big Statistics -->
+        <div class="stats-big-grid">
+            <div class="big-stat-card">
+                <div class="big-stat-icon" style="background: #DBEAFE; color: #1E40AF;">
+                    <i class="fas fa-box"></i>
+                </div>
+                <div class="big-stat-value" style="color: #3B82F6;" th:text="${totalOrders}">0</div>
+                <div class="big-stat-label">Tổng số đơn hàng</div>
+            </div>
+            
+            <div class="big-stat-card">
+                <div class="big-stat-icon" style="background: #D1FAE5; color: #065F46;">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="big-stat-value" style="color: #10B981;" th:text="${deliveredCount}">0</div>
+                <div class="big-stat-label">Đơn đã giao thành công</div>
+            </div>
+            
+            <div class="big-stat-card">
+                <div class="big-stat-icon" style="background: #FEE2E2; color: #991B1B;">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="big-stat-value" style="color: #EF4444;" th:text="${cancelledCount}">0</div>
+                <div class="big-stat-label">Đơn đã hủy</div>
+            </div>
+            
+            <div class="big-stat-card">
+                <div class="big-stat-icon" style="background: #FEF3C7; color: #92400E;">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <div class="big-stat-value" style="color: #F59E0B; font-size: 24px;" th:text="${#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
+                <div class="big-stat-label">Tổng doanh thu</div>
+            </div>
+        </div>
+
+        <!-- Success Rate -->
+        <div class="chart-section">
+            <h4 style="margin-bottom: 20px;"><i class="fas fa-chart-pie"></i> Tỷ lệ giao hàng thành công</h4>
+            <div style="text-align: center; padding: 40px;">
+                <div style="width: 200px; height: 200px; margin: 0 auto; border-radius: 50%; background: conic-gradient(#10B981 0% [[${successRate}]]%, #E2E8F0 [[${successRate}]]% 100%); display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 160px; height: 160px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                        <div style="font-size: 48px; font-weight: 700; color: #10B981;" th:text="${#numbers.formatDecimal(successRate, 1, 'COMMA', 2, 'POINT')} + '%'">0%</div>
+                        <div style="font-size: 14px; color: #64748B;">Thành công</div>
+                    </div>
+                </div>
+                <p style="margin-top: 24px; color: #64748B;">
+                    <span th:text="${deliveredCount}">0</span> giao thành công / <span th:text="${totalOrders}">0</span> tổng đơn
+                </p>
+            </div>
+        </div>
+
+        <!-- Recent Orders Table -->
+        <div class="chart-section">
+            <h4 style="margin-bottom: 20px;"><i class="fas fa-list"></i> Đơn hàng gần đây</h4>
+            <div style="overflow-x: auto;">
+                <table class="table table-hover">
+                    <thead style="background: #F8FAFC;">
+                        <tr>
+                            <th>Mã đơn</th>
+                            <th>Khách hàng</th>
+                            <th>Số tiền</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày tạo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${recentOrders.isEmpty()}">
+                            <td colspan="5" class="text-center text-muted">Chưa có đơn hàng nào</td>
+                        </tr>
+                        <tr th:each="order : ${recentOrders}">
+                            <td>
+                                <strong th:text="${order.orderNumber}">ORD-001</strong>
+                            </td>
+                            <td th:text="${order.recipientName}">Khách hàng</td>
+                            <td>
+                                <strong style="color: #EF4444;" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'">100,000 ₫</strong>
+                            </td>
+                            <td>
+                                <span th:if="${order.orderStatus == 'Confirmed'}" class="badge bg-warning">Chờ xác nhận</span>
+                                <span th:if="${order.orderStatus == 'Shipping'}" class="badge bg-info">Đang giao</span>
+                                <span th:if="${order.orderStatus == 'Delivered'}" class="badge bg-success">Đã giao</span>
+                                <span th:if="${order.orderStatus == 'Cancelled'}" class="badge bg-danger">Đã hủy</span>
+                            </td>
+                            <td>
+                                <small th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}">01/01/2024</small>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="chart-section">
+                    <h5><i class="fas fa-trophy"></i> Hiệu suất</h5>
+                    <div style="padding: 20px;">
+                        <div style="margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>Đơn đã giao</span>
+                                <strong style="color: #10B981;" th:text="${deliveredCount}">0</strong>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-success" role="progressbar" th:style="'width: ' + ${successRate} + '%'"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>Đơn đã hủy</span>
+                                <strong style="color: #EF4444;" th:text="${cancelledCount}">0</strong>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-danger" role="progressbar" th:style="'width: ' + ${cancelledCount * 100.0 / (totalOrders > 0 ? totalOrders : 1)} + '%'"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="chart-section">
+                    <h5><i class="fas fa-star"></i> Đánh giá</h5>
+                    <div style="padding: 20px; text-align: center;">
+                        <div style="font-size: 48px; color: #F59E0B;">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star-half-alt"></i>
+                        </div>
+                        <p style="margin-top: 16px; color: #64748B; font-size: 18px;">
+                            <strong>4.5</strong> / 5.0
+                        </p>
+                        <p style="color: #64748B; font-size: 14px;">
+                            Dựa trên <span th:text="${deliveredCount}">0</span> đơn đã giao
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

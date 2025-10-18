@@ -27,42 +27,66 @@ public class ShipperOrderController {
     @Autowired
     private NotificationService notificationService;
 
-    @GetMapping
-    public String listAssignedOrders(Model model, HttpSession session) {
-        User currentUser = (User) session.getAttribute("currentUser");
-        if (currentUser == null || currentUser.getRoles() == null || currentUser.getRoles().stream().noneMatch(role -> "SHIPPER".equals(role.getRoleName()))) {
-            return "redirect:/login";
-        }
-        Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
-        List<OrderDTO> assignedOrders = orderManagementService.getShipperAssignedOrders(shipperId);
-        List<OrderDTO> deliveringOrders = orderManagementService.getShipperDeliveringOrders(shipperId);
-        Long unreadNotificationCount = notificationService.getUnreadNotificationCount(shipperId);
-        
-        model.addAttribute("assignedOrders", assignedOrders);
-        model.addAttribute("deliveringOrders", deliveringOrders);
-        model.addAttribute("cancelCount", orderManagementService.getShipperCancelCount(shipperId));
-        model.addAttribute("unreadCount", unreadNotificationCount);
-        return "shipper/order/list";
-    }
+    // DEPRECATED: Use dashboard AJAX endpoints instead
+    // @GetMapping
+    // public String listAssignedOrders(Model model, HttpSession session) {
+    //     User currentUser = (User) session.getAttribute("currentUser");
+    //     if (currentUser == null || currentUser.getRoles() == null || currentUser.getRoles().stream().noneMatch(role -> "SHIPPER".equals(role.getRoleName()))) {
+    //         return "redirect:/login";
+    //     }
+    //     Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
+    //     List<OrderDTO> assignedOrders = orderManagementService.getShipperAssignedOrders(shipperId);
+    //     List<OrderDTO> deliveringOrders = orderManagementService.getShipperDeliveringOrders(shipperId);
+    //     Long unreadNotificationCount = notificationService.getUnreadNotificationCount(shipperId);
+    //     
+    //     model.addAttribute("shipperName", currentUser.getFullName() != null ? currentUser.getFullName() : currentUser.getUsername());
+    //     model.addAttribute("assignedOrders", assignedOrders);
+    //     model.addAttribute("deliveringOrders", deliveringOrders);
+    //     model.addAttribute("cancelCount", orderManagementService.getShipperCancelCount(shipperId));
+    //     model.addAttribute("unreadCount", unreadNotificationCount);
+    //     return "shipper/order/list";
+    // }
 
-    @GetMapping("/stats")
-    public String orderStats(Model model, HttpSession session) {
+    // DEPRECATED: Use dashboard AJAX endpoints instead
+    // @GetMapping("/stats")
+    // public String orderStats(Model model, HttpSession session) {
+    //     User currentUser = (User) session.getAttribute("currentUser");
+    //     if (currentUser == null || currentUser.getRoles() == null || currentUser.getRoles().stream().noneMatch(role -> "SHIPPER".equals(role.getRoleName()))) {
+    //         return "redirect:/login";
+    //     }
+    //     Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
+    //     long assignedCount = orderManagementService.getShipperAssignedOrders(shipperId).size();
+    //     long deliveringCount = orderManagementService.getShipperDeliveringOrders(shipperId).size();
+    //     long cancelCount = orderManagementService.getShipperCancelCount(shipperId);
+    //     model.addAttribute("assignedCount", assignedCount);
+    //     model.addAttribute("deliveringCount", deliveringCount);
+    //     model.addAttribute("cancelCount", cancelCount);
+    //     return "shipper/order/stats";
+    // }
+
+    @GetMapping("/{id}/detail")
+    public String getOrderDetail(@PathVariable Integer id, Model model, HttpSession session) {
         User currentUser = (User) session.getAttribute("currentUser");
         if (currentUser == null || currentUser.getRoles() == null || currentUser.getRoles().stream().noneMatch(role -> "SHIPPER".equals(role.getRoleName()))) {
             return "redirect:/login";
         }
-        Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
-        long assignedCount = orderManagementService.getShipperAssignedOrders(shipperId).size();
-        long deliveringCount = orderManagementService.getShipperDeliveringOrders(shipperId).size();
-        long cancelCount = orderManagementService.getShipperCancelCount(shipperId);
-        model.addAttribute("assignedCount", assignedCount);
-        model.addAttribute("deliveringCount", deliveringCount);
-        model.addAttribute("cancelCount", cancelCount);
-        return "shipper/order/stats";
+        try {
+            Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
+            OrderDTO order = orderManagementService.getOrderById(id);
+            model.addAttribute("order", order);
+            model.addAttribute("shipperName", currentUser.getFullName() != null ? currentUser.getFullName() : currentUser.getUsername());
+            model.addAttribute("cancelCount", orderManagementService.getShipperCancelCount(shipperId));
+            return "shipper/order/detail";
+        } catch (Exception e) {
+            return "redirect:/shipper/orders";
+        }
     }
 
     @PostMapping("/{id}/confirm")
-    public String confirmOrder(@PathVariable Integer id, HttpSession session, RedirectAttributes redirectAttributes) {
+    public String confirmOrder(@PathVariable Integer id, 
+                              @RequestParam(required = false, defaultValue = "3") Integer shippingTime,
+                              HttpSession session,
+                              RedirectAttributes redirectAttributes) {
         User currentUser = (User) session.getAttribute("currentUser");
         if (currentUser == null || currentUser.getRoles() == null || currentUser.getRoles().stream().noneMatch(role -> "SHIPPER".equals(role.getRoleName()))) {
             return "redirect:/login";
@@ -70,17 +94,17 @@ public class ShipperOrderController {
         try {
             Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
             orderManagementService.shipperConfirmOrder(id, shipperId);
-            redirectAttributes.addFlashAttribute("successMessage", "Xác nhận giao hàng thành công!");
+            redirectAttributes.addFlashAttribute("successMessage", "Đã xác nhận đơn hàng và bắt đầu giao! Thời gian giao: 2-5 phút.");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
         }
-        return "redirect:/shipper/orders";
+        return "redirect:/shipper";
     }
 
     @PostMapping("/{id}/cancel")
     public String cancelOrder(@PathVariable Integer id, 
                              @RequestParam(required = false, defaultValue = "Shipper cancel") String reason,
-                             HttpSession session, 
+                             HttpSession session,
                              RedirectAttributes redirectAttributes) {
         User currentUser = (User) session.getAttribute("currentUser");
         if (currentUser == null || currentUser.getRoles() == null || currentUser.getRoles().stream().noneMatch(role -> "SHIPPER".equals(role.getRoleName()))) {
@@ -89,25 +113,38 @@ public class ShipperOrderController {
         try {
             Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
             orderManagementService.shipperCancelOrder(id, shipperId, reason);
-            redirectAttributes.addFlashAttribute("successMessage", "Hủy giao hàng thành công!");
-        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("successMessage", "Đã hủy đơn hàng!");
+        } catch (IllegalStateException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-        }
-        return "redirect:/shipper/orders";
-    }
-
-    @PostMapping("/{id}/complete")
-    public String completeOrder(@PathVariable Integer id, HttpSession session, RedirectAttributes redirectAttributes) {
-        User currentUser = (User) session.getAttribute("currentUser");
-        if (currentUser == null || currentUser.getRoles() == null || currentUser.getRoles().stream().noneMatch(role -> "SHIPPER".equals(role.getRoleName()))) {
-            return "redirect:/login";
-        }
-        try {
-            orderManagementService.markOrderAsDelivered(id);
-            redirectAttributes.addFlashAttribute("successMessage", "Hoàn thành giao hàng!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
         }
-        return "redirect:/shipper/orders";
+        return "redirect:/shipper";
+    }
+
+    @PostMapping("/{id}/complete")
+    @ResponseBody
+    public String completeOrder(@PathVariable Integer id, HttpSession session) {
+        User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser == null || currentUser.getRoles() == null || currentUser.getRoles().stream().noneMatch(role -> "SHIPPER".equals(role.getRoleName()))) {
+            return "Unauthorized";
+        }
+        try {
+            orderManagementService.markOrderAsDelivered(id);
+            return "Success";
+        } catch (Exception e) {
+            return "Error: " + e.getMessage();
+        }
+    }
+    
+    @GetMapping("/notifications")
+    @ResponseBody
+    public java.util.List<java.util.Map<String, Object>> getNotifications(HttpSession session) {
+        User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser == null) {
+            return java.util.Collections.emptyList();
+        }
+        Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
+        return notificationService.getShipperNotifications(shipperId);
     }
 }

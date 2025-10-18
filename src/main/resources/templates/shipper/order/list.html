@@ -1,201 +1,537 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout/shipper-layout}">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Quản lý đơn hàng</title>
-    <th:block layout:fragment="styles">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý đơn hàng - UTE Fashion Shipper</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .stats-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        :root {
+            --primary-blue: #3B82F6;
+            --text-primary: #1E293B;
+            --text-secondary: #64748B;
+            --border-color: #E2E8F0;
+            --hover-bg: #F1F5F9;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #F8FAFC;
+            color: var(--text-primary);
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 240px;
+            background: white;
+            border-right: 1px solid var(--border-color);
+            padding: 24px 0;
+            z-index: 1000;
+        }
+        
+        .sidebar-logo {
+            padding: 0 24px 24px;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-blue);
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 16px;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0 12px;
+        }
+        
+        .sidebar-menu li { margin-bottom: 4px; }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        
+        .sidebar-menu a:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+        
+        .sidebar-menu a.active {
+            background: var(--primary-blue);
             color: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .sidebar-menu a i {
+            margin-right: 12px;
+            width: 20px;
             text-align: center;
         }
-        .order-card {
-            border: 2px solid #e9ecef;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            transition: all 0.3s ease;
+        
+        /* Main Content */
+        .main-content {
+            margin-left: 240px;
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .top-header {
             background: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .order-card:hover {
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            transform: translateY(-3px);
-        }
-        .order-card.pending {
-            border-left: 5px solid #ffc107;
-            background: #fffbf0;
-        }
-        .order-card.delivering {
-            border-left: 5px solid #17a2b8;
-            background: #f0f9ff;
-        }
-        .btn-action {
-            border-radius: 10px;
-            padding: 10px 25px;
+        
+        .header-greeting {
+            font-size: 24px;
             font-weight: 600;
-            margin: 5px;
         }
-        .timer-badge {
-            background: #17a2b8;
+        
+        .header-actions {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .header-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: var(--hover-bg);
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .badge-notification {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #EF4444;
             color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-weight: bold;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+        
+        /* Content */
+        .content-area {
+            padding: 32px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        
+        .order-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: all 0.2s;
+        }
+        
+        .order-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .order-number {
+            font-weight: 600;
             font-size: 16px;
         }
+        
+        .order-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-pending {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+        
+        .status-delivering {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+        
+        .order-info {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .order-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        
+        .btn-primary-custom {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary-custom:hover {
+            background: #2563EB;
+        }
+        
+        .btn-secondary-custom {
+            background: #F1F5F9;
+            color: var(--text-secondary);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .timer-badge {
+            background: var(--primary-blue);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
     </style>
-    </th:block>
 </head>
 <body>
-<div layout:fragment="content">
-    <div class="container my-4">
-        <!-- Flash Messages -->
-        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
-            <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <a href="/UTE_Fashion/" class="sidebar-logo" style="text-decoration: none; color: inherit; display: block; cursor: pointer;">
+            <i class="fas fa-shopping-bag"></i> UTE FASHION
+        </a>
+        <ul class="sidebar-menu">
+            <li>
+                <a href="#" th:href="@{/shipper/dashboard}">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Tổng quan</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" th:href="@{/shipper/orders}" class="active">
+                    <i class="fas fa-box"></i>
+                    <span>Đơn được giao</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" th:href="@{/shipper/history}">
+                    <i class="fas fa-history"></i>
+                    <span>Lịch sử giao hàng</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" th:href="@{/shipper/profile}">
+                    <i class="fas fa-user"></i>
+                    <span>Thông tin cá nhân</span>
+                </a>
+            </li>
+        </ul>
+        <div style="position: absolute; bottom: 20px; left: 0; right: 0; padding: 0 12px;">
+            <a href="#" th:href="@{/logout}" class="sidebar-menu" style="display: flex; align-items: center; padding: 12px 16px; color: #EF4444; text-decoration: none; border-radius: 8px;">
+                <i class="fas fa-sign-out-alt" style="margin-right: 12px;"></i>
+                <span>Đăng xuất</span>
+            </a>
         </div>
-        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show">
-            <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="top-header">
+            <div class="header-greeting">
+                Hello, <span th:text="${shipperName ?: 'Shipper'}">Shipper</span> 👋
+            </div>
+            <div class="header-actions">
+                <!-- Notification Bell -->
+                <div class="dropdown">
+                    <div class="header-icon" data-bs-toggle="dropdown" onclick="loadNotifications()">
+                        <i class="fas fa-bell"></i>
+                        <span id="notif-badge" th:if="${unreadCount != null && unreadCount > 0}" class="badge-notification" th:text="${unreadCount}">0</span>
+                    </div>
+                    <ul class="dropdown-menu dropdown-menu-end" id="notification-dropdown" style="width: 350px; max-height: 400px; overflow-y: auto;">
+                        <li class="dropdown-header"><strong>Thông báo</strong></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li id="notification-loading" class="text-center py-3">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            Đang tải...
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- User Menu -->
+                <div class="dropdown">
+                    <div class="header-icon" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li class="dropdown-header"><strong th:text="${shipperName}">Shipper</strong></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" th:href="@{/shipper/profile}"><i class="fas fa-user"></i> Thông tin cá nhân</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" th:href="@{/logout}"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a></li>
+                    </ul>
+                </div>
+            </div>
         </div>
 
-        <!-- Stats Cards -->
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="stats-card">
-                    <h3 class="mb-0" th:text="${assignedOrders.size()}">0</h3>
-                    <p class="mb-0"><i class="fas fa-clock"></i> Đơn chờ xác nhận</p>
-                </div>
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- Flash Messages -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+                <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
-            <div class="col-md-4">
-                <div class="stats-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-                    <h3 class="mb-0" th:text="${deliveringOrders.size()}">0</h3>
-                    <p class="mb-0"><i class="fas fa-truck"></i> Đang giao</p>
-                </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show">
+                <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
-            <div class="col-md-4">
-                <div class="stats-card" style="background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);">
-                    <h3 class="mb-0" id="cancelCount" th:text="${cancelCount}">0</h3>
-                    <p class="mb-0"><i class="fas fa-times-circle"></i> Đã hủy (Tối đa 3)</p>
-                </div>
-            </div>
-        </div>
 
-        <!-- Assigned Orders (Chờ xác nhận) -->
-        <div class="mb-5">
-            <h3 class="mb-3">
-                <i class="fas fa-bell text-warning"></i> Đơn chờ xác nhận 
-                <span th:if="${assignedOrders.size() > 0}" class="badge bg-warning text-dark" th:text="${assignedOrders.size()}">0</span>
-            </h3>
-            
-            <div th:if="${assignedOrders.isEmpty()}" class="alert alert-info">
-                <i class="fas fa-info-circle"></i> Không có đơn hàng chờ xác nhận.
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" th:text="${assignedOrders.size()}">0</div>
+                    <div class="stat-label"><i class="fas fa-clock"></i> Đơn chờ xác nhận</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" th:text="${deliveringOrders.size()}">0</div>
+                    <div class="stat-label"><i class="fas fa-truck"></i> Đang giao</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="cancelCount" th:text="${cancelCount}">0</div>
+                    <div class="stat-label"><i class="fas fa-times-circle"></i> Đã hủy (Tối đa 3)</div>
+                </div>
             </div>
-            
-            <div th:each="order : ${assignedOrders}" class="order-card pending">
-                <div class="row align-items-center">
-                    <div class="col-md-4">
-                        <h5 class="mb-2"><i class="fas fa-box"></i> Đơn <span th:text="${order.orderNumber}"></span></h5>
-                        <p class="text-muted mb-1"><i class="fas fa-user"></i> <span th:text="${order.customerName}"></span></p>
-                        <p class="text-muted mb-0"><i class="fas fa-phone"></i> <span th:text="${order.customerPhone}"></span></p>
+
+            <!-- Assigned Orders (Chờ xác nhận) -->
+            <div class="mb-4">
+                <h4 style="margin-bottom: 20px; font-weight: 600;">
+                    Đơn chờ xác nhận
+                    <span th:if="${assignedOrders.size() > 0}" class="badge bg-warning" th:text="${assignedOrders.size()}">0</span>
+                </h4>
+                
+                <div th:if="${assignedOrders.isEmpty()}" class="alert alert-info">
+                    Không có đơn hàng chờ xác nhận.
+                </div>
+                
+                <div th:each="order : ${assignedOrders}" class="order-card">
+                    <div class="order-header">
+                        <div class="order-number">
+                            <i class="fas fa-box"></i> <span th:text="${order.orderNumber}"></span>
+                        </div>
+                        <span class="order-status status-pending">Chờ xác nhận</span>
                     </div>
-                    <div class="col-md-4">
-                        <p class="mb-1"><i class="fas fa-map-marker-alt text-danger"></i> <strong>Địa chỉ:</strong></p>
-                        <p class="mb-0" th:text="${order.deliveryAddress}"></p>
+                    <div class="order-info">
+                        <div><i class="fas fa-user"></i> <strong>Khách hàng:</strong> <span th:text="${order.recipientName}"></span></div>
+                        <div><i class="fas fa-phone"></i> <strong>SĐT:</strong> <span th:text="${order.phoneNumber}"></span></div>
+                        <div><i class="fas fa-map-marker-alt"></i> <strong>Địa chỉ:</strong> <span th:text="${order.shippingAddress}"></span></div>
+                        <div><i class="fas fa-money-bill-wave"></i> <strong>Tổng tiền:</strong> 
+                            <span th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                        </div>
                     </div>
-                    <div class="col-md-4 text-end">
-                        <form th:action="@{/shipper/orders/{id}/confirm(id=${order.id})}" method="post" class="d-inline">
-                            <button type="submit" class="btn btn-success btn-action">
-                                <i class="fas fa-check"></i> Xác nhận giao
-                            </button>
-                        </form>
-                        <form th:id="'cancel-form-' + ${order.id}" th:action="@{/shipper/orders/{id}/cancel(id=${order.id})}" method="post" class="d-inline">
-                            <input type="hidden" name="reason" th:id="'cancel-reason-' + ${order.id}">
-                            <button type="button" th:onclick="'confirmCancel(' + ${order.id} + ')'" class="btn btn-warning btn-action">
-                                <i class="fas fa-times"></i> Hủy
-                            </button>
-                        </form>
+                    <div class="order-actions">
+                        <a th:href="@{/shipper/orders/{id}/detail(id=${order.id})}" class="btn-primary-custom" style="width: 100%; text-align: center; text-decoration: none; display: block;">
+                            <i class="fas fa-eye"></i> Xem Chi Tiết
+                        </a>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Delivering Orders (Đang giao) -->
-        <div>
-            <h3 class="mb-3">
-                <i class="fas fa-truck-loading text-info"></i> Đơn đang giao
-                <span th:if="${deliveringOrders.size() > 0}" class="badge bg-info text-dark" th:text="${deliveringOrders.size()}">0</span>
-            </h3>
-            
-            <div th:if="${deliveringOrders.isEmpty()}" class="alert alert-info">
-                <i class="fas fa-info-circle"></i> Không có đơn hàng đang giao.
-            </div>
-            
-            <div th:each="order : ${deliveringOrders}" class="order-card delivering">
-                <div class="row align-items-center">
-                    <div class="col-md-4">
-                        <h5 class="mb-2"><i class="fas fa-box"></i> Đơn <span th:text="${order.orderNumber}"></span></h5>
-                        <p class="text-muted mb-1"><i class="fas fa-user"></i> <span th:text="${order.customerName}"></span></p>
-                        <p class="text-muted mb-0"><i class="fas fa-phone"></i> <span th:text="${order.customerPhone}"></span></p>
+            <!-- Delivering Orders (Đang giao) -->
+            <div>
+                <h4 style="margin-bottom: 20px; font-weight: 600;">
+                    Đơn đang giao
+                    <span th:if="${deliveringOrders.size() > 0}" class="badge bg-info" th:text="${deliveringOrders.size()}">0</span>
+                </h4>
+                
+                <div th:if="${deliveringOrders.isEmpty()}" class="alert alert-info">
+                    Không có đơn hàng đang giao.
+                </div>
+                
+                <div th:each="order : ${deliveringOrders}" class="order-card">
+                    <div class="order-header">
+                        <div class="order-number">
+                            <i class="fas fa-truck"></i> <span th:text="${order.orderNumber}"></span>
+                        </div>
+                        <span class="order-status status-delivering">Đang giao</span>
                     </div>
-                    <div class="col-md-4">
-                        <p class="mb-1"><i class="fas fa-map-marker-alt text-danger"></i> <strong>Địa chỉ:</strong></p>
-                        <p class="mb-0" th:text="${order.deliveryAddress}"></p>
-                    </div>
-                    <div class="col-md-4 text-center">
-                        <p class="mb-2"><i class="fas fa-clock"></i> <strong>Thời gian giao dự kiến:</strong></p>
-                        <span class="timer-badge" th:id="'timer-' + ${order.id}">--:--</span>
-                        <script th:inline="javascript">
-                            /*<![CDATA[*/
-                            startTimer(/*[[${order.id}]]*/, /*[[${order.shippingTime}]]*/); 
-                            /*]]>*/
-                        </script>
-                        <p class="text-muted mt-2 mb-0">Đơn sẽ tự động hoàn thành khi hết giờ</p>
+                    <div class="order-info">
+                        <div><i class="fas fa-user"></i> <strong>Khách hàng:</strong> <span th:text="${order.recipientName}"></span></div>
+                        <div><i class="fas fa-phone"></i> <strong>SĐT:</strong> <span th:text="${order.phoneNumber}"></span></div>
+                        <div><i class="fas fa-map-marker-alt"></i> <strong>Địa chỉ:</strong> <span th:text="${order.shippingAddress}"></span></div>
+                        <div><i class="fas fa-money-bill-wave"></i> <strong>Tổng tiền:</strong> 
+                            <span th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                        </div>
+                        <div style="margin-top: 12px;">
+                            <i class="fas fa-clock"></i> <strong>Thời gian còn lại:</strong> 
+                            <span class="timer-badge countdown-timer" 
+                                  th:id="'timer-' + ${order.id}"
+                                  th:attr="data-delivery-time=${order.estimatedDeliveryTime}">--:--</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
-    <th:block layout:fragment="scripts">
+
     <script>
-        function startTimer(orderId, duration) {
-            var timer = duration * 60, minutes, seconds;
-            var interval = setInterval(function () {
-                minutes = parseInt(timer / 60, 10);
-                seconds = parseInt(timer % 60, 10);
-                seconds = seconds < 10 ? "0" + seconds : seconds;
-                document.getElementById('timer-' + orderId).textContent = minutes + ":" + seconds;
-                if (--timer < 0) {
-                    clearInterval(interval);
-                    fetch('/shipper/orders/' + orderId + '/complete', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        }
-                    }).then(() => {
-                        location.reload();
-                    });
+        // Start countdown timers
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.countdown-timer[data-delivery-time]').forEach(function(timerEl) {
+                const orderId = timerEl.id.replace('timer-', '');
+                const deliveryTimeStr = timerEl.getAttribute('data-delivery-time');
+                
+                console.log('Timer for order ' + orderId + ':', deliveryTimeStr);
+                
+                if (!deliveryTimeStr || deliveryTimeStr === 'null') {
+                    timerEl.textContent = 'Chưa có thời gian';
+                    return;
                 }
-            }, 1000);
-        }
+                
+                const deliveryTime = new Date(deliveryTimeStr).getTime();
+                
+                const interval = setInterval(function() {
+                    const now = new Date().getTime();
+                    const distance = deliveryTime - now;
+                    
+                    if (distance < 0) {
+                        clearInterval(interval);
+                        timerEl.textContent = 'Đã giao!';
+                        timerEl.style.background = '#10B981';
+                        
+                        // Auto complete delivery
+                        fetch('/UTE_Fashion/shipper/orders/' + orderId + '/complete', {
+                            method: 'POST'
+                        }).then(() => {
+                            setTimeout(() => location.reload(), 2000);
+                        });
+                        return;
+                    }
+                    
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                    timerEl.textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+                }, 1000);
+            });
+        });
         
         function confirmCancel(orderId) {
-            var reason = prompt('Đơn hàng này bạn đã hủy ' + document.getElementById('cancelCount').textContent + '/3 lần.\\nVui lòng nhập lý do hủy:');
+            var reason = prompt('Đơn hàng này bạn đã hủy ' + document.getElementById('cancelCount').textContent + '/3 lần.\nVui lòng nhập lý do hủy:');
             if (reason && reason.trim() !== '') {
                 var form = document.getElementById('cancel-form-' + orderId);
                 document.getElementById('cancel-reason-' + orderId).value = reason;
                 form.submit();
             }
         }
+        
+        function loadNotifications() {
+            fetch('/UTE_Fashion/shipper/orders/notifications')
+                .then(response => response.json())
+                .then(notifications => {
+                    const dropdown = document.getElementById('notification-dropdown');
+                    const loading = document.getElementById('notification-loading');
+                    
+                    if (loading) loading.remove();
+                    
+                    // Remove old items except header
+                    const items = dropdown.querySelectorAll('li:not(.dropdown-header):not([id="notification-loading"])');
+                    items.forEach(item => item.remove());
+                    
+                    if (notifications.length === 0) {
+                        dropdown.innerHTML += '<li><a class="dropdown-item" href="#">Không có thông báo mới</a></li>';
+                        return;
+                    }
+                    
+                    notifications.forEach(notif => {
+                        const timeAgo = getTimeAgo(new Date(notif.createdAt));
+                        dropdown.innerHTML += `
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item ${!notif.isRead ? 'fw-bold' : ''}" href="/UTE_Fashion/shipper/orders/${notif.orderId}/detail">
+                                    <div style="font-size: 14px;">
+                                        <i class="fas fa-box text-primary"></i>
+                                        <strong>Đơn hàng #${notif.orderNumber}</strong>
+                                    </div>
+                                    <small class="text-muted">${notif.message}</small>
+                                    <br>
+                                    <small class="text-muted">${timeAgo}</small>
+                                </a>
+                            </li>
+                        `;
+                    });
+                })
+                .catch(error => {
+                    console.error('Lỗi khi tải thông báo:', error);
+                });
+        }
+        
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return 'Vừa xong';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return minutes + ' phút trước';
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return hours + ' giờ trước';
+            const days = Math.floor(hours / 24);
+            return days + ' ngày trước';
+        }
     </script>
-    </th:block>
-</div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

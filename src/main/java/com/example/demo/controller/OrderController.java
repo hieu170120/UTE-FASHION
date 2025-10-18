@@ -25,14 +25,9 @@ public class OrderController {
     private OrderManagementService orderManagementService;
 
     @GetMapping
-    public String listOrders(Model model, HttpSession session) {
-        User currentUser = (User) session.getAttribute("currentUser");
-        if (currentUser == null) {
-            return "redirect:/login";
-        }
-        // Sử dụng method mới với JOIN FETCH để tránh lazy loading
-        model.addAttribute("orders", orderManagementService.getCustomerOrders(currentUser.getUserId()));
-        return "order/my-orders";
+    public String listOrders(HttpSession session) {
+        // ✅ Redirect về /orders/my-orders thay vì render trực tiếp
+        return "redirect:/orders/my-orders";
     }
 
     @GetMapping("/{id}")
@@ -44,12 +39,12 @@ public class OrderController {
         try {
             OrderDTO order = orderService.getOrderById(id);
             if (!order.getUserId().equals(currentUser.getUserId())) {
-                return "redirect:/orders";
+                return "redirect:/orders/my-orders";
             }
             model.addAttribute("order", order);
             return "order/detail";
         } catch (Exception e) {
-            return "redirect:/orders";
+            return "redirect:/orders/my-orders";
         }
     }
 
@@ -69,6 +64,6 @@ public class OrderController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi hủy đơn hàng!");
         }
-        return "redirect:/orders";
+        return "redirect:/orders/my-orders";
     }
 }

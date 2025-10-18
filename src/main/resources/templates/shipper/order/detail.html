@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi Tiết Đơn Hàng - UTE Fashion Shipper</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f8f9fa; }
+        .navbar-custom { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .card { border: none; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .info-label { font-weight: 600; color: #6c757d; }
+        .status-badge { padding: 8px 15px; border-radius: 20px; font-size: 14px; }
+        .action-card { background: #fff3cd; border-left: 4px solid #ffc107; }
+        .btn-action { padding: 12px 24px; font-size: 16px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-custom navbar-dark mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" th:href="@{/}">
+                <i class="fas fa-shopping-bag"></i> UTE FASHION
+            </a>
+            <div>
+                <a th:href="@{/shipper/orders}" class="btn btn-light btn-sm">
+                    <i class="fas fa-arrow-left"></i> Quay Lại Danh Sách
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-body">
+                <h2><i class="fas fa-receipt text-success"></i> Chi Tiết Đơn Hàng #<span th:text="${order.orderNumber}"></span></h2>
+            </div>
+        </div>
+
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5><i class="fas fa-info-circle text-info"></i> Thông Tin Đơn Hàng</h5>
+                        <hr>
+                        <p><span class="info-label">Ngày đặt:</span> <span th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></span></p>
+                        <p><span class="info-label">Trạng thái:</span> 
+                            <span class="status-badge bg-warning text-dark" 
+                                  th:text="${order.orderStatus == 'Processing' ? 'Đang Xử Lý' : 
+                                          (order.orderStatus == 'Confirmed' ? 'Chờ Xác Nhận Giao' : 
+                                          (order.orderStatus == 'Shipping' ? 'Đang Giao' : 
+                                          (order.orderStatus == 'Delivered' ? 'Đã Giao' : 
+                                          (order.orderStatus == 'Cancelled' ? 'Đã Hủy' : 'Đã Trả Hàng'))))}"></span>
+                        </p>
+                        <p><span class="info-label">Tổng tiền:</span> 
+                            <span class="text-danger fw-bold fs-5" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                        </p>
+                        <p><span class="info-label">Phương thức thanh toán:</span> 
+                            <span class="badge bg-info" th:text="${order.paymentStatus == 'Paid' ? 'Đã thanh toán online' : 'COD (Thanh toán khi nhận hàng)'}"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5><i class="fas fa-shipping-fast text-success"></i> Thông Tin Người Nhận</h5>
+                        <hr>
+                        <p><span class="info-label">Họ tên:</span> <span th:text="${order.recipientName}"></span></p>
+                        <p><span class="info-label">Số điện thoại:</span> <span th:text="${order.phoneNumber}"></span></p>
+                        <p><span class="info-label">Email:</span> <span th:text="${order.email}"></span></p>
+                        <p><span class="info-label">Địa chỉ:</span> <span th:text="${order.shippingAddress + ', ' + order.ward + ', ' + order.district + ', ' + order.city}"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions Card (Chỉ hiện khi Confirmed - chờ shipper xác nhận) -->
+        <div th:if="${order.orderStatus == 'Confirmed'}" class="card action-card">
+            <div class="card-body">
+                <h5><i class="fas fa-hand-pointer text-warning"></i> Hành Động</h5>
+                <p class="text-muted">Bạn đã hủy <strong><span th:text="${cancelCount}">0</span>/3</strong> đơn hàng. 
+                    <span th:if="${cancelCount >= 3}" class="text-danger">Bạn không thể hủy thêm đơn nào nữa!</span>
+                </p>
+                <div class="d-flex gap-3">
+                    <form th:action="@{/shipper/orders/{id}/confirm(id=${order.id})}" method="post" style="flex: 1;" 
+                          onsubmit="return confirm('Xác nhận nhận đơn này và bắt đầu giao hàng?\n\nThời gian giao sẽ được random từ 2-5 phút.');">
+                        <button type="submit" class="btn btn-success btn-action w-100">
+                            <i class="fas fa-check-circle"></i> Xác Nhận Giao Hàng
+                        </button>
+                    </form>
+                    <form th:if="${cancelCount < 3}" th:id="'cancel-form-' + ${order.id}" 
+                          th:action="@{/shipper/orders/{id}/cancel(id=${order.id})}" method="post" style="flex: 1;">
+                        <input type="hidden" name="reason" th:id="'cancel-reason-' + ${order.id}">
+                        <button type="button" th:onclick="'confirmCancelDetail(' + ${order.id} + ', ' + ${cancelCount} + ')'" 
+                                class="btn btn-danger btn-action w-100">
+                            <i class="fas fa-times-circle"></i> Hủy Đơn
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danh sách sản phẩm -->
+        <div class="card">
+            <div class="card-body">
+                <h5><i class="fas fa-box-open text-primary"></i> Danh Sách Sản Phẩm</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sản Phẩm</th>
+                                <th>Size</th>
+                                <th>Màu</th>
+                                <th>Số Lượng</th>
+                                <th>Đơn Giá</th>
+                                <th>Thành Tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="item : ${order.orderItems}">
+                                <td><strong th:text="${item.productName}"></strong></td>
+                                <td><span class="badge bg-secondary" th:text="${item.size}"></span></td>
+                                <td><span class="badge bg-info" th:text="${item.color}"></span></td>
+                                <td class="text-center"><strong th:text="${item.quantity}"></strong></td>
+                                <td th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                                <td class="text-danger fw-bold" th:text="${#numbers.formatDecimal(item.totalPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="5" class="text-end"><strong>TỔNG CỘNG:</strong></td>
+                                <td class="text-danger fw-bold fs-5" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function confirmCancelDetail(orderId, currentCancelCount) {
+            var reason = prompt('Đơn hàng này bạn đã hủy ' + currentCancelCount + '/3 lần.\nVui lòng nhập lý do hủy:');
+            if (reason && reason.trim() !== '') {
+                var form = document.getElementById('cancel-form-' + orderId);
+                document.getElementById('cancel-reason-' + orderId).value = reason;
+                form.submit();
+            }
+        }
+    </script>
+</body>
+</html>
