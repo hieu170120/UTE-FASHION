@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>Danh sách yêu thích</title>
+    <th:block layout:fragment="styles">
+        <style>
+            .wishlist-container {
+                min-height: 60vh;
+                padding: 40px 0;
+            }
+            
+            .wishlist-header {
+                border-bottom: 2px solid #e0e0e0;
+                padding-bottom: 20px;
+                margin-bottom: 30px;
+            }
+            
+            .wishlist-header h2 {
+                font-size: 28px;
+                font-weight: 600;
+                margin: 0;
+            }
+            
+            .wishlist-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 30px;
+            }
+            
+            @media (max-width: 992px) {
+                .wishlist-grid {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+            }
+            
+            @media (max-width: 768px) {
+                .wishlist-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 20px;
+                }
+            }
+            
+            @media (max-width: 576px) {
+                .wishlist-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+            
+            .wishlist-item {
+                position: relative;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                overflow: hidden;
+                transition: all 0.3s ease;
+            }
+            
+            .wishlist-item:hover {
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                transform: translateY(-5px);
+            }
+            
+            .wishlist-item-image {
+                position: relative;
+                padding-top: 133%;
+                overflow: hidden;
+                background-color: #f5f5f5;
+            }
+            
+            .wishlist-item-image img {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transition: transform 0.3s ease;
+            }
+            
+            .wishlist-item:hover .wishlist-item-image img {
+                transform: scale(1.05);
+            }
+            
+            .wishlist-item-remove {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: white;
+                border: none;
+                border-radius: 50%;
+                width: 36px;
+                height: 36px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                transition: all 0.3s ease;
+                z-index: 10;
+            }
+            
+            .wishlist-item-remove:hover {
+                background: #e60023;
+                transform: scale(1.1);
+            }
+            
+            .wishlist-item-remove i {
+                color: #e60023;
+                font-size: 18px;
+                transition: color 0.3s ease;
+            }
+            
+            .wishlist-item-remove:hover i {
+                color: white;
+            }
+            
+            .wishlist-item-info {
+                padding: 15px;
+            }
+            
+            .wishlist-item-name {
+                font-size: 16px;
+                font-weight: 500;
+                margin-bottom: 8px;
+                height: 48px;
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+            }
+            
+            .wishlist-item-name a {
+                color: #333;
+                text-decoration: none;
+            }
+            
+            .wishlist-item-name a:hover {
+                color: #e60023;
+            }
+            
+            .wishlist-item-price {
+                font-size: 18px;
+                font-weight: 600;
+                color: #e60023;
+                margin-bottom: 10px;
+            }
+            
+            .wishlist-item-price .original-price {
+                font-size: 14px;
+                color: #999;
+                text-decoration: line-through;
+                margin-left: 8px;
+                font-weight: normal;
+            }
+            
+            .wishlist-item-actions {
+                display: flex;
+                gap: 10px;
+            }
+            
+            .btn-add-cart {
+                flex: 1;
+                padding: 10px;
+                background: #000;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+                transition: all 0.3s ease;
+            }
+            
+            .btn-add-cart:hover {
+                background: #333;
+            }
+            
+            .empty-wishlist {
+                text-align: center;
+                padding: 80px 20px;
+            }
+            
+            .empty-wishlist i {
+                font-size: 80px;
+                color: #ccc;
+                margin-bottom: 20px;
+            }
+            
+            .empty-wishlist h3 {
+                font-size: 24px;
+                margin-bottom: 10px;
+                color: #666;
+            }
+            
+            .empty-wishlist p {
+                color: #999;
+                margin-bottom: 30px;
+            }
+            
+            .empty-wishlist .btn {
+                padding: 12px 30px;
+                font-size: 16px;
+            }
+        </style>
+    </th:block>
+</head>
+<body>
+    <div class="container wishlist-container" layout:fragment="content">
+        <div class="wishlist-header">
+            <h2><i class="fas fa-heart me-2" style="color: #e60023;"></i>Danh sách yêu thích (<span th:text="${wishlistItems.size()}">0</span> sản phẩm)</h2>
+        </div>
+        
+        <!-- Empty State -->
+        <div th:if="${wishlistItems.isEmpty()}" class="empty-wishlist">
+            <i class="fas fa-heart-broken"></i>
+            <h3>Danh sách yêu thích của bạn đang trống</h3>
+            <p>Hãy thêm những sản phẩm yêu thích để dễ dàng theo dõi và mua sắm sau này!</p>
+            <a th:href="@{/products}" class="btn btn-dark">
+                <i class="fas fa-shopping-bag me-2"></i>Khám phá sản phẩm
+            </a>
+        </div>
+        
+        <!-- Wishlist Items -->
+        <div th:if="${!wishlistItems.isEmpty()}" class="wishlist-grid">
+            <div class="wishlist-item" th:each="item : ${wishlistItems}">
+                <button class="wishlist-item-remove" th:onclick="'removeFromWishlist(' + ${item.product.id} + ')'" title="Xóa khỏi yêu thích">
+                    <i class="fas fa-times"></i>
+                </button>
+                
+                <a th:href="@{/products/{slug}(slug=${item.product.slug})}">
+                    <div class="wishlist-item-image">
+                        <img th:if="${item.product.images != null and !item.product.images.isEmpty()}"
+                             th:src="${item.product.images[0].imageUrl}"
+                             th:alt="${item.product.productName}"
+                             onerror="this.src='https://via.placeholder.com/300x400?text=No+Image'">
+                        <img th:if="${item.product.images == null or item.product.images.isEmpty()}"
+                             src="https://via.placeholder.com/300x400?text=No+Image"
+                             alt="No image">
+                    </div>
+                </a>
+                
+                <div class="wishlist-item-info">
+                    <h3 class="wishlist-item-name">
+                        <a th:href="@{/products/{slug}(slug=${item.product.slug})}" th:text="${item.product.productName}"></a>
+                    </h3>
+                    
+                    <div class="wishlist-item-price">
+                        <span th:if="${item.product.salePrice != null and item.product.salePrice < item.product.price}"
+                              th:text="${#numbers.formatDecimal(item.product.salePrice, 0, 'COMMA', 0, 'POINT')} + 'đ'">
+                        </span>
+                        <span th:if="${item.product.salePrice != null and item.product.salePrice < item.product.price}"
+                              class="original-price"
+                              th:text="${#numbers.formatDecimal(item.product.price, 0, 'COMMA', 0, 'POINT')} + 'đ'">
+                        </span>
+                        <span th:if="${item.product.salePrice == null or item.product.salePrice >= item.product.price}"
+                              th:text="${#numbers.formatDecimal(item.product.price, 0, 'COMMA', 0, 'POINT')} + 'đ'">
+                        </span>
+                    </div>
+                    
+                    <div class="wishlist-item-actions">
+                        <button class="btn-add-cart" th:onclick="'quickAddToCart(' + ${item.product.id} + ', this)'">
+                            <i class="fas fa-shopping-cart me-1"></i>Thêm vào giỏ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <th:block layout:fragment="scripts">
+        <script th:inline="javascript">
+            const csrfToken = /*[[${_csrf.token}]]*/ '';
+            const csrfHeader = /*[[${_csrf.headerName}]]*/ '';
+            
+            function removeFromWishlist(productId) {
+                if (!confirm('Bạn có chắc muốn xóa sản phẩm này khỏi danh sách yêu thích?')) {
+                    return;
+                }
+                
+                const headers = {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                };
+                if (csrfToken && csrfHeader) {
+                    headers[csrfHeader] = csrfToken;
+                }
+                
+                fetch('/UTE_Fashion/api/wishlist/remove?productId=' + productId, {
+                    method: 'DELETE',
+                    headers: headers,
+                    credentials: 'include'
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Có lỗi xảy ra: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra khi xóa sản phẩm');
+                });
+            }
+            
+            function quickAddToCart(productId, button) {
+                const originalText = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang thêm...';
+                
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (csrfToken && csrfHeader) {
+                    headers[csrfHeader] = csrfToken;
+                }
+                
+                fetch('/UTE_Fashion/cart/add', {
+                    method: 'POST',
+                    headers: headers,
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        productId: productId,
+                        quantity: 1
+                    })
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error('Không thể thêm vào giỏ');
+                    return res.json();
+                })
+                .then(data => {
+                    button.innerHTML = '<i class="fas fa-check me-1"></i>Đã thêm';
+                    button.style.backgroundColor = '#10b981';
+                    
+                    setTimeout(() => {
+                        button.disabled = false;
+                        button.innerHTML = originalText;
+                        button.style.backgroundColor = '';
+                    }, 2000);
+                })
+                .catch(error => {
+                    button.disabled = false;
+                    button.innerHTML = originalText;
+                    alert('Có lỗi xảy ra: ' + error.message);
+                });
+            }
+        </script>
+    </th:block>
+</body>
+</html>
