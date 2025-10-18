@@ -20,7 +20,7 @@ public class VendorProductController {
     // Tạm thời, chúng ta sẽ hardcode user. Sau này sẽ được thay thế bằng interceptor hoặc Principal
     private User getCurrentUser() {
         User user = new User();
-        user.setId(1); // Giả sử user có ID là 1 (admin/vendor)
+        user.setUserId(1); // Giả sử user có ID là 1 (admin/vendor)
         return user;
     }
 
