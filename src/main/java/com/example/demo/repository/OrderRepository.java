@@ -1,6 +1,8 @@
 package com.example.demo.repository;
 
 import com.example.demo.entity.Order;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -51,6 +53,11 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "WHERE o.user.userId = :userId " +
            "ORDER BY o.orderDate DESC")
     List<Order> findByUserUserIdWithDetails(@Param("userId") Integer userId);
+    
+    @Query("SELECT o FROM Order o " +
+           "WHERE o.user.userId = :userId " +
+           "ORDER BY o.orderDate DESC")
+    Page<Order> findByUserUserIdOrderByOrderDateDesc(@Param("userId") Integer userId, Pageable pageable);
     
     @Query("SELECT DISTINCT o FROM Order o " +
            "LEFT JOIN FETCH o.orderItems oi " +

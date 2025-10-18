@@ -45,6 +45,39 @@
         <div class="card mb-4">
             <div class="card-body">
                 <h3><i class="fas fa-list"></i> Danh Sách Tất Cả Đơn Hàng</h3>
+                
+                <!-- Filter Form -->
+                <form method="get" action="/UTE_Fashion/admin/orders" class="row g-3 mt-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Trạng thái</label>
+                        <select name="status" class="form-select">
+                            <option value="">-- Tất cả --</option>
+                            <option value="Processing" th:selected="${selectedStatus == 'Processing'}">Đang Xử Lý</option>
+                            <option value="Confirmed" th:selected="${selectedStatus == 'Confirmed'}">Đã Xác Nhận</option>
+                            <option value="Shipping" th:selected="${selectedStatus == 'Shipping'}">Đang Giao</option>
+                            <option value="Delivered" th:selected="${selectedStatus == 'Delivered'}">Đã Giao</option>
+                            <option value="Return_Requested" th:selected="${selectedStatus == 'Return_Requested'}">Yêu Cầu Trả Hàng</option>
+                            <option value="Returned" th:selected="${selectedStatus == 'Returned'}">Đã Trả Hàng</option>
+                            <option value="Cancelled" th:selected="${selectedStatus == 'Cancelled'}">Đã Hủy</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Từ ngày</label>
+                        <input type="date" name="fromDate" class="form-control" th:value="${fromDate}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Đến ngày</label>
+                        <input type="date" name="toDate" class="form-control" th:value="${toDate}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-filter"></i> Lọc
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -68,7 +101,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr th:each="order : ${orderPage.content}">
+                            <tr th:each="order : ${filteredOrders != null ? filteredOrders : orderPage.content}">
                                 <td><strong th:text="${order.orderNumber}"></strong></td>
                                 <td th:text="${order.recipientName}"></td>
                                 <td><span class="text-danger fw-bold" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span></td>
@@ -97,14 +130,18 @@
                 <nav th:if="${orderPage.totalPages > 1}">
                     <ul class="pagination justify-content-center">
                         <li class="page-item" th:classappend="${orderPage.first} ? 'disabled'">
-                            <a class="page-link" th:href="@{/admin/orders(page=${orderPage.number - 1})}">Trước</a>
+                            <a class="page-link" 
+                               th:href="@{/admin/orders(page=${orderPage.number - 1}, status=${selectedStatus}, fromDate=${fromDate}, toDate=${toDate})}">Trước</a>
                         </li>
                         <li class="page-item" th:each="i : ${#numbers.sequence(0, orderPage.totalPages - 1)}"
                             th:classappend="${i == orderPage.number} ? 'active'">
-                            <a class="page-link" th:href="@{/admin/orders(page=${i})}" th:text="${i + 1}"></a>
+                            <a class="page-link" 
+                               th:href="@{/admin/orders(page=${i}, status=${selectedStatus}, fromDate=${fromDate}, toDate=${toDate})}" 
+                               th:text="${i + 1}"></a>
                         </li>
                         <li class="page-item" th:classappend="${orderPage.last} ? 'disabled'">
-                            <a class="page-link" th:href="@{/admin/orders(page=${orderPage.number + 1})}">Sau</a>
+                            <a class="page-link" 
+                               th:href="@{/admin/orders(page=${orderPage.number + 1}, status=${selectedStatus}, fromDate=${fromDate}, toDate=${toDate})}">Sau</a>
                         </li>
                     </ul>
                 </nav>
