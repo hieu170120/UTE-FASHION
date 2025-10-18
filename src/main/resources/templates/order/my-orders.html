@@ -450,6 +450,11 @@
 
         <!-- Action Buttons -->
         <div class="action-buttons mt-4">
+            <!-- DEBUG: Hiển thị trạng thái hiện tại -->
+            <small class="text-muted d-block mb-2">
+                Trạng thái hiện tại: <strong th:text="${order.orderStatus}"></strong>
+            </small>
+            
             <!-- Nút Hủy Đơn (chỉ khi Processing hoặc Confirmed) -->
             <form th:if="${order.orderStatus == 'Processing' || order.orderStatus == 'Confirmed'}"
                   th:action="@{/orders/{id}/cancel(id=${order.id})}" method="post" class="d-inline">

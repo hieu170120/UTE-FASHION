@@ -88,29 +88,6 @@
                                     <a th:href="@{/admin/orders/{id}(id=${order.id})}" class="btn btn-sm btn-primary">
                                         <i class="fas fa-eye"></i> Chi Tiết
                                     </a>
-                                    
-                                    <!-- Nút chuyển trạng thái nhanh -->
-                                    <span th:if="${order.orderStatus == 'Processing'}">
-                                        <a th:href="@{/admin/orders/{id}(id=${order.id})}" class="btn btn-sm btn-warning" title="Chọn Shipper">
-                                            <i class="fas fa-user-check"></i>
-                                        </a>
-                                    </span>
-                                    <span th:if="${order.orderStatus == 'Confirmed'}">
-                                        <form th:action="@{/admin/orders/{id}/quick-update(id=${order.id})}" method="post" style="display:inline;">
-                                            <input type="hidden" name="status" value="Shipping">
-                                            <button type="submit" class="btn btn-sm btn-info" title="Chuyển sang Đang Giao">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                        </form>
-                                    </span>
-                                    <span th:if="${order.orderStatus == 'Shipping'}">
-                                        <form th:action="@{/admin/orders/{id}/quick-update(id=${order.id})}" method="post" style="display:inline;">
-                                            <input type="hidden" name="status" value="Delivered">
-                                            <button type="submit" class="btn btn-sm btn-success" title="Đánh dấu Đã Giao">
-                                                <i class="fas fa-check-circle"></i>
-                                            </button>
-                                        </form>
-                                    </span>
                                 </td>
                             </tr>
                         </tbody>

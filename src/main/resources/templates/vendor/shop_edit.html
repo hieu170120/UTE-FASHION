@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout/default}">
+<head>
+    <title>Chỉnh Sửa Thông Tin Shop</title>
+</head>
+<body>
+
+<div class="container mt-5 mb-5" layout:fragment="content">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center">Chỉnh Sửa Thông Tin Cửa Hàng</h2>
+                </div>
+                <div class="card-body">
+
+                    <!-- Success/Error Messages -->
+                    <div th:if="${successMessage}" class="alert alert-success" role="alert"
+                         th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" role="alert"
+                         th:text="${errorMessage}"></div>
+
+                    <form th:action="@{/vendor/shop/edit}" th:object="${shopDTO}" method="post">
+                        <div class="mb-3">
+                            <label for="shopName" class="form-label">Tên cửa hàng</label>
+                            <input type="text" class="form-control" id="shopName" th:field="*{shopName}" required>
+                            <div th:if="${#fields.hasErrors('shopName')}" th:errors="*{shopName}" class="text-danger"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Mô tả cửa hàng</label>
+                            <textarea class="form-control" id="description" th:field="*{description}" rows="4"></textarea>
+                            <div th:if="${#fields.hasErrors('description')}" th:errors="*{description}" class="text-danger"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="logoUrl" class="form-label">URL Logo</label>
+                            <input type="text" class="form-control" id="logoUrl" th:field="*{logoUrl}">
+                             <div class="form-text">Nếu bạn muốn thay đổi logo, hãy dán đường dẫn mới vào đây.</div>
+                            <div th:if="${#fields.hasErrors('logoUrl')}" th:errors="*{logoUrl}" class="text-danger"></div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a th:href="@{/vendor/dashboard}" class="btn btn-secondary">Hủy bỏ</a>
+                            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

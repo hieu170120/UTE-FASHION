@@ -1,0 +1,164 @@
+<!-- Dashboard Content Fragment -->
+<div xmlns:th="http://www.thymeleaf.org">
+    <style>
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stat-box:nth-child(2) {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        
+        .stat-box:nth-child(3) {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .stat-box:nth-child(4) {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        
+        .stat-box h3 {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .stat-box p {
+            font-size: 14px;
+            opacity: 0.9;
+            margin: 0;
+        }
+        
+        .recent-orders-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid #E2E8F0;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1E293B;
+        }
+        
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid #E2E8F0;
+            transition: all 0.2s;
+        }
+        
+        .order-item:hover {
+            background: #F8FAFC;
+        }
+        
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        
+        .order-info-item {
+            flex: 1;
+        }
+        
+        .order-number-dash {
+            font-weight: 600;
+            color: #3B82F6;
+            font-size: 15px;
+        }
+        
+        .order-customer {
+            color: #64748B;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        
+        .order-status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-confirmed {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+    </style>
+
+    <h2 style="margin-bottom: 24px; font-weight: 700; color: #1E293B;">📊 Tổng quan</h2>
+
+    <!-- Statistics Grid -->
+    <div class="dashboard-stats">
+        <div class="stat-box">
+            <h3 th:text="${assignedCount}">0</h3>
+            <p><i class="fas fa-clock"></i> Đơn chờ xác nhận</p>
+        </div>
+        <div class="stat-box">
+            <h3 th:text="${deliveringCount}">0</h3>
+            <p><i class="fas fa-shipping-fast"></i> Đang giao hàng</p>
+        </div>
+        <div class="stat-box">
+            <h3 th:text="${deliveredCount}">0</h3>
+            <p><i class="fas fa-check-circle"></i> Đã giao hôm nay</p>
+        </div>
+        <div class="stat-box">
+            <h3 th:text="${cancelCount}">0</h3>
+            <p><i class="fas fa-times-circle"></i> Đã hủy (Tối đa 3)</p>
+        </div>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="recent-orders-section">
+        <div class="section-title">
+            <i class="fas fa-list"></i> Đơn hàng gần đây
+        </div>
+        
+        <div th:if="${recentOrders.isEmpty()}" class="text-center py-4" style="color: #64748B;">
+            <i class="fas fa-inbox fa-3x mb-3"></i>
+            <p>Không có đơn hàng nào</p>
+        </div>
+        
+        <div th:each="order : ${recentOrders}" class="order-item">
+            <div class="order-info-item">
+                <div class="order-number-dash">
+                    <i class="fas fa-box"></i> <span th:text="${order.orderNumber}">ORD-001</span>
+                </div>
+                <div class="order-customer">
+                    <i class="fas fa-user"></i> <span th:text="${order.recipientName}">Khách hàng</span>
+                </div>
+            </div>
+            <div class="order-info-item" style="text-align: right;">
+                <div style="font-weight: 600; color: #EF4444;" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'">
+                    100,000 ₫
+                </div>
+                <div class="order-customer">
+                    <i class="fas fa-map-marker-alt"></i> <span th:text="${order.city}">TP.HCM</span>
+                </div>
+            </div>
+            <div>
+                <span class="order-status-badge status-confirmed">Chờ xác nhận</span>
+            </div>
+        </div>
+        
+        <div th:if="${!recentOrders.isEmpty()}" class="text-center mt-3">
+            <a href="#" onclick="loadContent('orders')" class="btn btn-primary">
+                <i class="fas fa-arrow-right"></i> Xem tất cả
+            </a>
+        </div>
+    </div>
+</div>
