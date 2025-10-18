@@ -11,6 +11,7 @@ public interface OrderService {
     OrderDTO createOrderFromCart(Integer userId, String sessionId, OrderDTO orderDTO);
     OrderDTO getOrderById(Integer orderId);
     List<OrderDTO> getUserOrders(Integer userId);
+    Page<OrderDTO> getUserOrdersPageable(Integer userId, Pageable pageable);
     Page<OrderDTO> getAllOrders(Pageable pageable);
     OrderDTO updateOrderStatus(Integer orderId, String newStatus, String notes, Integer changedBy);
     void cancelOrder(Integer orderId, Integer userId);

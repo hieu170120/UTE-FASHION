@@ -47,5 +47,6 @@ public class OrderDTO {
     private Integer shippingTime; // Thời gian giao (phút)
     private LocalDateTime deliveredAt;
     private LocalDateTime cancelledAt;
+    private String cancelReason;
     private List<OrderItemDTO> orderItems;
 }
