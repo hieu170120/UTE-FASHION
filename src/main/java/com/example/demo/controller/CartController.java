@@ -83,8 +83,6 @@ public class CartController {
     @ResponseBody
     public Map<String, Object> batchUpdateCartItems(@RequestBody(required = false) List<Map<String, Integer>> updates) {
         Map<String, Object> response = new HashMap<>();
-        System.out.println("=== BATCH UPDATE CALLED ===");
-        System.out.println("Updates: " + updates);
         try {
             if (updates == null || updates.isEmpty()) {
                 response.put("success", false);
@@ -106,7 +104,6 @@ public class CartController {
             response.put("message", "Cập nhật " + count + " sản phẩm thành công!");
             response.put("updatedCount", count);
         } catch (Exception e) {
-            e.printStackTrace();
             response.put("success", false);
             response.put("message", "Lỗi: " + e.getMessage());
         }

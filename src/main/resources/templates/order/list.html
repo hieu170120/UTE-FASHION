@@ -39,16 +39,95 @@
                     <td th:text="${order.orderNumber}"></td>
                     <td th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
                     <td th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
-                    <td th:text="${order.orderStatus}"></td>
                     <td>
-                        <a th:href="@{/orders/{id}(id=${order.id})}" class="btn btn-sm btn-primary">Chi tiết</a>
-                        <a th:if="${order.orderStatus == 'Pending'}" th:href="@{/orders/{id}/cancel(id=${order.id})}" class="btn btn-sm btn-danger">Hủy</a>
+                        <span class="badge" 
+                              th:classappend="${order.orderStatus == 'Processing' ? 'bg-warning' : 
+                                              (order.orderStatus == 'Confirmed' ? 'bg-info' : 
+                                              (order.orderStatus == 'Shipping' ? 'bg-primary' : 
+                                              (order.orderStatus == 'Delivered' ? 'bg-success' : 'bg-danger')))}">
+                            <span th:text="${order.orderStatus == 'Processing' ? 'Đang xử lý' : 
+                                            (order.orderStatus == 'Confirmed' ? 'Đã xử lý' : 
+                                            (order.orderStatus == 'Shipping' ? 'Đang giao' : 
+                                            (order.orderStatus == 'Delivered' ? 'Đã giao' : 'Đã hủy')))}"></span>
+                        </span>
+                    </td>
+                    <td>
+                        <a th:href="@{/orders/{orderId}/detail(orderId=${order.id})}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-eye"></i> Chi tiết
+                        </a>
+                        
+                        <!-- Nút Hủy Đơn -->
+                        <form th:if="${order.orderStatus == 'Processing' || order.orderStatus == 'Confirmed'}" 
+                              th:action="@{/orders/{id}/cancel(id=${order.id})}" 
+                              method="post" 
+                              class="d-inline"
+                              onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng này?')">
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                <i class="fas fa-times-circle"></i> Hủy
+                            </button>
+                        </form>
+                        
+                        <!-- Nút Trả Hàng -->
+                        <button th:if="${order.orderStatus == 'Delivered'}" 
+                                type="button" 
+                                class="btn btn-sm btn-warning" 
+                                data-bs-toggle="modal" 
+                                th:data-bs-target="'#returnModal' + ${order.id}">
+                            <i class="fas fa-undo"></i> Trả hàng
+                        </button>
                     </td>
                 </tr>
             </tbody>
         </table>
 
-        <a th:href="@{/products}" class="btn btn-secondary mt-3">Quay lại danh sách sản phẩm</a>
+        <a th:href="@{/}" class="btn btn-secondary mt-3">
+            <i class="fas fa-arrow-left me-2"></i>Quay về trang chủ
+        </a>
+    </div>
+    
+    <!-- Modal Trả Hàng -->
+    <div th:each="order : ${orders}">
+        <div class="modal fade" th:id="'returnModal' + ${order.id}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-undo me-2 text-warning"></i>
+                            Yêu Cầu Trả Hàng
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form th:action="@{/orders/{id}/request-return(id=${order.id})}" method="post">
+                        <div class="modal-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Đơn hàng: <strong th:text="${order.orderNumber}"></strong>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    Lý do trả hàng <span class="text-danger">*</span>
+                                </label>
+                                <textarea name="reason" class="form-control" rows="4" 
+                                          placeholder="Vui lòng cho biết lý do bạn muốn trả hàng..." 
+                                          required></textarea>
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-lightbulb me-1"></i>
+                                Yêu cầu sẽ được gửi đến admin để xem xét.
+                            </small>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="fas fa-times me-2"></i>Đóng
+                            </button>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-paper-plane me-2"></i> Gửi Yêu Cầu
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

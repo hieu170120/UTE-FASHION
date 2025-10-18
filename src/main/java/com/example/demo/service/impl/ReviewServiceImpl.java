@@ -39,23 +39,38 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional
     public ReviewDTO createReview(ReviewCreationRequest request, Integer userId) {
-        // 1. Validate purchase (redundant given the new logic, but good for a quick check)
-        boolean hasPurchased = orderRepository.hasUserPurchasedProduct(userId, request.getProductId(), "Delivered");
-        if (!hasPurchased) {
-            throw new AccessDeniedException("You can only review products you have purchased.");
+        boolean isVerifiedPurchase = false;
+        Order order = null;
+        
+        // 1. If orderId is provided, validate purchase
+        if (request.getOrderId() != null) {
+            boolean hasPurchased = orderRepository.hasUserPurchasedProduct(userId, request.getProductId(), "Delivered");
+            if (!hasPurchased) {
+                throw new AccessDeniedException("You can only review products you have purchased.");
+            }
+            
+            // Check for duplicate review for the specific product in the specific order
+            if (reviewRepository.existsByUser_UserIdAndOrder_IdAndProduct_Id(userId, request.getOrderId(), request.getProductId())) {
+                throw new IllegalStateException("You have already reviewed this product for this order.");
+            }
+            
+            order = orderRepository.findById(request.getOrderId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+            isVerifiedPurchase = true;
+        } else {
+            // Check if user has already reviewed this product without order
+            if (reviewRepository.existsByUser_UserIdAndProduct_IdAndOrderIsNull(userId, request.getProductId())) {
+                throw new IllegalStateException("You have already reviewed this product.");
+            }
         }
 
-        // 2. Check for duplicate review for the specific product in the specific order
-        if (reviewRepository.existsByUser_UserIdAndOrder_IdAndProduct_Id(userId, request.getOrderId(), request.getProductId())) {
-            throw new IllegalStateException("You have already reviewed this product for this order.");
-        }
+        // 2. Fetch entities
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        Product product = productRepository.findById(request.getProductId())
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
-        // 3. Fetch entities
-        User user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        Product product = productRepository.findById(request.getProductId()).orElseThrow(() -> new ResourceNotFoundException("Product not found"));
-        Order order = orderRepository.findById(request.getOrderId()).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
-
-        // 4. Create and save review
+        // 3. Create and save review
         Review review = Review.builder()
                 .user(user)
                 .product(product)
@@ -63,8 +78,8 @@ public class ReviewServiceImpl implements ReviewService {
                 .rating(request.getRating())
                 .title(request.getTitle())
                 .comment(request.getComment())
-                .isVerifiedPurchase(true)
-                .isApproved(false) // Reviews should be moderated
+                .isVerifiedPurchase(isVerifiedPurchase)
+                .isApproved(true) // Auto-approve for testing (change to false in production)
                 .build();
 
         Review savedReview = reviewRepository.save(review);
@@ -73,12 +88,19 @@ public class ReviewServiceImpl implements ReviewService {
         Set<ReviewImage> reviewImages = new HashSet<>();
         if (request.getImageUrls() != null) {
             for (String imageUrl : request.getImageUrls()) {
-                reviewImages.add(ReviewImage.builder().review(savedReview).imageUrl(imageUrl).build());
+                reviewImages.add(ReviewImage.builder()
+                        .review(savedReview)
+                        .imageUrl(imageUrl)
+                        .build());
             }
         }
         if (request.getVideoUrls() != null) {
             for (String videoUrl : request.getVideoUrls()) {
-                reviewImages.add(ReviewImage.builder().review(savedReview).videoUrl(videoUrl).build());
+                reviewImages.add(ReviewImage.builder()
+                        .review(savedReview)
+                        .imageUrl("")  // Set empty string to satisfy NOT NULL constraint
+                        .videoUrl(videoUrl)
+                        .build());
             }
         }
 

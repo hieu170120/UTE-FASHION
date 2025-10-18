@@ -17,6 +17,7 @@ import com.example.demo.dto.ProductDTO;
 import com.example.demo.dto.ProductSearchCriteria;
 import com.example.demo.dto.ProductSummaryDTO;
 import com.example.demo.dto.ReviewDTO;
+import com.example.demo.service.BrandService;
 import com.example.demo.service.CategoryService;
 import com.example.demo.service.ProductService;
 import com.example.demo.service.ReviewService;
@@ -31,6 +32,8 @@ public class ProductController {
 	private ProductService productService;
 	@Autowired
 	private CategoryService categoryService;
+	@Autowired
+	private BrandService brandService;
 	@Autowired
 	private ReviewService reviewService;
 
@@ -108,7 +111,6 @@ public class ProductController {
 
 			return "product/product-detail";
 		} catch (Exception e) {
-			e.printStackTrace();
 			return "redirect:/products?error=notfound";
 		}
 	}
