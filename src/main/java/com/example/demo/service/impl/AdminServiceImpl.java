@@ -18,7 +18,7 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public List<Shop> getAllShops() {
-        return shopRepository.findAll();
+        return shopRepository.findAllWithVendor();
     }
 
     @Override

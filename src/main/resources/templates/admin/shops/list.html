@@ -92,7 +92,7 @@
                                 </thead>
                                 <tbody>
                                 <tr th:each="shop : ${shops}">
-                                    <td class="fw-bold" th:text="${shop.shopId}"></td>
+                                    <td class="fw-bold" th:text="${shop.Id}"></td>
                                     <td th:text="${shop.shopName}"></td>
                                     <td><img th:src="${shop.logoUrl != null ? shop.logoUrl : 'https://via.placeholder.com/80x40.png?text=Logo'}" alt="Logo" class="img-fluid rounded" style="max-width: 80px;"/></td>
                                     <td th:text="${shop.vendor.username}"></td>
@@ -102,10 +102,10 @@
                                     </td>
                                     <td th:text="${#temporals.format(shop.createdAt, 'dd/MM/yyyy')}"></td>
                                     <td class="text-center">
-                                        <form th:action="@{/admin/shops/approve/{id}(id=${shop.shopId})}" method="post" class="d-inline-block m-1">
+                                        <form th:action="@{/admin/shops/approve/{id}(id=${shop.Id})}" method="post" class="d-inline-block m-1">
                                             <button type="submit" class="btn btn-sm btn-outline-success" th:disabled="${shop.active}">Duyệt</button>
                                         </form>
-                                        <form th:action="@{/admin/shops/reject/{id}(id=${shop.shopId})}" method="post" class="d-inline-block m-1">
+                                        <form th:action="@{/admin/shops/reject/{id}(id=${shop.Id})}" method="post" class="d-inline-block m-1">
                                             <button type="submit" class="btn btn-sm btn-outline-danger" th:disabled="not ${shop.active}">Khóa</button>
                                         </form>
                                     </td>
