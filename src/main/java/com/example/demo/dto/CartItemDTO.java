@@ -14,6 +14,7 @@ public class CartItemDTO {
     private String productImage;
     private Integer quantity;
     private BigDecimal price;
+    private BigDecimal salePrice;   // Giá sale (nếu có)
     private BigDecimal totalPrice;
     
     // Variant info
