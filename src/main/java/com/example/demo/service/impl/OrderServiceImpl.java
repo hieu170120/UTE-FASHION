@@ -92,6 +92,9 @@ public class OrderServiceImpl implements OrderService {
             orderItem.setVariant(cartItem.getVariant());
             orderItem.setProductName(cartItem.getProduct().getProductName());
             orderItem.setProductSku(cartItem.getProduct().getSku());
+            // Note: productImageUrl left null to avoid lazy loading issues
+            // Images can be fetched separately if needed in the future
+            
             if (cartItem.getVariant() != null) {
                 orderItem.setSize(cartItem.getVariant().getSize().getSizeName());
                 orderItem.setColor(cartItem.getVariant().getColor().getColorName());
@@ -141,6 +144,13 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findByUser_UserId(userId).stream()
                 .map(this::mapToOrderDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<OrderDTO> getUserOrdersPageable(Integer userId, Pageable pageable) {
+        return orderRepository.findByUserUserIdOrderByOrderDateDesc(userId, pageable)
+                .map(this::mapToOrderDTO);
     }
 
     @Override
@@ -237,7 +247,9 @@ public class OrderServiceImpl implements OrderService {
         if (!order.getOrderStatus().equals(OrderStatus.CONFIRMED.getValue())) {
             throw new RuntimeException("Order not in confirmed status");
         }
-        updateOrderStatus(orderId, OrderStatus.SHIPPING.getValue(), "Shipper confirmed and started shipping", order.getShipper().getUser().getUserId());
+        // Use shipper's linked user ID if available, otherwise use null
+        Integer shipperUserId = (order.getShipper().getUser() != null) ? order.getShipper().getUser().getUserId() : null;
+        updateOrderStatus(orderId, OrderStatus.SHIPPING.getValue(), "Shipper confirmed and started shipping", shipperUserId);
         // Set random shipping time 2-5 minutes for simulation
         Random random = new Random();
         int randomMin = random.nextInt(4) + 2; // 2 to 5
@@ -263,7 +275,9 @@ public class OrderServiceImpl implements OrderService {
         shipper.setCancelCount(shipper.getCancelCount() + 1);
         shipperRepository.save(shipper);
         order.setShipper(null);
-        updateOrderStatus(orderId, OrderStatus.PROCESSING.getValue(), "Shipper cancelled assignment", shipper.getUser().getUserId());
+        // Use shipper's linked user ID if available, otherwise use null
+        Integer shipperUserId = (shipper.getUser() != null) ? shipper.getUser().getUserId() : null;
+        updateOrderStatus(orderId, OrderStatus.PROCESSING.getValue(), "Shipper cancelled assignment", shipperUserId);
     }
 
     @Transactional
@@ -312,15 +326,41 @@ public class OrderServiceImpl implements OrderService {
 
     private OrderDTO mapToOrderDTO(Order order) {
         OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
-        orderDTO.setOrderItems(order.getOrderItems().stream()
-                .map(item -> modelMapper.map(item, OrderItemDTO.class))
-                .collect(Collectors.toList()));
+        
+        // Map order items with full details
+        if (order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
+            orderDTO.setOrderItems(order.getOrderItems().stream()
+                    .map(item -> {
+                        OrderItemDTO itemDTO = modelMapper.map(item, OrderItemDTO.class);
+                        // Map basic fields from OrderItem (already stored when order was created)
+                        itemDTO.setProductName(item.getProductName());
+                        itemDTO.setProductSku(item.getProductSku());
+                        itemDTO.setSize(item.getSize());
+                        itemDTO.setColor(item.getColor());
+                        itemDTO.setProductImage(item.getProductImageUrl()); // Saved image URL
+                        return itemDTO;
+                    })
+                    .collect(Collectors.toList()));
+        }
+        
+        // Map carrier details
         if (order.getCarrier() != null) {
             orderDTO.setCarrierId(order.getCarrier().getId());
+            orderDTO.setCarrierName(order.getCarrier().getCarrierName());
         }
+        
+        // Map shipper details
         if (order.getShipper() != null) {
             orderDTO.setShipperId(order.getShipper().getId());
+            orderDTO.setShipperName(order.getShipper().getFullName());
+            orderDTO.setShipperPhone(order.getShipper().getPhoneNumber());
         }
+        
+        // Map user ID
+        if (order.getUser() != null) {
+            orderDTO.setUserId(order.getUser().getUserId());
+        }
+        
         return orderDTO;
     }
 }

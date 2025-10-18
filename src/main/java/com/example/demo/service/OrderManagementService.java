@@ -82,7 +82,7 @@ public interface OrderManagementService {
     /**
      * Khách hàng hủy đơn (chỉ khi DON_DANG_XU_LY hoặc DA_XU_LY_DON_HANG)
      */
-    void customerCancelOrder(Integer orderId, Integer userId);
+    void customerCancelOrder(Integer orderId, Integer userId, String cancelReason);
     
     /**
      * Khách hàng yêu cầu trả hàng (chỉ khi DA_GIAO)

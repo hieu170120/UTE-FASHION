@@ -216,7 +216,7 @@ public class OrderManagementServiceImpl implements OrderManagementService {
 
     @Override
     @Transactional
-    public void customerCancelOrder(Integer orderId, Integer userId) {
+    public void customerCancelOrder(Integer orderId, Integer userId, String cancelReason) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
         
@@ -234,6 +234,7 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         
         order.setOrderStatus(OrderStatus.CANCELLED.getValue());
         order.setCancelledAt(LocalDateTime.now());
+        order.setCancelReason(cancelReason);
         
         orderRepository.save(order);
     }

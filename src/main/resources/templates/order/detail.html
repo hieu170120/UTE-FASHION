@@ -65,6 +65,16 @@
 </head>
 <body>
 <div layout:fragment="content" class="container my-5">
+    <!-- Flash Messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -125,9 +135,11 @@
                     </h5>
                     
                     <div th:each="item : ${order.orderItems}" class="product-item">
-                        <img th:src="${item.productImage}" 
-                             th:alt="${item.productName}" 
-                             class="product-image me-3">
+                        <!-- Product Image -->
+                        <img th:src="${#strings.isEmpty(item.productImage) ? 'https://cdn.hstatic.net/products/200000182297/1.10_b8c81da853bd47bcb8dfe0addedfdd69_master.jpg' : item.productImage}" 
+                             class="product-image me-3" 
+                             alt="Product Image"
+                             onerror="this.onerror=null;this.src='https://cdn.hstatic.net/products/200000182297/1.10_b8c81da853bd47bcb8dfe0addedfdd69_master.jpg';" />
                         <div class="flex-grow-1">
                             <h6 class="mb-2 fw-bold" th:text="${item.productName}"></h6>
                             <p class="text-muted small mb-2">
@@ -147,6 +159,71 @@
                                     <p class="mb-0 fw-bold text-danger" th:text="${#numbers.formatDecimal(item.totalPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="card order-detail-card">
+                <div class="card-body">
+                    <h5 class="section-title">
+                        <i class="fas fa-cog text-primary me-2"></i>Hành động
+                    </h5>
+                    
+                    <!-- DEBUG: Hiển thị trạng thái hiện tại -->
+                    <div class="alert alert-secondary mb-3">
+                        <small>
+                            <strong>Trạng thái hiện tại:</strong> 
+                            <code th:text="${order.orderStatus}"></code>
+                        </small>
+                    </div>
+                    
+                    <!-- Nút Hủy Đơn (chỉ khi Processing hoặc Confirmed) -->
+                    <button th:if="${order.orderStatus != null && (order.orderStatus.equals('Processing') || order.orderStatus.equals('Confirmed'))}"
+                            type="button" 
+                            class="btn btn-danger w-100 mb-2" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#cancelModal">
+                        <i class="fas fa-times-circle me-2"></i> Hủy Đơn Hàng
+                    </button>
+                    
+                    <!-- Nút Trả Hàng (chỉ khi Delivered) -->
+                    <button th:if="${order.orderStatus != null && order.orderStatus.equals('Delivered')}"
+                            type="button" 
+                            class="btn btn-warning w-100 mb-2" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#returnModal">
+                        <i class="fas fa-undo me-2"></i> Yêu Cầu Trả Hàng
+                    </button>
+                    
+                    <!-- Thông báo nếu đơn đang chờ xử lý -->
+                    <div th:if="${order.orderStatus != null && order.orderStatus.equals('Processing')}" class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Đơn hàng đang chờ admin xử lý và phân công shipper.
+                    </div>
+                    
+                    <div th:if="${order.orderStatus != null && order.orderStatus.equals('Confirmed')}" class="alert alert-success mb-0">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Đơn hàng đã được xác nhận và sắp được giao.
+                    </div>
+                    
+                    <div th:if="${order.orderStatus != null && order.orderStatus.equals('Shipping')}" class="alert alert-primary mb-0">
+                        <i class="fas fa-truck me-2"></i>
+                        Đơn hàng đang được vận chuyển đến bạn.
+                    </div>
+                    
+                    <div th:if="${order.orderStatus != null && order.orderStatus.equals('Delivered')}" class="alert alert-success mb-0">
+                        <i class="fas fa-check-double me-2"></i>
+                        Đơn hàng đã được giao thành công.
+                    </div>
+                    
+                    <div th:if="${order.orderStatus != null && order.orderStatus.equals('Cancelled')}" class="alert alert-danger mb-0">
+                        <i class="fas fa-times-circle me-2"></i>
+                        Đơn hàng đã bị hủy.
+                        <div th:if="${order.cancelReason != null && !order.cancelReason.isEmpty()}" class="mt-2 pt-2 border-top">
+                            <strong>Lý do hủy:</strong><br/>
+                            <span th:text="${order.cancelReason}"></span>
                         </div>
                     </div>
                 </div>
@@ -224,5 +301,125 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Hủy Đơn -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="cancelModalLabel">
+                    <i class="fas fa-times-circle me-2"></i>
+                    Hủy Đơn Hàng
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form th:action="@{/orders/{orderId}/cancel(orderId=${order.id})}" method="post">
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Đơn hàng: <strong th:text="${order.orderNumber}"></strong>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            Lý do hủy đơn <span class="text-danger">*</span>
+                        </label>
+                        <textarea name="cancelReason" class="form-control" rows="4" 
+                                  placeholder="Vui lòng cho biết lý do bạn muốn hủy đơn hàng..." 
+                                  required></textarea>
+                    </div>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Đơn hàng sẽ bị hủy ngay lập tức và không thể khôi phục.
+                    </small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Đóng
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-check me-2"></i> Xác Nhận Hủy
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Trả Hàng -->
+<div class="modal fade" id="returnModal" tabindex="-1" aria-labelledby="returnModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="returnModalLabel">
+                    <i class="fas fa-undo me-2 text-warning"></i>
+                    Yêu Cầu Trả Hàng
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form th:action="@{/orders/{orderId}/request-return(orderId=${order.id})}" method="post">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Đơn hàng: <strong th:text="${order.orderNumber}"></strong>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            Lý do trả hàng <span class="text-danger">*</span>
+                        </label>
+                        <textarea name="reason" class="form-control" rows="4" 
+                                  placeholder="Vui lòng cho biết lý do bạn muốn trả hàng..." 
+                                  required></textarea>
+                    </div>
+                    <small class="text-muted">
+                        <i class="fas fa-lightbulb me-1"></i>
+                        Yêu cầu sẽ được gửi đến admin để xem xét.
+                    </small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Đóng
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-paper-plane me-2"></i> Gửi Yêu Cầu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<th:block layout:fragment="scripts">
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Kiểm tra Bootstrap có load không
+            if (typeof bootstrap === 'undefined') {
+                console.error('Bootstrap JS chưa load!');
+                alert('Lỗi: Bootstrap chưa load. Vui lòng refresh trang.');
+                return;
+            }
+            
+            console.log('Bootstrap version:', bootstrap.Modal.VERSION);
+            console.log('Cancel modal element:', document.getElementById('cancelModal'));
+            console.log('Return modal element:', document.getElementById('returnModal'));
+            
+            // Test modal manually
+            const cancelBtn = document.querySelector('[data-bs-target="#cancelModal"]');
+            const returnBtn = document.querySelector('[data-bs-target="#returnModal"]');
+            
+            if (cancelBtn) {
+                console.log('Cancel button found:', cancelBtn);
+                cancelBtn.addEventListener('click', function(e) {
+                    console.log('Cancel button clicked!');
+                });
+            }
+            
+            if (returnBtn) {
+                console.log('Return button found:', returnBtn);
+                returnBtn.addEventListener('click', function(e) {
+                    console.log('Return button clicked!');
+                });
+            }
+        });
+    </script>
+</th:block>
 </body>
 </html>
