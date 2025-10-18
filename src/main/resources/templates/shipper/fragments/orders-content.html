@@ -242,8 +242,18 @@
                         timerEl.style.background = '#10B981';
                         
                         // Auto complete delivery
+                        const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+                        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+                        
+                        const headers = {};
+                        if (csrfToken && csrfHeader) {
+                            headers[csrfHeader] = csrfToken;
+                        }
+                        
                         fetch('/UTE_Fashion/shipper/orders/' + orderId + '/complete', {
-                            method: 'POST'
+                            method: 'POST',
+                            headers: headers,
+                            credentials: 'include'
                         }).then(() => {
                             setTimeout(() => {
                                 if (typeof loadContent === 'function') {
@@ -286,11 +296,21 @@
             const randomMinutes = Math.floor(Math.random() * 4) + 2; // 2 to 5 minutes
             
             // Submit form via AJAX
+            const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+            
             var formData = new FormData();
             formData.append('shippingTime', randomMinutes);
             
+            const headers = {};
+            if (csrfToken && csrfHeader) {
+                headers[csrfHeader] = csrfToken;
+            }
+            
             fetch('/UTE_Fashion/shipper/orders/' + orderId + '/confirm', {
                 method: 'POST',
+                headers: headers,
+                credentials: 'include',
                 body: formData
             })
             .then(response => {
@@ -317,11 +337,21 @@
             var reason = prompt('Đơn hàng này bạn đã hủy ' + document.getElementById('cancelCount').textContent + '/3 lần.\nVui lòng nhập lý do hủy:');
             if (reason && reason.trim() !== '') {
                 // Submit via AJAX
+                const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+                const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+                
                 var formData = new FormData();
                 formData.append('reason', reason);
                 
+                const headers = {};
+                if (csrfToken && csrfHeader) {
+                    headers[csrfHeader] = csrfToken;
+                }
+                
                 fetch('/UTE_Fashion/shipper/orders/' + orderId + '/cancel', {
                     method: 'POST',
+                    headers: headers,
+                    credentials: 'include',
                     body: formData
                 })
                 .then(response => {
