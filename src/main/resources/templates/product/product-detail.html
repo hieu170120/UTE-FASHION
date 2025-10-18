@@ -615,6 +615,29 @@ body {
 	border-radius: 8px;
 	border: 2px solid #e0e0e0;
 }
+
+/* --- Wishlist Button --- */
+.wishlist-btn {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 8px;
+	transition: all 0.3s ease;
+}
+
+.wishlist-btn i {
+	font-size: 28px;
+	color: #e60023;
+	transition: all 0.3s ease;
+}
+
+.wishlist-btn:hover i {
+	transform: scale(1.1);
+}
+
+.wishlist-btn.active i {
+	font-weight: bold;
+}
 </style>
 </th:block>
 </head>
@@ -659,7 +682,14 @@ body {
 			</div>
 
 			<div class="col-md-5 product-details">
-				<h2 th:text="${product.productName}"></h2>
+				<div class="d-flex justify-content-between align-items-start mb-2">
+					<div>
+						<h2 th:text="${product.productName}"></h2>
+					</div>
+					<button class="wishlist-btn" id="wishlistBtn" onclick="toggleWishlist()" title="Thêm vào yêu thích">
+						<i class="bi bi-heart" id="wishlistIcon"></i>
+					</button>
+				</div>
 				<p class="product-meta">
 					Thương hiệu: <span
 						th:text="${brand != null ? brand.brandName : 'N/A'}"></span> | Mã

@@ -632,4 +632,81 @@ function initProductDetail(config) {
             if (modalImage) modalImage.src = '';
         });
     }
+    
+    // Check initial wishlist status
+    checkWishlistStatus();
+}
+
+// === WISHLIST FUNCTIONS ===
+function checkWishlistStatus() {
+    fetch(`${contextPath}api/wishlist/check/${productId}`)
+        .then(res => res.json())
+        .then(data => {
+            const wishlistBtn = document.getElementById('wishlistBtn');
+            const wishlistIcon = document.getElementById('wishlistIcon');
+            
+            if (wishlistBtn && wishlistIcon && data.inWishlist) {
+                wishlistIcon.classList.remove('bi-heart');
+                wishlistIcon.classList.add('bi-heart-fill');
+                wishlistBtn.classList.add('active');
+            }
+        })
+        .catch(error => console.error('Error checking wishlist:', error));
+}
+
+function toggleWishlist() {
+    const wishlistBtn = document.getElementById('wishlistBtn');
+    const wishlistIcon = document.getElementById('wishlistIcon');
+    const isActive = wishlistBtn.classList.contains('active');
+    
+    const headers = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    };
+    if (csrfToken && csrfHeader) {
+        headers[csrfHeader] = csrfToken;
+    }
+    
+    if (isActive) {
+        // Remove from wishlist
+        fetch(`${contextPath}api/wishlist/remove?productId=${productId}`, {
+            method: 'DELETE',
+            headers: headers,
+            credentials: 'include'
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                wishlistIcon.classList.remove('bi-heart-fill');
+                wishlistIcon.classList.add('bi-heart');
+                wishlistBtn.classList.remove('active');
+            }
+        })
+        .catch(error => console.error('Error removing from wishlist:', error));
+    } else {
+        // Add to wishlist
+        fetch(`${contextPath}api/wishlist/add?productId=${productId}`, {
+            method: 'POST',
+            headers: headers,
+            credentials: 'include'
+        })
+        .then(res => {
+            if (res.status === 401) {
+                alert('Vui lòng đăng nhập để thêm vào danh sách yêu thích');
+                throw new Error('Unauthorized');
+            }
+            return res.json();
+        })
+        .then(data => {
+            if (data.success) {
+                wishlistIcon.classList.remove('bi-heart');
+                wishlistIcon.classList.add('bi-heart-fill');
+                wishlistBtn.classList.add('active');
+            }
+        })
+        .catch(error => {
+            if (error.message !== 'Unauthorized') {
+                console.error('Error adding to wishlist:', error);
+            }
+        });
+    }
 }
