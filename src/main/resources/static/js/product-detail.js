@@ -270,7 +270,7 @@ function addToCart() {
     })
     .then(response => {
         if (response.ok) {
-            alert('Đã thêm vào giỏ hàng!');
+            
         } else {
             alert('Có lỗi xảy ra, vui lòng thử lại!');
         }

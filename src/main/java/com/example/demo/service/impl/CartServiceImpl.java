@@ -88,13 +88,18 @@ public class CartServiceImpl implements CartService {
             cartItem.setCart(cart);
             cartItem.setProduct(product);
             cartItem.setQuantity(cartItemDTO.getQuantity());
-            cartItem.setPrice(product.getPrice());
+            
+            // Sử dụng giá sale nếu có, không thì dùng giá gốc
+            BigDecimal basePrice = (product.getSalePrice() != null && product.getSalePrice().compareTo(product.getPrice()) < 0)
+                    ? product.getSalePrice()
+                    : product.getPrice();
+            cartItem.setPrice(basePrice);
 
             if (cartItemDTO.getVariantId() != null) {
                 ProductVariant variant = variantRepository.findById(cartItemDTO.getVariantId())
                         .orElseThrow(() -> new ResourceNotFoundException("Variant not found: " + cartItemDTO.getVariantId()));
                 cartItem.setVariant(variant);
-                cartItem.setPrice(variant.getPriceAdjustment().add(product.getPrice()));
+                cartItem.setPrice(variant.getPriceAdjustment().add(basePrice));
             }
 
             cart.getCartItems().add(cartItem);
@@ -142,7 +147,13 @@ public class CartServiceImpl implements CartService {
     @Override
     public CartDTO calculateCartTotals(CartDTO cartDTO) {
         BigDecimal total = cartDTO.getCartItems().stream()
-                .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .map(item -> {
+                    // Sử dụng giá sale nếu có, không thì dùng giá gốc
+                    BigDecimal effectivePrice = (item.getSalePrice() != null && item.getSalePrice().compareTo(item.getPrice()) < 0)
+                            ? item.getSalePrice()
+                            : item.getPrice();
+                    return effectivePrice.multiply(BigDecimal.valueOf(item.getQuantity()));
+                })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         cartDTO.setTotalAmount(total);
         return cartDTO;
@@ -171,7 +182,17 @@ public class CartServiceImpl implements CartService {
         CartItemDTO itemDTO = modelMapper.map(item, CartItemDTO.class);
         itemDTO.setProductName(item.getProduct().getProductName());
         itemDTO.setProductImage(getPrimaryImageUrl(item.getProduct()));
-        itemDTO.setTotalPrice(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+        
+        // Set sale price from product if exists
+        if (item.getProduct().getSalePrice() != null) {
+            itemDTO.setSalePrice(item.getProduct().getSalePrice());
+        }
+        
+        // Tính totalPrice dựa trên giá hiện hành (giá sale nếu có)
+        BigDecimal effectivePrice = (itemDTO.getSalePrice() != null && itemDTO.getSalePrice().compareTo(item.getPrice()) < 0)
+                ? itemDTO.getSalePrice()
+                : item.getPrice();
+        itemDTO.setTotalPrice(effectivePrice.multiply(BigDecimal.valueOf(item.getQuantity())));
         
         // Add variant info if exists
         if (item.getVariant() != null) {
