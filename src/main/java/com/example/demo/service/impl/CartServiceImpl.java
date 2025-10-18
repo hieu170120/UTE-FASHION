@@ -205,7 +205,6 @@ public class CartServiceImpl implements CartService {
 
 	@Override
 	public Integer getCartItemCount(Integer userId, String sessionId) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 }

@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -51,9 +52,11 @@ public class NotificationServiceImpl implements NotificationService {
             .map(notification -> {
                 Map<String, Object> map = new HashMap<>();
                 map.put("id", notification.getId());
+                map.put("title", "Đơn hàng mới");
                 map.put("message", notification.getMessage());
                 map.put("isRead", notification.isRead());
                 map.put("createdAt", notification.getCreatedAt());
+                map.put("timeAgo", formatTimeAgo(notification.getCreatedAt()));
                 map.put("orderId", notification.getOrder().getId());
                 map.put("orderNumber", notification.getOrder().getOrderNumber());
                 return map;
@@ -84,5 +87,28 @@ public class NotificationServiceImpl implements NotificationService {
         });
         
         notificationRepository.saveAll(notifications);
+    }
+    
+    private String formatTimeAgo(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            return "Vừa xong";
+        }
+        
+        Duration duration = Duration.between(dateTime, LocalDateTime.now());
+        long minutes = duration.toMinutes();
+        long hours = duration.toHours();
+        long days = duration.toDays();
+        
+        if (minutes < 1) {
+            return "Vừa xong";
+        } else if (minutes < 60) {
+            return minutes + " phút trước";
+        } else if (hours < 24) {
+            return hours + " giờ trước";
+        } else if (days < 7) {
+            return days + " ngày trước";
+        } else {
+            return dateTime.toString();
+        }
     }
 }

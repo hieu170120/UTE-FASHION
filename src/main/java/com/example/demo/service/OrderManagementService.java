@@ -67,6 +67,11 @@ public interface OrderManagementService {
     List<OrderDTO> getShipperDeliveringOrders(Integer shipperId);
     
     /**
+     * Lấy tất cả đơn hàng của shipper (tất cả trạng thái)
+     */
+    List<OrderDTO> getShipperAllOrders(Integer shipperId);
+    
+    /**
      * Tự động cập nhật đơn sang DA_GIAO khi hết thời gian đếm ngược
      */
     void markOrderAsDelivered(Integer orderId);
@@ -88,4 +93,9 @@ public interface OrderManagementService {
      * Lấy lịch sử đơn hàng của khách hàng
      */
     List<OrderDTO> getCustomerOrders(Integer userId);
+    
+    /**
+     * Lấy chi tiết đơn hàng theo ID
+     */
+    OrderDTO getOrderById(Integer orderId);
 }

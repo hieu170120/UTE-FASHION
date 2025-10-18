@@ -218,10 +218,14 @@ public class PaymentController {
                 return "redirect:/cart";
             }
             
-            // Set carrier vào checkoutData
-            if (selectedCarrierId != null) {
-                checkoutData.setCarrierId(selectedCarrierId);
+            // ✅ VALIDATE: Phải chọn carrier trước
+            if (selectedCarrierId == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Vui lòng chọn nhà vận chuyển trước khi thanh toán!");
+                return "redirect:/payment/method-selection";
             }
+            
+            // Set carrier vào checkoutData
+            checkoutData.setCarrierId(selectedCarrierId);
             
             // ✅ TẠO ORDER
             OrderDTO createdOrder = orderService.createOrderFromCart(userId, session.getId(), checkoutData);
@@ -251,9 +255,16 @@ public class PaymentController {
         try {
             OrderDTO checkoutData = (OrderDTO) session.getAttribute("checkoutData");
             Integer userId = (Integer) session.getAttribute("checkoutUserId");
+            Integer selectedCarrierId = (Integer) session.getAttribute("selectedCarrierId");
             
             if (checkoutData == null) {
                 return "redirect:/cart";
+            }
+            
+            // ✅ VALIDATE: Phải chọn carrier trước
+            if (selectedCarrierId == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Vui lòng chọn nhà vận chuyển trước khi thanh toán!");
+                return "redirect:/payment/method-selection";
             }
             
             // Lấy cart để tính tổng tiền

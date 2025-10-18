@@ -1,10 +1,7 @@
 package com.example.demo.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -24,6 +21,8 @@ public class ReviewImage {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "review_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Review review;
 
     @Column(name = "image_url", nullable = false, length = 500)
