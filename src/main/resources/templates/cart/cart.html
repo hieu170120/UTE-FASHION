@@ -378,11 +378,20 @@
             updateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang cập nhật...';
             
             // Gửi 1 request batch duy nhất
+            const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+            
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (csrfToken && csrfHeader) {
+                headers[csrfHeader] = csrfToken;
+            }
+            
             fetch('/UTE_Fashion/cart/batch-update', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: headers,
+                credentials: 'include',
                 body: JSON.stringify(updates)
             })
                 .then(res => {
