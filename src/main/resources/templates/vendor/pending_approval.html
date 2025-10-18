@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>Chờ phê duyệt</title>
+</head>
+<body>
+
+<div layout:fragment="content">
+    <div class="container text-center my-5 py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-7">
+                <i class="fas fa-hourglass-half fa-4x text-warning mb-4"></i>
+                <h1 class="display-5 fw-bold">Yêu cầu của bạn đang được xử lý</h1>
+                <p class="lead text-muted">
+                    Cảm ơn bạn đã đăng ký cửa hàng "<strong th:text="${shopName}"></strong>" trên UTE Fashion.
+                    Yêu cầu của bạn đã được gửi đến ban quản trị và đang chờ phê duyệt.
+                </p>
+                <p class="text-muted">Chúng tôi sẽ thông báo cho bạn ngay khi có kết quả. Vui lòng quay lại sau!</p>
+                <a th:href="@{/}" class="btn btn-dark mt-3">Về trang chủ</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
