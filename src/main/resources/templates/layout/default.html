@@ -160,14 +160,14 @@
                                     <li><a class="dropdown-item" th:href="@{/shipper}">
                                         <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                                     </a></li>
-                                    <li><a class="dropdown-item" th:href="@{/shipper/orders/assigned}">
+                                    <li><a class="dropdown-item" href="#" onclick="if(window.location.pathname.includes('/shipper') && typeof loadContent === 'function') { loadContent('orders'); return false; } else { window.location.href='/UTE_Fashion/shipper'; return false; }">
                                         <i class="fas fa-clipboard-list me-2"></i>Đơn được giao
                                     </a></li>
-                                    <li><a class="dropdown-item" th:href="@{/shipper/orders/delivering}">
+                                    <li><a class="dropdown-item" href="#" onclick="if(window.location.pathname.includes('/shipper') && typeof loadContent === 'function') { loadContent('delivering'); return false; } else { window.location.href='/UTE_Fashion/shipper'; return false; }">
                                         <i class="fas fa-shipping-fast me-2"></i>Đơn đang giao
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" th:href="@{/shipper/history}">
+                                    <li><a class="dropdown-item" href="#" onclick="if(window.location.pathname.includes('/shipper') && typeof loadContent === 'function') { loadContent('history'); return false; } else { window.location.href='/UTE_Fashion/shipper'; return false; }">
                                         <i class="fas fa-history me-2"></i>Lịch sử
                                     </a></li>
                                 </ul>
@@ -186,7 +186,7 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" th:href="@{/profile}"><i class="fas fa-user me-2"></i>Thông tin cá nhân</a></li>
-                            <li><a class="dropdown-item" th:href="@{/orders}"><i class="fas fa-shopping-bag me-2"></i>Đơn hàng của tôi</a></li>
+                            <li><a class="dropdown-item" th:href="@{/orders/my-orders}"><i class="fas fa-shopping-bag me-2"></i>Đơn hàng của tôi</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" th:href="@{/logout}"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
                         </ul>

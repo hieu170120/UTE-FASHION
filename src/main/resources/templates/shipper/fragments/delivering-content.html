@@ -1,0 +1,142 @@
+<!-- Đơn đang giao - Delivering Content Fragment -->
+<div xmlns:th="http://www.thymeleaf.org">
+    <h2 style="margin-bottom: 24px; font-weight: 700; color: #1E293B;">🚚 Đơn đang giao & Đã hoàn thành</h2>
+
+    <!-- Filter Tabs -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#delivering-tab">
+                <i class="fas fa-shipping-fast"></i> Đang giao (<span th:text="${deliveringOrders.size()}">0</span>)
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#delivered-tab">
+                <i class="fas fa-check-circle"></i> Đã giao (<span th:text="${deliveredOrders.size()}">0</span>)
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#cancelled-tab">
+                <i class="fas fa-times-circle"></i> Đã hủy (<span th:text="${cancelledOrders.size()}">0</span>)
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Đang giao -->
+        <div class="tab-pane fade show active" id="delivering-tab">
+            <div th:if="${deliveringOrders.isEmpty()}" class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Không có đơn đang giao.
+            </div>
+            
+            <div th:each="order : ${deliveringOrders}" class="order-card" style="background: white; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div style="font-weight: 600; font-size: 16px;">
+                        <i class="fas fa-truck"></i> <span th:text="${order.orderNumber}"></span>
+                    </div>
+                    <span style="background: #DBEAFE; color: #1E40AF; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">Đang giao</span>
+                </div>
+                <div style="color: #64748B; font-size: 14px; line-height: 1.6;">
+                    <div><i class="fas fa-user"></i> <strong>Khách hàng:</strong> <span th:text="${order.recipientName}"></span></div>
+                    <div><i class="fas fa-phone"></i> <strong>SĐT:</strong> <span th:text="${order.phoneNumber}"></span></div>
+                    <div><i class="fas fa-map-marker-alt"></i> <strong>Địa chỉ:</strong> <span th:text="${order.shippingAddress}"></span></div>
+                    <div><i class="fas fa-money-bill-wave"></i> <strong>Tổng tiền:</strong> 
+                        <span th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                    </div>
+                    <div style="margin-top: 12px;">
+                        <i class="fas fa-clock"></i> <strong>Thời gian còn lại:</strong> 
+                        <span style="background: #3B82F6; color: white; padding: 8px 16px; border-radius: 8px; font-weight: 600;" 
+                              th:id="'timer-del-' + ${order.id}"
+                              th:attr="data-delivery-time=${order.estimatedDeliveryTime}"
+                              class="countdown-timer">--:--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Đã giao -->
+        <div class="tab-pane fade" id="delivered-tab">
+            <div th:if="${deliveredOrders.isEmpty()}" class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Chưa có đơn nào được giao.
+            </div>
+            
+            <div th:each="order : ${deliveredOrders}" class="order-card" style="background: white; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div style="font-weight: 600; font-size: 16px;">
+                        <i class="fas fa-check-circle"></i> <span th:text="${order.orderNumber}"></span>
+                    </div>
+                    <span style="background: #D1FAE5; color: #065F46; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">Đã giao</span>
+                </div>
+                <div style="color: #64748B; font-size: 14px; line-height: 1.6;">
+                    <div><i class="fas fa-user"></i> <strong>Khách hàng:</strong> <span th:text="${order.recipientName}"></span></div>
+                    <div><i class="fas fa-money-bill-wave"></i> <strong>Tổng tiền:</strong> 
+                        <span th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                    </div>
+                    <div><i class="fas fa-calendar"></i> <strong>Ngày giao:</strong> 
+                        <span th:text="${#temporals.format(order.deliveredAt, 'dd/MM/yyyy HH:mm')}"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Đã hủy -->
+        <div class="tab-pane fade" id="cancelled-tab">
+            <div th:if="${cancelledOrders.isEmpty()}" class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Không có đơn nào bị hủy.
+            </div>
+            
+            <div th:each="order : ${cancelledOrders}" class="order-card" style="background: white; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div style="font-weight: 600; font-size: 16px;">
+                        <i class="fas fa-times-circle"></i> <span th:text="${order.orderNumber}"></span>
+                    </div>
+                    <span style="background: #FEE2E2; color: #991B1B; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">Đã hủy</span>
+                </div>
+                <div style="color: #64748B; font-size: 14px; line-height: 1.6;">
+                    <div><i class="fas fa-user"></i> <strong>Khách hàng:</strong> <span th:text="${order.recipientName}"></span></div>
+                    <div><i class="fas fa-calendar"></i> <strong>Ngày hủy:</strong> 
+                        <span th:text="${#temporals.format(order.cancelledAt, 'dd/MM/yyyy HH:mm')}"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Start countdown timers for all delivering orders
+        (function() {
+            document.querySelectorAll('.countdown-timer[data-delivery-time]').forEach(function(timerEl) {
+                const orderId = timerEl.id.replace('timer-del-', '');
+                const deliveryTime = new Date(timerEl.getAttribute('data-delivery-time')).getTime();
+                
+                const interval = setInterval(function() {
+                    const now = new Date().getTime();
+                    const distance = deliveryTime - now;
+                    
+                    if (distance < 0) {
+                        clearInterval(interval);
+                        timerEl.textContent = 'Đã giao!';
+                        timerEl.style.background = '#10B981';
+                        
+                        // Auto complete delivery
+                        fetch('/UTE_Fashion/shipper/orders/' + orderId + '/complete', {
+                            method: 'POST'
+                        }).then(() => {
+                            setTimeout(() => {
+                                if (typeof loadContent === 'function') {
+                                    loadContent('delivering');
+                                } else {
+                                    location.reload();
+                                }
+                            }, 2000);
+                        });
+                        return;
+                    }
+                    
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                    timerEl.textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+                }, 1000);
+            });
+        })();
+    </script>
+</div>

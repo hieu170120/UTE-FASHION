@@ -1,0 +1,209 @@
+<!-- Profile Content Fragment -->
+<div xmlns:th="http://www.thymeleaf.org">
+    <style>
+        .profile-container {
+            max-width: 800px;
+        }
+        
+        .profile-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 16px;
+        }
+        
+        .profile-name {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .profile-role {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .info-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid #E2E8F0;
+            margin-bottom: 24px;
+        }
+        
+        .info-card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1E293B;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #E2E8F0;
+        }
+        
+        .info-row {
+            display: flex;
+            padding: 12px 0;
+            border-bottom: 1px solid #F1F5F9;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            flex: 0 0 180px;
+            font-weight: 600;
+            color: #64748B;
+        }
+        
+        .info-value {
+            flex: 1;
+            color: #1E293B;
+        }
+        
+        .status-active {
+            background: #D1FAE5;
+            color: #065F46;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-inactive {
+            background: #FEE2E2;
+            color: #991B1B;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .warning-box {
+            background: #FEF3C7;
+            border-left: 4px solid #F59E0B;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+        
+        .warning-box strong {
+            color: #92400E;
+        }
+    </style>
+
+    <div class="profile-container">
+        <h2 style="margin-bottom: 24px; font-weight: 700; color: #1E293B;">👤 Thông tin cá nhân</h2>
+
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <div class="profile-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="profile-name" th:text="${shipper.fullName}">Shipper Name</div>
+            <div class="profile-role">
+                <i class="fas fa-id-badge"></i> Shipper ID: <span th:text="${shipper.shipperId}">001</span>
+            </div>
+        </div>
+
+        <!-- Personal Information -->
+        <div class="info-card">
+            <div class="info-card-title">
+                <i class="fas fa-user-circle"></i> Thông tin cá nhân
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label"><i class="fas fa-user"></i> Họ và tên:</div>
+                <div class="info-value" th:text="${shipper.fullName}">Nguyễn Văn A</div>
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label"><i class="fas fa-envelope"></i> Email:</div>
+                <div class="info-value" th:text="${shipper.email}">email@example.com</div>
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label"><i class="fas fa-phone"></i> Số điện thoại:</div>
+                <div class="info-value" th:text="${shipper.phoneNumber}">0123456789</div>
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label"><i class="fas fa-motorcycle"></i> Loại phương tiện:</div>
+                <div class="info-value" th:text="${shipper.vehicleType}">Xe máy</div>
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label"><i class="fas fa-toggle-on"></i> Trạng thái:</div>
+                <div class="info-value">
+                    <span th:if="${shipper.isActive}" class="status-active">
+                        <i class="fas fa-check-circle"></i> Đang hoạt động
+                    </span>
+                    <span th:unless="${shipper.isActive}" class="status-inactive">
+                        <i class="fas fa-times-circle"></i> Không hoạt động
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Work Statistics -->
+        <div class="info-card">
+            <div class="info-card-title">
+                <i class="fas fa-chart-bar"></i> Thống kê công việc
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label"><i class="fas fa-times-circle"></i> Số lần hủy đơn:</div>
+                <div class="info-value">
+                    <strong style="color: #EF4444; font-size: 18px;" th:text="${cancelCount}">0</strong> / 3
+                </div>
+            </div>
+            
+            <div th:if="${cancelCount >= 2}" class="warning-box">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Cảnh báo!</strong> 
+                Bạn đã hủy <span th:text="${cancelCount}">0</span> đơn hàng. 
+                Nếu hủy đủ 3 đơn, tài khoản sẽ bị khóa.
+            </div>
+        </div>
+
+        <!-- Carrier Information -->
+        <div class="info-card">
+            <div class="info-card-title">
+                <i class="fas fa-building"></i> Thông tin đơn vị vận chuyển
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label"><i class="fas fa-truck"></i> Đơn vị:</div>
+                <div class="info-value">
+                    <span th:if="${shipper.carrierId != null}">Carrier ID: <span th:text="${shipper.carrierId}">N/A</span></span>
+                    <span th:unless="${shipper.carrierId != null}" style="color: #64748B;">Chưa có đơn vị</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="text-center mt-4">
+            <a href="#" th:href="@{/shipper/profile/edit}" class="btn btn-primary btn-lg">
+                <i class="fas fa-edit"></i> Chỉnh sửa thông tin
+            </a>
+            <a href="#" th:href="@{/shipper/profile/change-password}" class="btn btn-outline-secondary btn-lg ms-2">
+                <i class="fas fa-key"></i> Đổi mật khẩu
+            </a>
+        </div>
+    </div>
+</div>

@@ -293,4 +293,20 @@ public class OrderManagementServiceImpl implements OrderManagementService {
                 .map(order -> modelMapper.map(order, OrderDTO.class))
                 .collect(Collectors.toList());
     }
+    
+    @Override
+    public List<OrderDTO> getShipperAllOrders(Integer shipperId) {
+        List<Order> orders = orderRepository.findByShipperId(shipperId);
+        return orders.stream()
+                .map(order -> modelMapper.map(order, OrderDTO.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderDTO getOrderById(Integer orderId) {
+        Order order = orderRepository.findByIdWithDetails(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
+        return modelMapper.map(order, OrderDTO.class);
+    }
 }
