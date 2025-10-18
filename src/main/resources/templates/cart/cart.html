@@ -213,7 +213,16 @@
 
                     <!-- Giá -->
                     <div class="col-md-2 text-center">
-                        <p class="mb-0 fw-bold" th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></p>
+                        <th:block th:if="${item.salePrice != null and item.salePrice < item.price}">
+                            <p class="mb-0 fw-bold text-danger" th:text="${#numbers.formatDecimal(item.salePrice, 0, 'COMMA', 0, 'POINT')} + 'đ'"></p>
+                            <p class="mb-0 text-muted text-decoration-line-through" style="font-size: 13px;" 
+                               th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')} + 'đ'"></p>
+                            <span class="badge bg-danger" style="font-size: 11px;"
+                                  th:text="'-' + ${#numbers.formatInteger(((item.price - item.salePrice) * 100.0) / item.price, 0)} + '%'"></span>
+                        </th:block>
+                        <th:block th:unless="${item.salePrice != null and item.salePrice < item.price}">
+                            <p class="mb-0 fw-bold" th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')} + 'đ'"></p>
+                        </th:block>
                     </div>
 
                     <!-- Số lượng -->
