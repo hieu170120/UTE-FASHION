@@ -159,21 +159,24 @@
                 gap: 10px;
             }
             
-            .btn-add-cart {
+            .btn-view-detail {
                 flex: 1;
                 padding: 10px;
                 background: #000;
                 color: white;
                 border: none;
                 border-radius: 4px;
-                cursor: pointer;
+                text-decoration: none;
                 font-size: 14px;
                 font-weight: 500;
                 transition: all 0.3s ease;
+                display: inline-block;
+                text-align: center;
             }
             
-            .btn-add-cart:hover {
+            .btn-view-detail:hover {
                 background: #333;
+                color: white;
             }
             
             .empty-wishlist {
@@ -259,9 +262,9 @@
                     </div>
                     
                     <div class="wishlist-item-actions">
-                        <button class="btn-add-cart" th:onclick="'quickAddToCart(' + ${item.product.id} + ', this)'">
-                            <i class="fas fa-shopping-cart me-1"></i>Thêm vào giỏ
-                        </button>
+                        <a th:href="@{/products/{slug}(slug=${item.product.slug})}" class="btn-view-detail">
+                            <i class="fas fa-eye me-1"></i>Xem chi tiết
+                        </a>
                     </div>
                 </div>
             </div>
