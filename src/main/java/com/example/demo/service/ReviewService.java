@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.RatingStatisticsDTO;
 import com.example.demo.dto.ReviewCreationRequest;
 import com.example.demo.dto.ReviewDTO;
 import org.springframework.data.domain.Page;
@@ -22,4 +23,11 @@ public interface ReviewService {
      * @return The created ReviewDTO.
      */
     ReviewDTO createReview(ReviewCreationRequest request, Integer userId);
+    
+    /**
+     * Get rating statistics for a product (breakdown by star rating).
+     * @param productId The ID of the product.
+     * @return Rating statistics including count and percentage for each star rating.
+     */
+    RatingStatisticsDTO getRatingStatistics(Integer productId);
 }
