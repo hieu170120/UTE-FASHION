@@ -108,6 +108,9 @@ public class ProductController {
 
 			Page<ReviewDTO> reviewPage = reviewService.getReviewsByProductId(product.getId(), PageRequest.of(0, 5));
 			model.addAttribute("reviewPage", reviewPage);
+			
+			// Add rating statistics
+			model.addAttribute("ratingStats", reviewService.getRatingStatistics(product.getId()));
 
 			return "product/product-detail";
 		} catch (Exception e) {

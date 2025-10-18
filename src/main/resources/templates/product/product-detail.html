@@ -732,15 +732,15 @@ body {
 						<!-- Left: Overall Rating -->
 						<div class="col-md-3 text-center">
 							<div class="overall-rating">
-								<div class="rating-number" th:text="${product.averageRating != null ? #numbers.formatDecimal(product.averageRating, 1, 1) : '5.0'}">5.0</div>
+								<div class="rating-number" th:text="${ratingStats.totalReviews > 0 ? #numbers.formatDecimal(ratingStats.averageRating, 1, 1) : '0.0'}">0.0</div>
 								<div class="rating-text">/5</div>
 								<div class="star-rating-summary">
-									<th:block th:with="rating=${product.averageRating != null ? product.averageRating : 5}">
+									<th:block th:with="rating=${ratingStats.averageRating}">
 										<i th:each="i : ${#numbers.sequence(1, 5)}"
 											th:class="${i <= rating} ? 'bi bi-star-fill' : 'bi bi-star'"></i>
 									</th:block>
 								</div>
-								<div class="review-count" th:text="'Dựa trên ' + ${reviewPage.totalElements} + ' đánh giá'">Dựa trên 2 đánh giá</div>
+								<div class="review-count" th:text="'Dựa trên ' + ${ratingStats.totalReviews} + ' đánh giá'">Dựa trên 0 đánh giá</div>
 							</div>
 						</div>
 						
@@ -754,21 +754,15 @@ body {
 									<div class="progress-bar-container">
 										<div class="progress">
 											<div class="progress-bar bg-warning" role="progressbar" 
-												style="width: 100%" 
-												th:if="${star == 5}">
-											</div>
-											<div class="progress-bar bg-warning" role="progressbar" 
-												style="width: 0%" 
-												th:unless="${star == 5}">
+												th:style="'width: ' + ${ratingStats.getRatingPercentage(star)} + '%'">
 											</div>
 										</div>
 									</div>
 									<div class="rating-percent">
-										<span th:if="${star == 5}">100.0%</span>
-										<span th:unless="${star == 5}">0.0%</span>
+										<span th:text="${#numbers.formatDecimal(ratingStats.getRatingPercentage(star), 1, 1)} + '%'">0.0%</span>
 									</div>
 									<div class="rating-count">
-										(<span th:if="${star == 5}" th:text="${reviewPage.totalElements}">2</span><span th:unless="${star == 5}">0</span>)
+										(<span th:text="${ratingStats.getRatingCount(star)}">0</span>)
 									</div>
 								</div>
 							</div>

@@ -1,5 +1,6 @@
 package com.example.demo.service.impl;
 
+import com.example.demo.dto.RatingStatisticsDTO;
 import com.example.demo.dto.ReviewCreationRequest;
 import com.example.demo.dto.ReviewDTO;
 import com.example.demo.entity.*;
@@ -14,7 +15,10 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -129,5 +133,36 @@ public class ReviewServiceImpl implements ReviewService {
                 .collect(Collectors.toList()));
         }
         return dto;
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public RatingStatisticsDTO getRatingStatistics(Integer productId) {
+        List<Review> reviews = reviewRepository.findAll().stream()
+            .filter(r -> r.getProduct().getId().equals(productId) && r.isApproved())
+            .collect(Collectors.toList());
+        
+        Map<Integer, Long> ratingCounts = new HashMap<>();
+        for (int i = 1; i <= 5; i++) {
+            ratingCounts.put(i, 0L);
+        }
+        
+        long total = 0;
+        double sum = 0;
+        
+        for (Review review : reviews) {
+            int rating = review.getRating();
+            ratingCounts.put(rating, ratingCounts.get(rating) + 1);
+            sum += rating;
+            total++;
+        }
+        
+        double average = total > 0 ? sum / total : 0.0;
+        
+        return RatingStatisticsDTO.builder()
+            .totalReviews(total)
+            .averageRating(average)
+            .ratingCounts(ratingCounts)
+            .build();
     }
 }
