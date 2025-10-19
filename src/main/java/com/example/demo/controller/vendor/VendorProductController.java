@@ -36,43 +36,45 @@ public class VendorProductController {
     private void authorizeVendorForProduct(Principal principal, Integer productId) {
         Integer shopId = vendorService.getShopIdByUsername(principal.getName());
         ProductDTO product = productService.getProductById(productId);
-        if (shopId == null || !product.getShopId().equals(shopId)) {
+        if (!product.getShopId().equals(shopId)) {
             throw new UnauthorizedException("Bạn không có quyền thực hiện hành động này trên sản phẩm này.");
         }
     }
 
     @GetMapping
     public String showProductList(Model model, Principal principal) {
-        Integer shopId = vendorService.getShopIdByUsername(principal.getName());
-        if (shopId == null) {
+        try {
+            Integer shopId = vendorService.getShopIdByUsername(principal.getName());
+            List<Product> products = productService.getProductsByShopId(shopId);
+            model.addAttribute("products", products);
+            model.addAttribute("isProductListEmpty", products.isEmpty());
+        } catch (UnauthorizedException e) {
             model.addAttribute("errorMessage", "Bạn chưa có cửa hàng. Vui lòng tạo cửa hàng trước.");
-            return "vendor/products/list";
+            model.addAttribute("isProductListEmpty", true);
         }
-
-        List<Product> products = productService.getProductsByShopId(shopId);
-        model.addAttribute("products", products);
-        model.addAttribute("isProductListEmpty", products.isEmpty());
 
         return "vendor/products/list";
     }
 
     @GetMapping("/add")
     public String showAddProductForm(Model model, Principal principal, RedirectAttributes redirectAttributes) {
-        Integer shopId = vendorService.getShopIdByUsername(principal.getName());
-        if (shopId == null) {
+        try {
+            vendorService.getShopIdByUsername(principal.getName());
+            model.addAttribute("productDTO", new ProductDTO());
+            model.addAttribute("categories", categoryService.findAllActive());
+            return "vendor/products/add";
+        } catch (UnauthorizedException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: Không tìm thấy cửa hàng của bạn.");
             return "redirect:/vendor/products";
         }
-
-        model.addAttribute("productDTO", new ProductDTO());
-        model.addAttribute("categories", categoryService.findAllActive());
-        return "vendor/products/add";
     }
 
     @PostMapping("/add")
     public String addProduct(@Valid @ModelAttribute("productDTO") ProductDTO productDTO, BindingResult result, Principal principal, Model model, RedirectAttributes redirectAttributes) {
-        Integer shopId = vendorService.getShopIdByUsername(principal.getName());
-        if (shopId == null) {
+        Integer shopId;
+        try {
+            shopId = vendorService.getShopIdByUsername(principal.getName());
+        } catch (UnauthorizedException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: Không tìm thấy cửa hàng của bạn.");
             return "redirect:/vendor/products";
         }
@@ -85,7 +87,6 @@ public class VendorProductController {
         try {
             ProductDTO newProduct = productService.createProduct(productDTO, shopId);
             redirectAttributes.addFlashAttribute("successMessage", "Thêm sản phẩm thành công! Giờ bạn có thể thêm các biến thể.");
-            // Redirect to the edit page to add variants
             return "redirect:/vendor/products/edit/" + newProduct.getId();
         } catch (Exception e) {
             model.addAttribute("categories", categoryService.findAllActive());
@@ -104,7 +105,7 @@ public class VendorProductController {
 
             model.addAttribute("productDTO", productDTO);
             model.addAttribute("categories", categories);
-            model.addAttribute("variants", variants); 
+            model.addAttribute("variants", variants);
             model.addAttribute("newVariant", new ProductVariantDTO()); // For the 'Add Variant' form
 
             return "vendor/products/edit";
@@ -142,7 +143,7 @@ public class VendorProductController {
             return "vendor/products/edit";
         }
     }
-    
+
     @GetMapping("/delete/{id}")
     public String deleteProduct(@PathVariable("id") Integer id, Principal principal, RedirectAttributes redirectAttributes) {
         try {

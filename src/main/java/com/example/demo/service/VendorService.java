@@ -35,5 +35,13 @@ public interface VendorService {
      * @throws jakarta.persistence.EntityNotFoundException nếu không tìm thấy shop.
      */
     Shop updateCurrentVendorShop(ShopRegistrationDTO shopDTO);
+    
+    /**
+     * Lấy ID của shop dựa vào username của vendor.
+     *
+     * @param username Tên đăng nhập của vendor.
+     * @return ID của shop nếu tìm thấy.
+     */
+    Integer getShopIdByUsername(String username);
 
 }
