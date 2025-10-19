@@ -34,7 +34,7 @@ public interface OrderManagementService {
     /**
      * Admin từ chối yêu cầu trả hàng
      */
-    void rejectReturnRequest(Integer requestId);
+    void rejectReturnRequest(Integer requestId, String rejectionReason);
     
     
     // === SHIPPER FUNCTIONS ===
