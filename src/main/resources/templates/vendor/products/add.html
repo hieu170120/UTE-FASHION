@@ -16,9 +16,9 @@
 <form th:action="@{/vendor/products/add}" th:object="${productDTO}" method="post">
 
     <div>
-        <label for="name">Tên sản phẩm:</label>
-        <input type="text" id="name" th:field="*{name}"/>
-        <p th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="error"></p>
+        <label for="productName">Tên sản phẩm:</label>
+        <input type="text" id="productName" th:field="*{productName}"/>
+        <p th:if="${#fields.hasErrors('productName')}" th:errors="*{productName}" class="error"></p>
     </div>
 
     <div>
@@ -28,9 +28,9 @@
     </div>
 
     <div>
-        <label for="stock">Số lượng tồn kho:</label>
-        <input type="number" id="stock" th:field="*{stock}"/>
-        <p th:if="${#fields.hasErrors('stock')}" th:errors="*{stock}" class="error"></p>
+        <label for="stockQuantity">Số lượng tồn kho:</label>
+        <input type="number" id="stockQuantity" th:field="*{stockQuantity}"/>
+        <p th:if="${#fields.hasErrors('stockQuantity')}" th:errors="*{stockQuantity}" class="error"></p>
     </div>
 
     <div>

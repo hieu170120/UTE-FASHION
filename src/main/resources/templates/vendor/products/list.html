@@ -55,7 +55,7 @@
                 <td th:text="${product.id}"></td>
                 <td th:text="${product.productName}"></td>
                 <td th:text="${product.price}"></td>
-                <td th:text="${product.stock}"></td>
+                <td th:text="${product.stockQuantity}"></td>
                 <td th:text="${product.isActive ? 'Đang bán' : 'Ngừng bán'}"></td>
                 <td>
                     <a th:href="@{/vendor/products/edit/{id}(id=${product.id})}">Sửa</a>

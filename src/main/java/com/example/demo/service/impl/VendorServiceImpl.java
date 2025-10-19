@@ -108,6 +108,6 @@ public class VendorServiceImpl implements VendorService {
 				.orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 		Shop shop = shopRepository.findByVendorUserId(user.getUserId())
 				.orElseThrow(() -> new UnauthorizedException("User does not have a shop."));
-		return shop.getShopId();
+		return shop.getId();
 	}
 }

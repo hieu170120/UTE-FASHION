@@ -45,7 +45,7 @@ public class SecurityConfig {
 								"/payment-test", "/payment-test/**", "/api/auth/**", "/api/**", // Public product APIs
 								"/verify-email", "/verify-email/**", "/resend-otp", "/error", // Allow error page
 								"/admin/**", // TODO: TEMPORARY - Remove this line in production
-								"/shipper/**") // TODO: TEMPORARY - Remove this line in production
+								"/shipper/**")
 						.permitAll().requestMatchers("/api/v1/reviews/**").authenticated() // Review APIs need auth
 						// .requestMatchers("/admin/**").hasRole("ADMIN") // Admin only - COMMENTED FOR
 						// TESTING

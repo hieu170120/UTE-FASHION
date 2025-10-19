@@ -1,11 +1,15 @@
 package com.example.demo.service.impl;
 
 import com.example.demo.dto.ProductVariantDTO;
+import com.example.demo.entity.Color;
 import com.example.demo.entity.Product;
 import com.example.demo.entity.ProductVariant;
+import com.example.demo.entity.Size;
 import com.example.demo.exception.ResourceNotFoundException;
+import com.example.demo.repository.ColorRepository;
 import com.example.demo.repository.ProductRepository;
 import com.example.demo.repository.ProductVariantRepository;
+import com.example.demo.repository.SizeRepository;
 import com.example.demo.service.ProductService;
 import com.example.demo.service.ProductVariantService;
 import org.modelmapper.ModelMapper;
@@ -21,6 +25,12 @@ public class ProductVariantServiceImpl implements ProductVariantService {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private ColorRepository colorRepository;
+
+    @Autowired
+    private SizeRepository sizeRepository;
 
     @Autowired
     private ProductService productService; // Injected to update parent product stock
@@ -68,11 +78,18 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         ProductVariant existingVariant = productVariantRepository.findById(variantDTO.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Variant not found with id: " + variantDTO.getId()));
 
-        // Map fields from DTO to the existing entity
-        existingVariant.setSku(variantDTO.getSku());
-        existingVariant.setColor(variantDTO.getColor());
-        existingVariant.setSize(variantDTO.getSize());
-        existingVariant.setPrice(variantDTO.getPrice());
+        // Fetch and set Color
+        Color color = colorRepository.findById(variantDTO.getColor().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Color not found with id: " + variantDTO.getColor().getId()));
+        existingVariant.setColor(color);
+
+        // Fetch and set Size
+        Size size = sizeRepository.findById(variantDTO.getSize().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Size not found with id: " + variantDTO.getSize().getId()));
+        existingVariant.setSize(size);
+
+        // Map other fields from DTO to the existing entity
+        existingVariant.setPriceAdjustment(variantDTO.getPriceAdjustment());
         existingVariant.setStockQuantity(variantDTO.getStockQuantity());
 
         productVariantRepository.save(existingVariant);
