@@ -66,8 +66,6 @@ public class ProductServiceImpl implements ProductService {
         Pageable adjustedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
                 getSortOrder(criteria.getSort()));
 
-        // OPTIMIZED: Call the custom repository method that uses DTO projection.
-        // This is much more efficient than findAll() and mapping afterwards.
         return productRepository.findSummaries(spec, adjustedPageable);
     }
 
@@ -161,7 +159,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public ProductDTO createProduct(ProductDTO productDTO, Integer shopId) {
+    public ProductDTO createProduct(ProductDTO productDTO, List<ProductImageDTO> images, Integer shopId) {
         Product product = modelMapper.map(productDTO, Product.class);
 
         product.setSlug(slugify.slugify(productDTO.getProductName()));
@@ -171,8 +169,25 @@ public class ProductServiceImpl implements ProductService {
         product.setCategory(
                 categoryRepository.findById(productDTO.getCategoryId())
                         .orElseThrow(() -> new ResourceNotFoundException("Category not found")));
+        
+        // Save the product first to get an ID
         Product savedProduct = productRepository.save(product);
+
+        // Now, save the images
+        if (images != null && !images.isEmpty()) {
+            images.forEach(imageDTO -> {
+                ProductImage productImage = modelMapper.map(imageDTO, ProductImage.class);
+                productImage.setProduct(savedProduct);
+                productImageRepository.save(productImage);
+            });
+        }
+
         return modelMapper.map(savedProduct, ProductDTO.class);
+    }
+    
+    // Keep the old method for compatibility if it's used elsewhere
+    public ProductDTO createProduct(ProductDTO productDTO, Integer shopId) {
+        return createProduct(productDTO, Collections.emptyList(), shopId);
     }
 
     @Override
@@ -215,12 +230,10 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
 
-        // Calculate the total stock from all its variants
         int totalStock = product.getVariants().stream()
                 .mapToInt(ProductVariant::getStockQuantity)
                 .sum();
 
-        // Update the parent product's stock
         product.setStockQuantity(totalStock);
 
         productRepository.save(product);

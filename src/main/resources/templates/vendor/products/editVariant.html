@@ -1,55 +1,85 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
 <head>
-    <meta charset="UTF-8">
     <title>Chỉnh sửa biến thể</title>
-    <style>
-        .error { color: red; }
-    </style>
 </head>
 <body>
 
-<h1>Chỉnh sửa biến thể sản phẩm</h1>
+<div layout:fragment="content" class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
 
-<div th:if="${errorMessage}" class="alert alert-danger" style="color: red;">
-    <p th:text="${errorMessage}"></p>
-</div>
+            <h1 class="mb-4 text-center">Chỉnh sửa biến thể</h1>
 
-<!-- Form for editing a variant -->
-<form th:action="@{/vendor/products/{productId}/variants/edit/{variantId}(productId=${productId}, variantId=${variant.id})}" 
-      th:object="${variant}" 
-      method="post">
-    
-    <input type="hidden" th:field="*{id}" />
+            <!-- Messages -->
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-    <div>
-        <label for="variant-sku">SKU:</label>
-        <input type="text" id="variant-sku" th:field="*{sku}"/>
-    </div>
-    <div>
-        <label for="variant-color">Màu sắc:</label>
-        <input type="text" id="variant-color" th:field="*{color}"/>
-    </div>
-    <div>
-        <label for="variant-size">Kích thước:</label>
-        <input type="text" id="variant-size" th:field="*{size}"/>
-    </div>
-    <div>
-        <label for="variant-price">Giá:</label>
-        <input type="number" step="0.01" id="variant-price" th:field="*{price}"/>
-    </div>
-    <div>
-        <label for="variant-stock">Số lượng:</label>
-        <input type="number" id="variant-stock" th:field="*{stockQuantity}"/>
-    </div>
-    
-    <div>
-        <button type="submit">Cập nhật biến thể</button>
-    </div>
-</form>
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Chi tiết biến thể</h4>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/vendor/products/{productId}/variants/edit/{variantId}(productId=${productId}, variantId=${variant.id})}" 
+                          th:object="${variant}" 
+                          method="post">
+                        
+                        <input type="hidden" th:field="*{id}">
+                        <input type="hidden" th:field="*{productId}">
 
-<div style="margin-top: 20px;">
-    <a th:href="@{/vendor/products/edit/{id}(id=${productId})}">Quay lại trang chỉnh sửa sản phẩm</a>
+                        <!-- SKU -->
+                        <div class="mb-3">
+                            <label for="sku" class="form-label">SKU (*)</label>
+                            <input type="text" id="sku" class="form-control" th:field="*{sku}" required>
+                            <div th:if="${#fields.hasErrors('sku')}" th:errors="*{sku}" class="text-danger small mt-1"></div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Color -->
+                            <div class="col-md-6 mb-3">
+                                <label for="color" class="form-label">Màu sắc</label>
+                                <input type="text" id="color" class="form-control" th:field="*{color}">
+                            </div>
+
+                            <!-- Size -->
+                            <div class="col-md-6 mb-3">
+                                <label for="size" class="form-label">Kích thước</label>
+                                <input type="text" id="size" class="form-control" th:field="*{size}">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Price -->
+                            <div class="col-md-6 mb-3">
+                                <label for="price" class="form-label">Giá</label>
+                                <div class="input-group">
+                                    <input type="number" id="price" class="form-control" th:field="*{price}" step="any">
+                                    <span class="input-group-text">VNĐ</span>
+                                </div>
+                            </div>
+
+                            <!-- Stock Quantity -->
+                            <div class="col-md-6 mb-3">
+                                <label for="stockQuantity" class="form-label">Số lượng tồn kho</label>
+                                <input type="number" id="stockQuantity" class="form-control" th:field="*{stockQuantity}">
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a th:href="@{/vendor/products/edit/{id}(id=${productId})}" class="btn btn-secondary">Hủy</a>
+                            <button type="submit" class="btn btn-dark">Cập nhật biến thể</button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 </body>

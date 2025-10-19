@@ -1,72 +1,160 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
 <head>
     <meta charset="UTF-8">
     <title>Quản lý sản phẩm</title>
-    <!-- Include your CSS/JS here -->
+
     <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        body {
+            font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+            color: #111;
+            background-color: #f8f9fa;
         }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
+
+        h1, h2, h3, h4 {
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
-        th {
-            background-color: #f2f2f2;
+        
+        .btn-dark {
+            background-color: #000;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+            padding: 10px 25px;
+            border-radius: 6px;
         }
+
+        .btn-dark:hover {
+            background-color: #333;
+        }
+        
+        .card {
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+        }
+        
+        .card-header {
+            background-color: #fff;
+            border-bottom: 2px solid #000;
+            padding: 1rem 1.5rem;
+        }
+        
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .table thead th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            border-bottom-width: 2px;
+            border-color: #dee2e6;
+        }
+        
+        .table tbody tr:hover {
+            background-color: #f1f3f5;
+        }
+        
+        .btn-sm {
+           padding: .25rem .5rem;
+           font-size: .8rem;
+        }
+        
+        .btn-outline-dark {
+            border-color: #000;
+            color: #000;
+        }
+
+        .btn-outline-dark:hover {
+            background-color: #000;
+            color: #fff;
+        }
+        
+        .btn-outline-danger {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+        
+        .btn-outline-danger:hover {
+             background-color: #dc3545;
+            color: #fff;
+        }
+
     </style>
 </head>
 <body>
 
-<h1>Quản lý sản phẩm</h1>
+<div layout:fragment="content" class="container mt-5 mb-5">
 
-<div th:if="${successMessage}" class="alert alert-success">
-    <p th:text="${successMessage}" style="color: green;"></p>
-</div>
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Quản lý sản phẩm</h1>
+        <a th:href="@{/vendor/products/add}" class="btn btn-dark">
+            <i class="fas fa-plus me-2"></i>Thêm sản phẩm mới
+        </a>
+    </div>
 
-<div th:if="${errorMessage}" class="alert alert-danger">
-    <p th:text="${errorMessage}" style="color: red;"></p>
-</div>
+    <!-- Messages -->
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-<a th:href="@{/vendor/products/add}" style="margin-bottom: 20px; display: inline-block;">Thêm sản phẩm mới</a>
+    <!-- Product Table Card -->
+    <div class="card">
+        <div class="card-body p-0">
+            
+            <!-- Empty State -->
+            <div th:if="${isProductListEmpty}" class="text-center p-5">
+                <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">Bạn chưa có sản phẩm nào.</h4>
+                <p>Hãy bắt đầu thêm sản phẩm để quản lý cửa hàng của bạn.</p>
+            </div>
 
-<div th:if="${isProductListEmpty}">
-    <p>Bạn chưa có sản phẩm nào. Hãy bắt đầu thêm sản phẩm!</p>
-</div>
-
-<div th:unless="${isProductListEmpty}">
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Tên sản phẩm</th>
-                <th>Giá</th>
-                <th>Số lượng</th>
-                <th>Trạng thái</th>
-                <th>Hành động</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Loop through products -->
-            <tr th:each="product : ${products}">
-                <td th:text="${product.id}"></td>
-                <td th:text="${product.productName}"></td>
-                <td th:text="${product.price}"></td>
-                <td th:text="${product.stockQuantity}"></td>
-                <td th:text="${product.isActive ? 'Đang bán' : 'Ngừng bán'}"></td>
-                <td>
-                    <a th:href="@{/vendor/products/edit/{id}(id=${product.id})}">Sửa</a>
-                    <!-- Add delete functionality with confirmation -->
-                    <a th:href="@{/vendor/products/delete/{id}(id=${product.id})}" 
-                       th:onclick="|return confirm('Bạn có chắc chắn muốn xóa sản phẩm này không?')|" 
-                       style="margin-left: 10px;">Xóa</a>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+            <!-- Product Table -->
+            <div th:unless="${isProductListEmpty}" class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th class="text-center">ID</th>
+                            <th>Tên sản phẩm</th>
+                            <th class="text-end">Giá</th>
+                            <th class="text-center">Số lượng</th>
+                            <th class="text-center">Trạng thái</th>
+                            <th class="text-center">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="product : ${products}">
+                            <td class="text-center fw-bold" th:text="${product.id}"></td>
+                            <td th:text="${product.productName}"></td>
+                            <td class="text-end" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+                            <td class="text-center" th:text="${product.stockQuantity}"></td>
+                            <td class="text-center">
+                                <span th:if="${product.isActive}" class="badge bg-success">Đang bán</span>
+                                <span th:unless="${product.isActive}" class="badge bg-secondary">Ngừng bán</span>
+                            </td>
+                            <td class="text-center">
+                                <a th:href="@{/vendor/products/edit/{id}(id=${product.id})}" class="btn btn-sm btn-outline-dark me-1" title="Sửa">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a th:href="@{/vendor/products/delete/{id}(id=${product.id})}" 
+                                   class="btn btn-sm btn-outline-danger"
+                                   th:onclick="|return confirm('Bạn có chắc chắn muốn xóa sản phẩm này không?')|" title="Xóa">
+                                   <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 </body>

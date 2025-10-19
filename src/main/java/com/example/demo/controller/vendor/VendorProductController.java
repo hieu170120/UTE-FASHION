@@ -1,10 +1,14 @@
 package com.example.demo.controller.vendor;
 
+import com.example.demo.dto.BrandDTO;
 import com.example.demo.dto.CategoryDTO;
 import com.example.demo.dto.ProductDTO;
+import com.example.demo.dto.ProductFormDTO;
+import com.example.demo.dto.ProductImageDTO;
 import com.example.demo.dto.ProductVariantDTO;
 import com.example.demo.entity.Product;
 import com.example.demo.exception.UnauthorizedException;
+import com.example.demo.service.BrandService;
 import com.example.demo.service.CategoryService;
 import com.example.demo.service.ProductService;
 import com.example.demo.service.VendorService;
@@ -18,6 +22,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/vendor/products")
@@ -32,7 +37,9 @@ public class VendorProductController {
     @Autowired
     private CategoryService categoryService;
 
-    // Method to check if the product belongs to the vendor's shop
+    @Autowired
+    private BrandService brandService;
+
     private void authorizeVendorForProduct(Principal principal, Integer productId) {
         Integer shopId = vendorService.getShopIdByUsername(principal.getName());
         ProductDTO product = productService.getProductById(productId);
@@ -60,8 +67,9 @@ public class VendorProductController {
     public String showAddProductForm(Model model, Principal principal, RedirectAttributes redirectAttributes) {
         try {
             vendorService.getShopIdByUsername(principal.getName());
-            model.addAttribute("productDTO", new ProductDTO());
+            model.addAttribute("form", new ProductFormDTO());
             model.addAttribute("categories", categoryService.findAllActive());
+            model.addAttribute("brands", brandService.findAllActive());
             return "vendor/products/add";
         } catch (UnauthorizedException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: Không tìm thấy cửa hàng của bạn.");
@@ -70,7 +78,7 @@ public class VendorProductController {
     }
 
     @PostMapping("/add")
-    public String addProduct(@Valid @ModelAttribute("productDTO") ProductDTO productDTO, BindingResult result, Principal principal, Model model, RedirectAttributes redirectAttributes) {
+    public String addProduct(@Valid @ModelAttribute("form") ProductFormDTO form, BindingResult result, Principal principal, Model model, RedirectAttributes redirectAttributes) {
         Integer shopId;
         try {
             shopId = vendorService.getShopIdByUsername(principal.getName());
@@ -81,15 +89,29 @@ public class VendorProductController {
 
         if (result.hasErrors()) {
             model.addAttribute("categories", categoryService.findAllActive());
+            model.addAttribute("brands", brandService.findAllActive());
             return "vendor/products/add";
         }
 
         try {
-            ProductDTO newProduct = productService.createProduct(productDTO, shopId);
+            ProductDTO productDTO = form.getProduct();
+
+            List<ProductImageDTO> images = form.getImages().stream()
+                .filter(img -> img.getImageUrl() != null && !img.getImageUrl().trim().isEmpty())
+                .collect(Collectors.toList());
+
+            Integer primaryIndex = form.getPrimaryImageIndex();
+            if (primaryIndex != null && primaryIndex >= 0 && primaryIndex < images.size()) {
+                images.get(primaryIndex).setPrimary(true);
+            }
+
+            ProductDTO newProduct = productService.createProduct(productDTO, images, shopId);
+
             redirectAttributes.addFlashAttribute("successMessage", "Thêm sản phẩm thành công! Giờ bạn có thể thêm các biến thể.");
             return "redirect:/vendor/products/edit/" + newProduct.getId();
         } catch (Exception e) {
             model.addAttribute("categories", categoryService.findAllActive());
+            model.addAttribute("brands", brandService.findAllActive());
             model.addAttribute("errorMessage", "Đã xảy ra lỗi khi thêm sản phẩm: " + e.getMessage());
             return "vendor/products/add";
         }
@@ -99,14 +121,22 @@ public class VendorProductController {
     public String showEditProductForm(@PathVariable("id") Integer id, Model model, Principal principal, RedirectAttributes redirectAttributes) {
         try {
             authorizeVendorForProduct(principal, id);
+
             ProductDTO productDTO = productService.getProductById(id);
+            List<ProductImageDTO> images = productService.getImagesByProductId(id);
             List<CategoryDTO> categories = categoryService.findAllActive();
+            List<BrandDTO> brands = brandService.findAllActive();
             List<ProductVariantDTO> variants = productService.getVariantsByProductId(id);
 
-            model.addAttribute("productDTO", productDTO);
+            ProductFormDTO form = new ProductFormDTO();
+            form.setProduct(productDTO);
+            form.setImages(images);
+
+            model.addAttribute("form", form);
             model.addAttribute("categories", categories);
+            model.addAttribute("brands", brands);
             model.addAttribute("variants", variants);
-            model.addAttribute("newVariant", new ProductVariantDTO()); // For the 'Add Variant' form
+            model.addAttribute("newVariant", new ProductVariantDTO());
 
             return "vendor/products/edit";
         } catch (UnauthorizedException e) {
@@ -129,7 +159,8 @@ public class VendorProductController {
 
         if (result.hasErrors()) {
             model.addAttribute("categories", categoryService.findAllActive());
-            return "vendor/products/edit"; // Return to edit form with errors
+            model.addAttribute("brands", brandService.findAllActive());
+            return "vendor/products/edit";
         }
 
         try {
@@ -139,6 +170,7 @@ public class VendorProductController {
             return "redirect:/vendor/products/edit/" + id;
         } catch (Exception e) {
             model.addAttribute("categories", categoryService.findAllActive());
+            model.addAttribute("brands", brandService.findAllActive());
             model.addAttribute("errorMessage", "Đã xảy ra lỗi khi cập nhật sản phẩm: " + e.getMessage());
             return "vendor/products/edit";
         }

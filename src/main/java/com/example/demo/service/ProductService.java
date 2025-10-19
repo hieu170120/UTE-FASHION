@@ -28,7 +28,7 @@ public interface ProductService {
     CompletableFuture<List<ProductSummaryDTO>> getNewestProducts();
 
     // --- CRUD Operations ---
-    ProductDTO createProduct(ProductDTO productDTO, Integer shopId);
+    ProductDTO createProduct(ProductDTO productDTO, List<ProductImageDTO> images, Integer shopId);
 
     ProductDTO updateProduct(Integer id, ProductDTO productDTO, Integer shopId);
 
