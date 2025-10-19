@@ -103,9 +103,43 @@
             <h4 style="margin-bottom: 20px;"><i class="fas fa-chart-pie"></i> Phân bố trạng thái đơn hàng</h4>
             <div class="row align-items-center">
                 <div class="col-md-6">
-                    <!-- Donut Chart -->
+                    <!-- SVG Donut Chart -->
                     <div style="position: relative; width: 280px; height: 280px; margin: 0 auto;">
-                        <canvas id="orderStatusChart"></canvas>
+                        <svg width="280" height="280" viewBox="0 0 280 280" style="transform: rotate(-90deg);">
+                            <circle cx="140" cy="140" r="90" fill="none" stroke="#F1F5F9" stroke-width="60"/>
+                            
+                            <!-- Delivered segment -->
+                            <circle th:if="${deliveredPercent > 0}" cx="140" cy="140" r="90" fill="none" 
+                                stroke="#10B981" stroke-width="60" 
+                                th:attr="stroke-dasharray=${565.5 * deliveredPercent / 100} + ' 565.5'"
+                                stroke-dashoffset="0"/>
+                            
+                            <!-- Shipping segment -->
+                            <circle th:if="${shippingPercent > 0}" cx="140" cy="140" r="90" fill="none" 
+                                stroke="#3B82F6" stroke-width="60" 
+                                th:attr="stroke-dasharray=${565.5 * shippingPercent / 100} + ' 565.5',
+                                           stroke-dashoffset=${-565.5 * deliveredPercent / 100}"/>
+                            
+                            <!-- Cancelled segment -->
+                            <circle th:if="${cancelledPercent > 0}" cx="140" cy="140" r="90" fill="none" 
+                                stroke="#EF4444" stroke-width="60" 
+                                th:attr="stroke-dasharray=${565.5 * cancelledPercent / 100} + ' 565.5',
+                                           stroke-dashoffset=${-565.5 * (deliveredPercent + shippingPercent) / 100}"/>
+                            
+                            <!-- Returned segment -->
+                            <circle th:if="${returnedPercent > 0}" cx="140" cy="140" r="90" fill="none" 
+                                stroke="#8B5CF6" stroke-width="60" 
+                                th:attr="stroke-dasharray=${565.5 * returnedPercent / 100} + ' 565.5',
+                                           stroke-dashoffset=${-565.5 * (deliveredPercent + shippingPercent + cancelledPercent) / 100}"/>
+                            
+                            <!-- Confirmed segment -->
+                            <circle th:if="${confirmedPercent > 0}" cx="140" cy="140" r="90" fill="none" 
+                                stroke="#F59E0B" stroke-width="60" 
+                                th:attr="stroke-dasharray=${565.5 * confirmedPercent / 100} + ' 565.5',
+                                           stroke-dashoffset=${-565.5 * (deliveredPercent + shippingPercent + cancelledPercent + returnedPercent) / 100}"/>
+                        </svg>
+                        
+                        <!-- Center text -->
                         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
                             <div style="font-size: 40px; font-weight: 700; color: #1E293B;" th:text="${totalOrders}">0</div>
                             <div style="font-size: 14px; color: #64748B;">Tổng đơn</div>
@@ -188,25 +222,26 @@
                         <tr th:if="${recentOrders.isEmpty()}">
                             <td colspan="5" class="text-center text-muted">Chưa có đơn hàng nào</td>
                         </tr>
-                        <tr th:each="order : ${recentOrders}">
+                        <tr th:each="item : ${recentOrders}">
                             <td>
-                                <strong th:text="${order.orderNumber}">ORD-001</strong>
+                                <strong th:text="${item.orderNumber}">ORD-001</strong>
                             </td>
-                            <td th:text="${order.recipientName}">Khách hàng</td>
+                            <td th:text="${item.recipientName}">Khách hàng</td>
                             <td>
-                                <strong style="color: #EF4444;" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'">100,000 ₫</strong>
-                            </td>
-                            <td>
-                                <span th:if="${order.orderStatus == 'Processing'}" class="badge bg-warning text-dark">Đang xử lý</span>
-                                <span th:if="${order.orderStatus == 'Confirmed'}" class="badge bg-info">Chờ xác nhận</span>
-                                <span th:if="${order.orderStatus == 'Shipping'}" class="badge bg-primary">Đang giao</span>
-                                <span th:if="${order.orderStatus == 'Delivered'}" class="badge bg-success">Đã giao</span>
-                                <span th:if="${order.orderStatus == 'Return_Requested'}" class="badge bg-warning">Yêu cầu trả hàng</span>
-                                <span th:if="${order.orderStatus == 'Returned'}" class="badge bg-secondary">Đã trả hàng</span>
-                                <span th:if="${order.orderStatus == 'Cancelled'}" class="badge bg-danger">Đã hủy</span>
+                                <strong style="color: #EF4444;" th:text="${#numbers.formatDecimal(item.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'">100,000 ₫</strong>
                             </td>
                             <td>
-                                <small th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}">01/01/2024</small>
+                                <span th:if="${item.orderStatus == 'Processing'}" class="badge bg-warning text-dark">Đang xử lý</span>
+                                <span th:if="${item.orderStatus == 'Confirmed'}" class="badge bg-info">Chờ xác nhận</span>
+                                <span th:if="${item.orderStatus == 'Shipping'}" class="badge bg-primary">Đang giao</span>
+                                <span th:if="${item.orderStatus == 'Delivered'}" class="badge bg-success">Đã giao</span>
+                                <span th:if="${item.orderStatus == 'Return_Requested'}" class="badge bg-warning">Yêu cầu trả hàng</span>
+                                <span th:if="${item.orderStatus == 'Returned'}" class="badge bg-secondary">Đã trả hàng</span>
+                                <span th:if="${item.orderStatus == 'ShipperCancelled'}" class="badge bg-danger">Shipper hủy</span>
+                                <span th:if="${item.orderStatus == 'Cancelled'}" class="badge bg-danger">Đã hủy</span>
+                            </td>
+                            <td>
+                                <small th:text="${#temporals.format(item.displayDate, 'dd/MM/yyyy HH:mm')}">01/01/2024</small>
                             </td>
                         </tr>
                     </tbody>
@@ -310,80 +345,3 @@
         </div>
     </div>
 </div>
-
-<!-- Chart.js for Donut Chart -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
-    // Wait for both DOM and Chart.js to load
-    setTimeout(function() {
-        // Data from server
-        const deliveredCount = /*[[${deliveredCount}]]*/ 0;
-        const shippingCount = /*[[${shippingCount}]]*/ 0;
-        const cancelledCount = /*[[${cancelledCount}]]*/ 0;
-        const returnedCount = /*[[${returnedCount}]]*/ 0;
-        const confirmedCount = /*[[${confirmedCount}]]*/ 0;
-        
-        console.log('Chart data:', { deliveredCount, shippingCount, cancelledCount, returnedCount, confirmedCount });
-        
-        // Create donut chart
-        const ctx = document.getElementById('orderStatusChart');
-        if (!ctx) {
-            console.error('Canvas element #orderStatusChart not found!');
-            return;
-        }
-        
-        console.log('Canvas found, creating chart...');
-        
-        try {
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Đã giao', 'Đang giao', 'Đã hủy', 'Đã trả hàng', 'Chờ xác nhận'],
-                    datasets: [{
-                        data: [deliveredCount, shippingCount, cancelledCount, returnedCount, confirmedCount],
-                        backgroundColor: [
-                            '#10B981',  // Green - Delivered
-                            '#3B82F6',  // Blue - Shipping
-                            '#EF4444',  // Red - Cancelled
-                            '#8B5CF6',  // Purple - Returned
-                            '#F59E0B'   // Orange - Confirmed
-                        ],
-                        borderWidth: 0,
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    cutout: '70%',
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            backgroundColor: '#1E293B',
-                            padding: 12,
-                            titleFont: {
-                                size: 14,
-                                weight: '600'
-                            },
-                            bodyFont: {
-                                size: 13
-                            },
-                            callbacks: {
-                                label: function(context) {
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
-                                    return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-            console.log('Chart created successfully!');
-        } catch (error) {
-            console.error('Error creating chart:', error);
-        }
-    }, 500);
-</script>

@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.dto.OrderDTO;
 import com.example.demo.dto.OrderReturnRequestDTO;
+import com.example.demo.dto.ShipperCancelHistoryDTO;
 
 import java.util.List;
 
@@ -60,6 +61,16 @@ public interface OrderManagementService {
      * Kiểm tra số lần shipper đã hủy đơn
      */
     Long getShipperCancelCount(Integer shipperId);
+    
+    /**
+     * Lấy danh sách lịch sử hủy đơn của shipper
+     */
+    List<ShipperCancelHistoryDTO> getShipperCancelHistory(Integer shipperId);
+    
+    /**
+     * Lấy lịch sử hủy của một đơn hàng cụ thể (cho admin xem)
+     */
+    List<ShipperCancelHistoryDTO> getOrderCancelHistory(Integer orderId);
     
     /**
      * Lấy danh sách đơn đang giao của shipper (DANG_GIAO)

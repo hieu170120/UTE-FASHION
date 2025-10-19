@@ -1,6 +1,8 @@
 package com.example.demo.controller.shipper;
 
 import com.example.demo.dto.OrderDTO;
+import com.example.demo.dto.ShipperCancelHistoryDTO;
+import com.example.demo.dto.ShipperOrderHistoryItemDTO;
 import com.example.demo.entity.User;
 import com.example.demo.service.NotificationService;
 import com.example.demo.service.OrderManagementService;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Controller
@@ -112,21 +115,79 @@ public class ShipperDashboardController {
 
         Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
         
-        // Get all orders for this shipper - Sort by date descending
-        List<OrderDTO> allOrders = orderManagementService.getShipperAllOrders(shipperId).stream()
-            .sorted((o1, o2) -> o2.getOrderDate().compareTo(o1.getOrderDate()))
-            .toList();
+        // Get all orders for this shipper
+        List<OrderDTO> allOrders = orderManagementService.getShipperAllOrders(shipperId);
         
-        long totalDelivered = allOrders.stream().filter(o -> "Delivered".equals(o.getOrderStatus())).count();
-        long totalCancelled = allOrders.stream().filter(o -> "Cancelled".equals(o.getOrderStatus())).count();
-        long totalReturned = allOrders.stream().filter(o -> "Returned".equals(o.getOrderStatus())).count();
-        double totalRevenue = allOrders.stream()
+        // Lấy lịch sử hủy của SHIPPER HIỆN TẠI này
+        List<ShipperCancelHistoryDTO> cancelHistory = orderManagementService.getShipperCancelHistory(shipperId);
+        
+        // KHÔNG LỌC BỞ - CÙNG 1 ĐƠN CÓ THỂ XUẤT HIỆN NHIỀU LẦN VỚI CÁC TRẠNG THÁI KHÁC NHAU
+        // Ví dụ: Đơn #123 có thể có:
+        //  - 1 bản ghi "Shipper hủy" (lần 1)
+        //  - 1 bản ghi "Confirmed" (lần 2 - admin giao lại)
+        //  - 1 bản ghi "Shipper hủy" (lần 3 - hủy lại)
+        //  - ...
+        List<OrderDTO> filteredOrders = new java.util.ArrayList<>(allOrders);
+        
+        long totalDelivered = filteredOrders.stream().filter(o -> "Delivered".equals(o.getOrderStatus())).count();
+        // Số đơn shipper hủy (vẫn giữ nguyên tất cả lịch sử hủy)
+        long totalCancelled = cancelHistory.size();
+        long totalReturned = filteredOrders.stream().filter(o -> "Returned".equals(o.getOrderStatus())).count();
+        // Doanh thu = Tổng phí vận chuyển của các đơn đã giao thành công
+        double totalRevenue = filteredOrders.stream()
             .filter(o -> "Delivered".equals(o.getOrderStatus()))
-            .filter(o -> o.getTotalAmount() != null)
-            .mapToDouble(o -> o.getTotalAmount().doubleValue())
+            .filter(o -> o.getShippingFee() != null)
+            .mapToDouble(o -> o.getShippingFee().doubleValue())
             .sum();
         
-        model.addAttribute("orders", allOrders);
+        // Merge orders và cancelHistory thành một list chung để hiển thị theo thời gian
+        List<ShipperOrderHistoryItemDTO> combinedHistory = new java.util.ArrayList<>();
+        
+        // Thêm TẤT CẢ các đơn thường
+        for (OrderDTO order : filteredOrders) {
+            ShipperOrderHistoryItemDTO item = new ShipperOrderHistoryItemDTO();
+            item.setOrderId(order.getId());
+            item.setOrderNumber(order.getOrderNumber());
+            item.setRecipientName(order.getRecipientName());
+            item.setPhoneNumber(order.getPhoneNumber());
+            item.setShippingAddress(order.getShippingAddress());
+            item.setTotalAmount(order.getTotalAmount());
+            item.setOrderStatus(order.getOrderStatus());
+            
+            // Lấy thời gian mới nhất tùy theo trạng thái
+            LocalDateTime displayDate = order.getOrderDate(); // Mặc định
+            if (order.getDeliveredAt() != null) {
+                displayDate = order.getDeliveredAt();
+            } else if (order.getShippedAt() != null) {
+                displayDate = order.getShippedAt();
+            } else if (order.getConfirmedAt() != null) {
+                displayDate = order.getConfirmedAt();
+            }
+            item.setDisplayDate(displayDate);
+            item.setShipperCancelled(false);
+            combinedHistory.add(item);
+        }
+        
+        // Thêm các đơn shipper hủy (vẫn giữ tất cả trong lịch sử)
+        for (ShipperCancelHistoryDTO cancel : cancelHistory) {
+            ShipperOrderHistoryItemDTO item = new ShipperOrderHistoryItemDTO();
+            item.setOrderId(cancel.getOrderId());
+            item.setOrderNumber(cancel.getOrderNumber());
+            item.setRecipientName(cancel.getRecipientName());
+            item.setPhoneNumber(null);
+            item.setShippingAddress(null);
+            item.setTotalAmount(cancel.getTotalAmount());
+            item.setOrderStatus("ShipperCancelled");
+            item.setDisplayDate(cancel.getCancelledAt());
+            item.setCancelReason(cancel.getReason());
+            item.setShipperCancelled(true);
+            combinedHistory.add(item);
+        }
+        
+        // Sort theo thời gian giảm dần
+        combinedHistory.sort((o1, o2) -> o2.getDisplayDate().compareTo(o1.getDisplayDate()));
+        
+        model.addAttribute("combinedHistory", combinedHistory);
         model.addAttribute("totalDelivered", totalDelivered);
         model.addAttribute("totalCancelled", totalCancelled);
         model.addAttribute("totalReturned", totalReturned);
@@ -198,6 +259,9 @@ public class ShipperDashboardController {
         // Get all orders for this shipper
         List<OrderDTO> allOrders = orderManagementService.getShipperAllOrders(shipperId);
         
+        // Lấy lịch sử hủy của shipper
+        List<ShipperCancelHistoryDTO> cancelHistory = orderManagementService.getShipperCancelHistory(shipperId);
+        
         // Sort by date descending for each category
         List<OrderDTO> deliveringOrders = allOrders.stream()
             .filter(o -> "Shipping".equals(o.getOrderStatus()))
@@ -207,10 +271,6 @@ public class ShipperDashboardController {
             .filter(o -> "Delivered".equals(o.getOrderStatus()))
             .sorted((o1, o2) -> o2.getOrderDate().compareTo(o1.getOrderDate()))
             .toList();
-        List<OrderDTO> cancelledOrders = allOrders.stream()
-            .filter(o -> "Cancelled".equals(o.getOrderStatus()))
-            .sorted((o1, o2) -> o2.getOrderDate().compareTo(o1.getOrderDate()))
-            .toList();
         List<OrderDTO> returnedOrders = allOrders.stream()
             .filter(o -> "Returned".equals(o.getOrderStatus()))
             .sorted((o1, o2) -> o2.getOrderDate().compareTo(o1.getOrderDate()))
@@ -218,7 +278,7 @@ public class ShipperDashboardController {
         
         model.addAttribute("deliveringOrders", deliveringOrders);
         model.addAttribute("deliveredOrders", deliveredOrders);
-        model.addAttribute("cancelledOrders", cancelledOrders);
+        model.addAttribute("cancelledOrders", cancelHistory);
         model.addAttribute("returnedOrders", returnedOrders);
         
         return "shipper/fragments/delivering-content";
@@ -239,18 +299,30 @@ public class ShipperDashboardController {
         // Get all orders for this shipper
         List<OrderDTO> allOrders = orderManagementService.getShipperAllOrders(shipperId);
         
+        // Lấy lịch sử hủy của shipper
+        List<ShipperCancelHistoryDTO> cancelHistory = orderManagementService.getShipperCancelHistory(shipperId);
+        
         // Calculate statistics
         long totalOrders = allOrders.size();
         long deliveredCount = allOrders.stream().filter(o -> "Delivered".equals(o.getOrderStatus())).count();
-        long cancelledCount = allOrders.stream().filter(o -> "Cancelled".equals(o.getOrderStatus())).count();
+        
+        // Phân biệt cancelled by customer vs shipper
+        long customerCancelledCount = allOrders.stream()
+            .filter(o -> "Cancelled".equals(o.getOrderStatus()))
+            .filter(o -> "CUSTOMER".equals(o.getCancelledBy()))
+            .count();
+        // Số đơn shipper hủy từ lịch sử hủy
+        long cancelledCount = cancelHistory.size();
+        
         long returnedCount = allOrders.stream().filter(o -> "Returned".equals(o.getOrderStatus())).count();
         long shippingCount = allOrders.stream().filter(o -> "Shipping".equals(o.getOrderStatus())).count();
         long confirmedCount = allOrders.stream().filter(o -> "Confirmed".equals(o.getOrderStatus())).count();
         
+        // Doanh thu = Tổng phí vận chuyển của các đơn đã giao thành công
         double totalRevenue = allOrders.stream()
             .filter(o -> "Delivered".equals(o.getOrderStatus()))
-            .filter(o -> o.getTotalAmount() != null)
-            .mapToDouble(o -> o.getTotalAmount().doubleValue())
+            .filter(o -> o.getShippingFee() != null)
+            .mapToDouble(o -> o.getShippingFee().doubleValue())
             .sum();
         double successRate = totalOrders > 0 ? (deliveredCount * 100.0 / totalOrders) : 0;
         
@@ -264,6 +336,8 @@ public class ShipperDashboardController {
         model.addAttribute("totalOrders", totalOrders);
         model.addAttribute("deliveredCount", deliveredCount);
         model.addAttribute("cancelledCount", cancelledCount);
+        model.addAttribute("customerCancelledCount", customerCancelledCount);
+        model.addAttribute("shipperCancelledCount", cancelledCount);
         model.addAttribute("returnedCount", returnedCount);
         model.addAttribute("shippingCount", shippingCount);
         model.addAttribute("confirmedCount", confirmedCount);
@@ -275,11 +349,52 @@ public class ShipperDashboardController {
         model.addAttribute("shippingPercent", shippingPercent);
         model.addAttribute("confirmedPercent", confirmedPercent);
         
-        // Recent orders - Sort by date descending and take 10
-        List<OrderDTO> recentOrders = allOrders.stream()
-            .sorted((o1, o2) -> o2.getOrderDate().compareTo(o1.getOrderDate()))
+        // Merge orders và cancelHistory thành một list chung cho recent orders
+        // KHÔNG LỌC BỞ - cho phép cùng 1 đơn xuất hiện nhiều lần
+        List<ShipperOrderHistoryItemDTO> recentCombined = new java.util.ArrayList<>();
+        
+        // Thêm TẤT CẢ các đơn thường
+        for (OrderDTO order : allOrders) {
+            ShipperOrderHistoryItemDTO item = new ShipperOrderHistoryItemDTO();
+            item.setOrderId(order.getId());
+            item.setOrderNumber(order.getOrderNumber());
+            item.setRecipientName(order.getRecipientName());
+            item.setTotalAmount(order.getTotalAmount());
+            item.setOrderStatus(order.getOrderStatus());
+            
+            // Lấy thời gian mới nhất tùy theo trạng thái
+            java.time.LocalDateTime displayDate = order.getOrderDate(); // Mặc định
+            if (order.getDeliveredAt() != null) {
+                displayDate = order.getDeliveredAt();
+            } else if (order.getShippedAt() != null) {
+                displayDate = order.getShippedAt();
+            } else if (order.getConfirmedAt() != null) {
+                displayDate = order.getConfirmedAt();
+            }
+            item.setDisplayDate(displayDate);
+            item.setShipperCancelled(false);
+            recentCombined.add(item);
+        }
+        
+        // Thêm các đơn shipper hủy
+        for (ShipperCancelHistoryDTO cancel : cancelHistory) {
+            ShipperOrderHistoryItemDTO item = new ShipperOrderHistoryItemDTO();
+            item.setOrderId(cancel.getOrderId());
+            item.setOrderNumber(cancel.getOrderNumber());
+            item.setRecipientName(cancel.getRecipientName());
+            item.setTotalAmount(cancel.getTotalAmount());
+            item.setOrderStatus("ShipperCancelled");
+            item.setDisplayDate(cancel.getCancelledAt());
+            item.setShipperCancelled(true);
+            recentCombined.add(item);
+        }
+        
+        // Sort theo thời gian giảm dần và lấy 10 đơn gần nhất
+        List<ShipperOrderHistoryItemDTO> recentOrders = recentCombined.stream()
+            .sorted((o1, o2) -> o2.getDisplayDate().compareTo(o1.getDisplayDate()))
             .limit(10)
             .toList();
+        
         model.addAttribute("recentOrders", recentOrders);
         
         return "shipper/fragments/stats-content";

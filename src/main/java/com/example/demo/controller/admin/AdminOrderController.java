@@ -2,6 +2,7 @@ package com.example.demo.controller.admin;
 
 import com.example.demo.dto.OrderDTO;
 import com.example.demo.dto.OrderReturnRequestDTO;
+import com.example.demo.dto.ShipperCancelHistoryDTO;
 import com.example.demo.dto.ShipperDTO;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.service.CarrierService;
@@ -102,6 +103,10 @@ public class AdminOrderController {
             if ("Processing".equals(order.getOrderStatus()) && order.getCarrierId() != null) {
                 List<ShipperDTO> shippers = shipperService.getShippersByCarrier(order.getCarrierId());
                 model.addAttribute("shippers", shippers);
+                
+                // Lấy lịch sử hủy của đơn này (để admin biết shipper trước đã hủy vì sao)
+                List<ShipperCancelHistoryDTO> cancelHistory = orderManagementService.getOrderCancelHistory(id);
+                model.addAttribute("cancelHistory", cancelHistory);
             }
             
             return "admin/order/detail";

@@ -212,17 +212,32 @@
                         <i class="fas fa-check-double me-2"></i>
                         <strong>Đơn hàng đã được giao thành công.</strong>
                         <!-- Hiển lý do admin từ chối trả hàng (nếu có) -->
-                        <div th:if="${order.adminNotes != null && order.adminNotes.contains('Lý do từ chối trả hàng')}" 
-                             class="mt-3 pt-3 border-top border-danger">
-                            <div class="alert alert-danger mb-0">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                <strong>Yêu cầu trả hàng của bạn đã bị từ chối</strong><br/>
-                                <span th:text="${order.adminNotes}"></span>
+                        <div th:if="${order.adminNotes != null && order.adminNotes.contains('Lý do từ chối trả hàng')}" class="card border-dark mt-3">
+                            <div class="card-body">
+                                <h5 class="text-dark"><i class="fas fa-info-circle"></i> Thông Tin Từ Chối Trả Hàng</h5>
+                                <hr>
+                                
+                                <!-- Lý do trả hàng của khách -->
+                                <div th:if="${order.returnReason != null}" class="mb-3">
+                                    <p class="mb-1"><strong>Lý do trả hàng của khách hàng:</strong></p>
+                                    <div class="alert alert-light mb-0">
+                                        <p class="mb-0" th:text="${order.returnReason}"></p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Lý do từ chối của admin -->
+                                <div class="mb-3">
+                                    <p class="mb-1"><strong>Lý do admin từ chối:</strong></p>
+                                    <div class="alert alert-light mb-0">
+                                        <p class="mb-0" th:text="${order.adminNotes}"></p>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-danger mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Yêu cầu trả hàng của bạn đã bị từ chối. Bạn không thể yêu cầu trả hàng lại cho đơn này.</strong>
+                                </div>
                             </div>
-                            <small class="text-muted">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Bạn không thể yêu cầu trả hàng lại cho đơn này.
-                            </small>
                         </div>
                     </div>
                     

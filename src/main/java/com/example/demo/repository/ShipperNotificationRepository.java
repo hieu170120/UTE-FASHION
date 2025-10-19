@@ -14,4 +14,6 @@ public interface ShipperNotificationRepository extends JpaRepository<ShipperNoti
     Long countByShipperIdAndIsReadFalse(Integer shipperId);
     
     List<ShipperNotification> findByShipperIdAndIsReadFalseOrderByCreatedAtDesc(Integer shipperId);
+    
+    ShipperNotification findByShipper_IdAndOrder_IdAndIsReadFalse(Integer shipperId, Integer orderId);
 }
