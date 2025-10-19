@@ -3,6 +3,7 @@ package com.example.demo.controller.admin;
 import com.example.demo.dto.OrderDTO;
 import com.example.demo.dto.OrderReturnRequestDTO;
 import com.example.demo.dto.ShipperDTO;
+import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.service.CarrierService;
 import com.example.demo.service.OrderManagementService;
 import com.example.demo.service.OrderService;
@@ -179,15 +180,98 @@ public class AdminOrderController {
         return "redirect:/admin/orders/returns";
     }
     
-    // Từ chối trả hàng
-    @PostMapping("/returns/{id}/reject")
-    public String rejectReturn(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+    // Hiển thị trang nhập lý do từ chối
+    @GetMapping("/returns/{id}/reject")
+    public String showRejectReturnReasonPage(@PathVariable Integer id, Model model, RedirectAttributes redirectAttributes) {
         try {
-            orderManagementService.rejectReturnRequest(id);
+            // Lấy thông tin return request
+            java.util.List<OrderReturnRequestDTO> allRequests = orderManagementService.getPendingReturnRequests();
+            OrderReturnRequestDTO returnRequest = allRequests.stream()
+                .filter(req -> req.getId().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu"));
+            
+            model.addAttribute("returnRequest", returnRequest);
+            return "admin/order/reject-return-reason";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+            return "redirect:/admin/orders/returns";
+        }
+    }
+    
+    // Xử lý từ chối trả hàng
+    @PostMapping("/returns/{id}/reject")
+    public String rejectReturn(@PathVariable Integer id, 
+                              @RequestParam String rejectionReason,
+                              RedirectAttributes redirectAttributes) {
+        try {
+            orderManagementService.rejectReturnRequest(id, rejectionReason);
             redirectAttributes.addFlashAttribute("successMessage", "Đã từ chối yêu cầu trả hàng!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
         }
         return "redirect:/admin/orders/returns";
+    }
+    
+    // ===== APPROVE/REJECT TỪ ORDER DETAIL PAGE =====
+    
+    // Approve return từ detail page
+    @PostMapping("/{orderId}/returns/approve")
+    public String approveReturnFromDetail(@PathVariable Integer orderId, RedirectAttributes redirectAttributes) {
+        try {
+            // Tìm return request theo orderId
+            java.util.List<OrderReturnRequestDTO> allRequests = orderManagementService.getPendingReturnRequests();
+            OrderReturnRequestDTO returnRequest = allRequests.stream()
+                .filter(req -> req.getOrderId().equals(orderId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu trả hàng"));
+            
+            orderManagementService.approveReturnRequest(returnRequest.getId());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã chấp nhận trả hàng!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/admin/orders/" + orderId;
+    }
+    
+    // Hiển thị trang từ chối từ detail page
+    @GetMapping("/{orderId}/returns/reject")
+    public String showRejectReturnReasonFromDetail(@PathVariable Integer orderId, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            // Lấy thông tin return request theo orderId
+            java.util.List<OrderReturnRequestDTO> allRequests = orderManagementService.getPendingReturnRequests();
+            OrderReturnRequestDTO returnRequest = allRequests.stream()
+                .filter(req -> req.getOrderId().equals(orderId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu trả hàng"));
+            
+            model.addAttribute("returnRequest", returnRequest);
+            model.addAttribute("fromDetailPage", true); // Flag để biết redirect về đâu
+            return "admin/order/reject-return-reason";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+            return "redirect:/admin/orders/" + orderId;
+        }
+    }
+    
+    // Xử lý từ chối từ detail page
+    @PostMapping("/{orderId}/returns/reject")
+    public String rejectReturnFromDetail(@PathVariable Integer orderId,
+                                         @RequestParam String rejectionReason,
+                                         RedirectAttributes redirectAttributes) {
+        try {
+            // Tìm return request theo orderId
+            java.util.List<OrderReturnRequestDTO> allRequests = orderManagementService.getPendingReturnRequests();
+            OrderReturnRequestDTO returnRequest = allRequests.stream()
+                .filter(req -> req.getOrderId().equals(orderId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu trả hàng"));
+            
+            orderManagementService.rejectReturnRequest(returnRequest.getId(), rejectionReason);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã từ chối yêu cầu trả hàng!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/admin/orders/" + orderId;
     }
 }

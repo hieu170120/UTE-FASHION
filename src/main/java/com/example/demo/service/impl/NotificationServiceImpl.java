@@ -44,6 +44,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getShipperNotifications(Integer shipperId) {
         List<ShipperNotification> notifications = notificationRepository
             .findByShipperIdOrderByCreatedAtDesc(shipperId);
@@ -57,8 +58,14 @@ public class NotificationServiceImpl implements NotificationService {
                 map.put("isRead", notification.isRead());
                 map.put("createdAt", notification.getCreatedAt());
                 map.put("timeAgo", formatTimeAgo(notification.getCreatedAt()));
-                map.put("orderId", notification.getOrder().getId());
-                map.put("orderNumber", notification.getOrder().getOrderNumber());
+                // Safely access Order fields
+                if (notification.getOrder() != null) {
+                    map.put("orderId", notification.getOrder().getId());
+                    map.put("orderNumber", notification.getOrder().getOrderNumber());
+                } else {
+                    map.put("orderId", null);
+                    map.put("orderNumber", "N/A");
+                }
                 return map;
             })
             .collect(Collectors.toList());

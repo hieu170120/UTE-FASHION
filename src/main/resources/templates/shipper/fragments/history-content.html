@@ -78,6 +78,24 @@
             font-size: 12px;
             font-weight: 600;
         }
+        
+        .status-return-requested {
+            background: #FEF3C7;
+            color: #92400E;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-returned {
+            background: #E0E7FF;
+            color: #3730A3;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
     </style>
 
     <h2 style="margin-bottom: 24px; font-weight: 700; color: #1E293B;">📜 Lịch sử giao hàng</h2>
@@ -93,8 +111,45 @@
             <div class="history-stat-label"><i class="fas fa-times-circle"></i> Đã hủy</div>
         </div>
         <div class="history-stat-card">
+            <div class="history-stat-value" style="color: #8B5CF6;" th:text="${totalReturned}">0</div>
+            <div class="history-stat-label"><i class="fas fa-undo"></i> Đã trả hàng</div>
+        </div>
+        <div class="history-stat-card">
             <div class="history-stat-value" style="color: #10B981;" th:text="${#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
             <div class="history-stat-label"><i class="fas fa-money-bill-wave"></i> Tổng doanh thu</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div style="background: white; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+        <h5 style="margin-bottom: 16px;"><i class="fas fa-filter"></i> Bộ lọc</h5>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Trạng thái</label>
+                <select id="statusFilter" class="form-select">
+                    <option value="">-- Tất cả --</option>
+                    <option value="Delivered">Đã giao</option>
+                    <option value="Shipping">Đang giao</option>
+                    <option value="Cancelled">Đã hủy</option>
+                    <option value="Return_Requested">Yêu cầu trả hàng</option>
+                    <option value="Returned">Đã trả hàng</option>
+                    <option value="Confirmed">Chờ xác nhận</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Từ ngày</label>
+                <input type="date" id="fromDate" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Đến ngày</label>
+                <input type="date" id="toDate" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button onclick="filterOrders()" class="btn btn-primary w-100">
+                    <i class="fas fa-search"></i> Lọc
+                </button>
+            </div>
         </div>
     </div>
 
@@ -111,14 +166,15 @@
                     <th>Ngày</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="orderTableBody">
                 <tr th:if="${orders.isEmpty()}">
                     <td colspan="6" class="text-center py-5" style="color: #64748B;">
                         <i class="fas fa-inbox fa-3x mb-3"></i>
                         <p>Chưa có lịch sử giao hàng</p>
                     </td>
                 </tr>
-                <tr th:each="order : ${orders}">
+                <tr th:each="order : ${orders}" class="order-row" 
+                    th:attr="data-status=${order.orderStatus}, data-date=${#temporals.format(order.orderDate, 'yyyy-MM-dd')}">
                     <td>
                         <strong th:text="${order.orderNumber}">ORD-001</strong>
                     </td>
@@ -139,6 +195,12 @@
                         <span th:if="${order.orderStatus == 'Cancelled'}" class="status-cancelled">
                             <i class="fas fa-times"></i> Đã hủy
                         </span>
+                        <span th:if="${order.orderStatus == 'Return_Requested'}" class="status-return-requested">
+                            <i class="fas fa-undo"></i> Yêu cầu trả hàng
+                        </span>
+                        <span th:if="${order.orderStatus == 'Returned'}" class="status-returned">
+                            <i class="fas fa-box-open"></i> Đã trả hàng
+                        </span>
                     </td>
                     <td>
                         <small th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy')}">01/01/2024</small>
@@ -148,3 +210,45 @@
         </table>
     </div>
 </div>
+
+<script>
+    function filterOrders() {
+        const statusFilter = document.getElementById('statusFilter').value;
+        const fromDate = document.getElementById('fromDate').value;
+        const toDate = document.getElementById('toDate').value;
+        
+        const rows = document.querySelectorAll('.order-row');
+        
+        rows.forEach(row => {
+            const orderStatus = row.getAttribute('data-status');
+            const orderDate = row.getAttribute('data-date');
+            
+            let showRow = true;
+            
+            // Filter by status
+            if (statusFilter && orderStatus !== statusFilter) {
+                showRow = false;
+            }
+            
+            // Filter by from date
+            if (fromDate && orderDate < fromDate) {
+                showRow = false;
+            }
+            
+            // Filter by to date
+            if (toDate && orderDate > toDate) {
+                showRow = false;
+            }
+            
+            row.style.display = showRow ? '' : 'none';
+        });
+    }
+    
+    // Reset filters
+    function resetFilters() {
+        document.getElementById('statusFilter').value = '';
+        document.getElementById('fromDate').value = '';
+        document.getElementById('toDate').value = '';
+        filterOrders();
+    }
+</script>

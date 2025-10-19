@@ -78,6 +78,7 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrderReturnRequestDTO> getPendingReturnRequests() {
         List<OrderReturnRequest> requests = returnRequestRepository.findByStatus("Pending");
         return requests.stream()
@@ -116,14 +117,20 @@ public class OrderManagementServiceImpl implements OrderManagementService {
 
     @Override
     @Transactional
-    public void rejectReturnRequest(Integer requestId) {
+    public void rejectReturnRequest(Integer requestId, String rejectionReason) {
         OrderReturnRequest request = returnRequestRepository.findById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu"));
         
         request.setStatus("Rejected");
         request.setRejectedAt(LocalDateTime.now());
         
+        // Khôi phục trạng thái đơn hàng về Đã giao và lưu lý do từ chối
+        Order order = request.getOrder();
+        order.setOrderStatus(OrderStatus.DELIVERED.getValue());
+        order.setAdminNotes("Lý do từ chối trả hàng: " + rejectionReason);
+        
         returnRequestRepository.save(request);
+        orderRepository.save(order);
     }
 
     // === SHIPPER FUNCTIONS ===
@@ -296,10 +303,21 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     }
     
     @Override
+    @Transactional(readOnly = true)
     public List<OrderDTO> getShipperAllOrders(Integer shipperId) {
         List<Order> orders = orderRepository.findByShipperId(shipperId);
         return orders.stream()
-                .map(order -> modelMapper.map(order, OrderDTO.class))
+                .map(order -> {
+                    OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+                    // Lấy lý do trả hàng nếu có
+                    if ("Return_Requested".equals(order.getOrderStatus()) || "Returned".equals(order.getOrderStatus())) {
+                        returnRequestRepository.findByOrderId(order.getId())
+                            .stream()
+                            .findFirst()
+                            .ifPresent(returnRequest -> orderDTO.setReturnReason(returnRequest.getReason()));
+                    }
+                    return orderDTO;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -308,6 +326,17 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     public OrderDTO getOrderById(Integer orderId) {
         Order order = orderRepository.findByIdWithDetails(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
-        return modelMapper.map(order, OrderDTO.class);
+        
+        OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+        
+        // Lấy lý do trả hàng nếu có
+        if ("Return_Requested".equals(order.getOrderStatus()) || "Returned".equals(order.getOrderStatus())) {
+            returnRequestRepository.findByOrderId(order.getId())
+                .stream()
+                .findFirst()
+                .ifPresent(returnRequest -> orderDTO.setReturnReason(returnRequest.getReason()));
+        }
+        
+        return orderDTO;
     }
 }

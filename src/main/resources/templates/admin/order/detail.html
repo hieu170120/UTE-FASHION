@@ -13,6 +13,15 @@
         .info-label { font-weight: 600; color: #6c757d; }
         .status-badge { padding: 8px 15px; border-radius: 20px; font-size: 14px; }
         .shipper-select-card { background: #fff3cd; border-left: 4px solid #ffc107; }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid white;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        .dropdown-toggle::after { display: none; }
     </style>
 </head>
 <body>
@@ -21,13 +30,35 @@
             <a class="navbar-brand" th:href="@{/admin/dashboard}">
                 <i class="fas fa-shopping-bag"></i> UTE Fashion Admin
             </a>
-            <div>
+            <div class="d-flex align-items-center gap-2">
                 <a th:href="@{/admin/orders}" class="btn btn-light btn-sm me-2">
                     <i class="fas fa-arrow-left"></i> Quay Lại Danh Sách
                 </a>
-                <a th:href="@{/admin/orders/pending}" class="btn btn-warning btn-sm">
+                <a th:href="@{/admin/orders/pending}" class="btn btn-warning btn-sm me-2">
                     <i class="fas fa-clock"></i> Đơn Chờ Xử Lý
                 </a>
+                
+                <!-- User Avatar Dropdown -->
+                <div class="dropdown">
+                    <a class="dropdown-toggle" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="https://ui-avatars.com/api/?name=Admin&background=667eea&color=fff&size=128" 
+                             alt="User Avatar" 
+                             class="user-avatar" />
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        <li>
+                            <a class="dropdown-item" th:href="@{/profile}">
+                                <i class="fas fa-user me-2"></i>Thông tin cá nhân
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" th:href="@{/logout}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
     </nav>
@@ -56,12 +87,19 @@
                         <hr>
                         <p><span class="info-label">Ngày đặt:</span> <span th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></span></p>
                         <p><span class="info-label">Trạng thái:</span> 
-                            <span class="status-badge bg-warning text-dark" 
+                            <span class="status-badge" 
+                                  th:classappend="${order.orderStatus == 'Processing' ? 'bg-warning text-dark' : 
+                                                 (order.orderStatus == 'Confirmed' ? 'bg-info text-white' : 
+                                                 (order.orderStatus == 'Shipping' ? 'bg-primary text-white' : 
+                                                 (order.orderStatus == 'Delivered' ? 'bg-success text-white' : 
+                                                 (order.orderStatus == 'Return_Requested' ? 'bg-warning text-white' : 
+                                                 (order.orderStatus == 'Returned' ? 'bg-secondary text-white' : 'bg-danger text-white')))))}"
                                   th:text="${order.orderStatus == 'Processing' ? 'Đang Xử Lý' : 
                                           (order.orderStatus == 'Confirmed' ? 'Đã Xác Nhận' : 
                                           (order.orderStatus == 'Shipping' ? 'Đang Giao' : 
                                           (order.orderStatus == 'Delivered' ? 'Đã Giao' : 
-                                          (order.orderStatus == 'Cancelled' ? 'Đã Hủy' : 'Đã Trả Hàng'))))}"></span>
+                                          (order.orderStatus == 'Return_Requested' ? 'Yêu Cầu Trả Hàng' : 
+                                          (order.orderStatus == 'Returned' ? 'Đã Trả Hàng' : 'Đã Hủy')))))}"></span>
                         </p>
                         <p><span class="info-label">Tổng tiền:</span> 
                             <span class="text-danger fw-bold fs-5" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
@@ -125,6 +163,28 @@
             </div>
         </div>
 
+        <!-- Xử lý yêu cầu trả hàng -->
+        <div th:if="${order.orderStatus == 'Return_Requested'}" class="card border-warning">
+            <div class="card-body">
+                <h5 class="text-warning"><i class="fas fa-undo"></i> Yêu Cầu Trả Hàng</h5>
+                <hr>
+                <p><span class="info-label">Lý do trả hàng:</span></p>
+                <div class="alert alert-light">
+                    <p class="mb-0" th:text="${order.returnReason != null ? order.returnReason : 'Không có lý do'}"></p>
+                </div>
+                <div class="d-flex gap-3 mt-3">
+                    <form th:action="@{/admin/orders/{id}/returns/approve(id=${order.id})}" method="post" style="flex: 1;" onsubmit="return confirm('Bạn có chắc chắn muốn chấp nhận yêu cầu trả hàng này không?');">
+                        <button type="submit" class="btn btn-success w-100 btn-lg">
+                            <i class="fas fa-check-circle"></i> Chấp Nhận Trả Hàng
+                        </button>
+                    </form>
+                    <a th:href="@{/admin/orders/{id}/returns/reject(id=${order.id})}" class="btn btn-danger btn-lg" style="flex: 1;">
+                        <i class="fas fa-times-circle"></i> Từ Chối Trả Hàng
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <!-- ⚠️ TRẠNG THÁI ĐƠN HÀNG TỰ ĐỘNG - ADMIN KHÔNG ĐƯỢC SỬA THỦ CÔNG -->
         <div class="card border-warning">
             <div class="card-body">
@@ -150,6 +210,7 @@
                     <table class="table table-hover">
                         <thead class="table-light">
                             <tr>
+                                <th style="width: 120px;">Ảnh</th>
                                 <th>Sản Phẩm</th>
                                 <th>Size</th>
                                 <th>Màu</th>
@@ -160,6 +221,13 @@
                         </thead>
                         <tbody>
                             <tr th:each="item : ${order.orderItems}">
+                                <td>
+                                    <img th:src="${#strings.isEmpty(item.productImage) ? 'https://cdn.hstatic.net/products/200000182297/1.10_b8c81da853bd47bcb8dfe0addedfdd69_master.jpg' : item.productImage}" 
+                                         alt="Product Image" 
+                                         class="img-thumbnail" 
+                                         style="width: 100px; height: 120px; object-fit: cover; border-radius: 8px;"
+                                         onerror="this.onerror=null;this.src='https://cdn.hstatic.net/products/200000182297/1.10_b8c81da853bd47bcb8dfe0addedfdd69_master.jpg';" />
+                                </td>
                                 <td><strong th:text="${item.productName}"></strong></td>
                                 <td><span class="badge bg-secondary" th:text="${item.size}"></span></td>
                                 <td><span class="badge bg-info" th:text="${item.color}"></span></td>
@@ -170,7 +238,7 @@
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="5" class="text-end"><strong>TỔNG CỘNG:</strong></td>
+                                <td colspan="6" class="text-end"><strong>TỔNG CỘNG:</strong></td>
                                 <td class="text-danger fw-bold fs-5" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
                             </tr>
                         </tfoot>
