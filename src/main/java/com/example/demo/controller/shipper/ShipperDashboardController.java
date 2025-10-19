@@ -112,11 +112,14 @@ public class ShipperDashboardController {
 
         Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
         
-        // Get all orders for this shipper
-        List<OrderDTO> allOrders = orderManagementService.getShipperAllOrders(shipperId);
+        // Get all orders for this shipper - Sort by date descending
+        List<OrderDTO> allOrders = orderManagementService.getShipperAllOrders(shipperId).stream()
+            .sorted((o1, o2) -> o2.getOrderDate().compareTo(o1.getOrderDate()))
+            .toList();
         
         long totalDelivered = allOrders.stream().filter(o -> "Delivered".equals(o.getOrderStatus())).count();
         long totalCancelled = allOrders.stream().filter(o -> "Cancelled".equals(o.getOrderStatus())).count();
+        long totalReturned = allOrders.stream().filter(o -> "Returned".equals(o.getOrderStatus())).count();
         double totalRevenue = allOrders.stream()
             .filter(o -> "Delivered".equals(o.getOrderStatus()))
             .filter(o -> o.getTotalAmount() != null)
@@ -126,6 +129,7 @@ public class ShipperDashboardController {
         model.addAttribute("orders", allOrders);
         model.addAttribute("totalDelivered", totalDelivered);
         model.addAttribute("totalCancelled", totalCancelled);
+        model.addAttribute("totalReturned", totalReturned);
         model.addAttribute("totalRevenue", totalRevenue);
         
         return "shipper/fragments/history-content";
@@ -194,19 +198,28 @@ public class ShipperDashboardController {
         // Get all orders for this shipper
         List<OrderDTO> allOrders = orderManagementService.getShipperAllOrders(shipperId);
         
+        // Sort by date descending for each category
         List<OrderDTO> deliveringOrders = allOrders.stream()
             .filter(o -> "Shipping".equals(o.getOrderStatus()))
+            .sorted((o1, o2) -> o2.getOrderDate().compareTo(o1.getOrderDate()))
             .toList();
         List<OrderDTO> deliveredOrders = allOrders.stream()
             .filter(o -> "Delivered".equals(o.getOrderStatus()))
+            .sorted((o1, o2) -> o2.getOrderDate().compareTo(o1.getOrderDate()))
             .toList();
         List<OrderDTO> cancelledOrders = allOrders.stream()
             .filter(o -> "Cancelled".equals(o.getOrderStatus()))
+            .sorted((o1, o2) -> o2.getOrderDate().compareTo(o1.getOrderDate()))
+            .toList();
+        List<OrderDTO> returnedOrders = allOrders.stream()
+            .filter(o -> "Returned".equals(o.getOrderStatus()))
+            .sorted((o1, o2) -> o2.getOrderDate().compareTo(o1.getOrderDate()))
             .toList();
         
         model.addAttribute("deliveringOrders", deliveringOrders);
         model.addAttribute("deliveredOrders", deliveredOrders);
         model.addAttribute("cancelledOrders", cancelledOrders);
+        model.addAttribute("returnedOrders", returnedOrders);
         
         return "shipper/fragments/delivering-content";
     }
@@ -230,6 +243,10 @@ public class ShipperDashboardController {
         long totalOrders = allOrders.size();
         long deliveredCount = allOrders.stream().filter(o -> "Delivered".equals(o.getOrderStatus())).count();
         long cancelledCount = allOrders.stream().filter(o -> "Cancelled".equals(o.getOrderStatus())).count();
+        long returnedCount = allOrders.stream().filter(o -> "Returned".equals(o.getOrderStatus())).count();
+        long shippingCount = allOrders.stream().filter(o -> "Shipping".equals(o.getOrderStatus())).count();
+        long confirmedCount = allOrders.stream().filter(o -> "Confirmed".equals(o.getOrderStatus())).count();
+        
         double totalRevenue = allOrders.stream()
             .filter(o -> "Delivered".equals(o.getOrderStatus()))
             .filter(o -> o.getTotalAmount() != null)
@@ -237,12 +254,33 @@ public class ShipperDashboardController {
             .sum();
         double successRate = totalOrders > 0 ? (deliveredCount * 100.0 / totalOrders) : 0;
         
+        // Calculate percentages for chart
+        double deliveredPercent = totalOrders > 0 ? (deliveredCount * 100.0 / totalOrders) : 0;
+        double cancelledPercent = totalOrders > 0 ? (cancelledCount * 100.0 / totalOrders) : 0;
+        double returnedPercent = totalOrders > 0 ? (returnedCount * 100.0 / totalOrders) : 0;
+        double shippingPercent = totalOrders > 0 ? (shippingCount * 100.0 / totalOrders) : 0;
+        double confirmedPercent = totalOrders > 0 ? (confirmedCount * 100.0 / totalOrders) : 0;
+        
         model.addAttribute("totalOrders", totalOrders);
         model.addAttribute("deliveredCount", deliveredCount);
         model.addAttribute("cancelledCount", cancelledCount);
+        model.addAttribute("returnedCount", returnedCount);
+        model.addAttribute("shippingCount", shippingCount);
+        model.addAttribute("confirmedCount", confirmedCount);
         model.addAttribute("totalRevenue", totalRevenue);
         model.addAttribute("successRate", successRate);
-        model.addAttribute("recentOrders", allOrders.stream().limit(10).toList());
+        model.addAttribute("deliveredPercent", deliveredPercent);
+        model.addAttribute("cancelledPercent", cancelledPercent);
+        model.addAttribute("returnedPercent", returnedPercent);
+        model.addAttribute("shippingPercent", shippingPercent);
+        model.addAttribute("confirmedPercent", confirmedPercent);
+        
+        // Recent orders - Sort by date descending and take 10
+        List<OrderDTO> recentOrders = allOrders.stream()
+            .sorted((o1, o2) -> o2.getOrderDate().compareTo(o1.getOrderDate()))
+            .limit(10)
+            .toList();
+        model.addAttribute("recentOrders", recentOrders);
         
         return "shipper/fragments/stats-content";
     }
@@ -321,7 +359,12 @@ public class ShipperDashboardController {
     }
 
     private long getDeliveredTodayCount(Integer shipperId) {
-        // TODO: Implement in service to get delivered orders for today
-        return 0;
+        List<OrderDTO> allOrders = orderManagementService.getShipperAllOrders(shipperId);
+        LocalDate today = LocalDate.now();
+        
+        return allOrders.stream()
+            .filter(o -> "Delivered".equals(o.getOrderStatus()))
+            .filter(o -> o.getDeliveredAt() != null && o.getDeliveredAt().toLocalDate().equals(today))
+            .count();
     }
 }

@@ -45,6 +45,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private ShipperRepository shipperRepository;
+    
+    @Autowired
+    private OrderReturnRequestRepository returnRequestRepository;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -326,6 +329,14 @@ public class OrderServiceImpl implements OrderService {
 
     private OrderDTO mapToOrderDTO(Order order) {
         OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+        
+        // Lấy lý do trả hàng nếu có
+        if ("Return_Requested".equals(order.getOrderStatus())) {
+            returnRequestRepository.findByOrderId(order.getId())
+                .stream()
+                .findFirst()
+                .ifPresent(returnRequest -> orderDTO.setReturnReason(returnRequest.getReason()));
+        }
         
         // Map order items with full details
         if (order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {

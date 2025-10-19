@@ -101,9 +101,29 @@ public class ShipperOrderController {
         return "redirect:/shipper";
     }
 
+    @GetMapping("/{id}/cancel")
+    public String showCancelReasonPage(@PathVariable Integer id, Model model, HttpSession session, RedirectAttributes redirectAttributes) {
+        User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser == null || currentUser.getRoles() == null || currentUser.getRoles().stream().noneMatch(role -> "SHIPPER".equals(role.getRoleName()))) {
+            return "redirect:/login";
+        }
+        try {
+            Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
+            OrderDTO order = orderManagementService.getOrderById(id);
+            Long cancelCount = orderManagementService.getShipperCancelCount(shipperId);
+            
+            model.addAttribute("order", order);
+            model.addAttribute("cancelCount", cancelCount);
+            return "shipper/order/cancel-reason";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+            return "redirect:/shipper/orders/" + id + "/detail";
+        }
+    }
+    
     @PostMapping("/{id}/cancel")
     public String cancelOrder(@PathVariable Integer id, 
-                             @RequestParam(required = false, defaultValue = "Shipper cancel") String reason,
+                             @RequestParam String reason,
                              HttpSession session,
                              RedirectAttributes redirectAttributes) {
         User currentUser = (User) session.getAttribute("currentUser");

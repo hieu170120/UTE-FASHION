@@ -112,11 +112,48 @@ public class CustomerOrderController {
     }
 
     /**
-     * Hủy đơn hàng
+     * Hiển thị trang nhập lý do hủy đơn
+     */
+    @GetMapping("/{orderId}/cancel")
+    public String showCancelReasonPage(@PathVariable Integer orderId,
+                                      HttpSession session,
+                                      Model model,
+                                      RedirectAttributes redirectAttributes) {
+        User currentUser = (User) session.getAttribute("currentUser");
+        
+        if (currentUser == null) {
+            return "redirect:/login";
+        }
+        
+        try {
+            OrderDTO order = orderService.getOrderById(orderId);
+            
+            // Kiểm tra ownership
+            if (!order.getUserId().equals(currentUser.getUserId())) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền hủy đơn hàng này");
+                return "redirect:/orders/my-orders";
+            }
+            
+            // Kiểm tra trạng thái
+            if (!"Processing".equals(order.getOrderStatus()) && !"Confirmed".equals(order.getOrderStatus())) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Không thể hủy đơn ở trạng thái này");
+                return "redirect:/orders/" + orderId + "/detail";
+            }
+            
+            model.addAttribute("order", order);
+            return "order/cancel-reason";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy đơn hàng");
+            return "redirect:/orders/my-orders";
+        }
+    }
+    
+    /**
+     * Xử lý hủy đơn hàng
      */
     @PostMapping("/{orderId}/cancel")
     public String cancelOrder(@PathVariable Integer orderId,
-                             @RequestParam String cancelReason,
+                             @RequestParam(name = "cancelReason") String cancelReason,  
                              HttpSession session,
                              RedirectAttributes redirectAttributes) {
         User currentUser = (User) session.getAttribute("currentUser");
@@ -147,7 +184,44 @@ public class CustomerOrderController {
     }
 
     /**
-     * Yêu cầu trả hàng
+     * Hiển thị trang nhập lý do trả hàng
+     */
+    @GetMapping("/{orderId}/request-return")
+    public String showReturnReasonPage(@PathVariable Integer orderId,
+                                      HttpSession session,
+                                      Model model,
+                                      RedirectAttributes redirectAttributes) {
+        User currentUser = (User) session.getAttribute("currentUser");
+        
+        if (currentUser == null) {
+            return "redirect:/login";
+        }
+        
+        try {
+            OrderDTO order = orderService.getOrderById(orderId);
+            
+            // Kiểm tra ownership
+            if (!order.getUserId().equals(currentUser.getUserId())) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền yêu cầu trả hàng đơn này");
+                return "redirect:/orders/my-orders";
+            }
+            
+            // Kiểm tra trạng thái
+            if (!"Delivered".equals(order.getOrderStatus())) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Chỉ có thể trả hàng khi đơn đã được giao");
+                return "redirect:/orders/" + orderId + "/detail";
+            }
+            
+            model.addAttribute("order", order);
+            return "order/return-reason";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy đơn hàng");
+            return "redirect:/orders/my-orders";
+        }
+    }
+    
+    /**
+     * Xử lý yêu cầu trả hàng
      */
     @PostMapping("/{orderId}/request-return")
     public String requestReturn(@PathVariable Integer orderId,
