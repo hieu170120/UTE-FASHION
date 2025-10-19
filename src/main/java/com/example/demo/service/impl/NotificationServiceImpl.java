@@ -96,6 +96,19 @@ public class NotificationServiceImpl implements NotificationService {
         notificationRepository.saveAll(notifications);
     }
     
+    @Override
+    @Transactional
+    public void markNotificationAsReadByOrder(Integer shipperId, Integer orderId) {
+        ShipperNotification notification = notificationRepository
+            .findByShipper_IdAndOrder_IdAndIsReadFalse(shipperId, orderId);
+        
+        if (notification != null) {
+            notification.setRead(true);
+            notification.setReadAt(LocalDateTime.now());
+            notificationRepository.save(notification);
+        }
+    }
+    
     private String formatTimeAgo(LocalDateTime dateTime) {
         if (dateTime == null) {
             return "Vừa xong";

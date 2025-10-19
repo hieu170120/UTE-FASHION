@@ -126,6 +126,26 @@
             </div>
         </div>
 
+        <!-- Lịch sử hủy đơn (nếu có) -->
+        <div th:if="${order.orderStatus == 'Processing' && cancelHistory != null && !cancelHistory.isEmpty()}" class="card border-warning">
+            <div class="card-body">
+                <h5 class="text-warning"><i class="fas fa-exclamation-triangle"></i> Lịch Sử Hủy Đơn</h5>
+                <hr>
+                <p class="text-muted">Shipper trước đã hủy đơn này. Vui lòng xem lý do trước khi giao cho shipper khác.</p>
+                
+                <div th:each="history : ${cancelHistory}" class="mb-3 p-3" style="background: #FEF2F2; border-left: 4px solid #DC2626; border-radius: 4px;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong><i class="fas fa-user"></i> Shipper: <span th:text="${history.shipperName}"></span></strong>
+                        <small class="text-muted" th:text="${#temporals.format(history.cancelledAt, 'dd/MM/yyyy HH:mm')}"></small>
+                    </div>
+                    <div>
+                        <i class="fas fa-comment"></i> <strong>Lý do:</strong><br/>
+                        <span th:text="${history.reason}"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Chọn Shipper (chỉ hiện khi đơn đang Processing) -->
         <div th:if="${order.orderStatus == 'Processing' && shippers != null}" class="card shipper-select-card">
             <div class="card-body">
@@ -184,6 +204,58 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Hiển thị lý do hủy đơn (nếu trạng thái là Cancelled) -->
+        <div th:if="${order.orderStatus == 'Cancelled' && order.cancelReason != null}" class="card border-danger">
+            <div class="card-body">
+                <h5 class="text-danger"><i class="fas fa-times-circle"></i> Thông Tin Hủy Đơn</h5>
+                <hr>
+                <p><span class="info-label">Người hủy:</span> 
+                    <strong th:text="${order.recipientName}"></strong>
+                    <span class="badge ms-2" 
+                          th:classappend="${order.cancelledBy == 'CUSTOMER' ? 'bg-warning text-dark' : 'bg-info'}"
+                          th:text="${order.cancelledBy == 'CUSTOMER' ? 'Khách hàng' : (order.cancelledBy == 'SHIPPER' ? 'Shipper' : 'Không rõ')}"></span>
+                </p>
+                <p><span class="info-label">Lý do hủy:</span></p>
+                <div class="alert alert-danger">
+                    <p class="mb-0" th:text="${order.cancelReason}"></p>
+                </div>
+                <p th:if="${order.cancelledAt}" class="text-muted small mb-0">
+                    <i class="far fa-clock"></i> Thời gian hủy: <span th:text="${#temporals.format(order.cancelledAt, 'dd/MM/yyyy HH:mm')}"></span>
+                </p>
+            </div>
+        </div>
+        
+        <!-- Hiển thị lý do từ chối trả hàng (nếu trạng thái là Delivered và có adminNotes với từ chối) -->
+        <div th:if="${order.orderStatus == 'Delivered' && order.adminNotes != null && #strings.contains(order.adminNotes, 'Lý do từ chối trả hàng')}" class="card border-dark">
+            <div class="card-body">
+                <h5 class="text-dark"><i class="fas fa-info-circle"></i> Thông Tin Từ Chối Trả Hàng</h5>
+                <hr>
+                <p class="mb-2"><span class="info-label">Trạng thái:</span> 
+                    <span class="badge bg-danger">Admin đã từ chối yêu cầu trả hàng</span>
+                </p>
+                
+                <!-- Lý do trả hàng của khách -->
+                <div th:if="${order.returnReason != null}" class="mb-3">
+                    <p class="mb-1"><strong>Lý do trả hàng của khách hàng:</strong></p>
+                    <div class="alert alert-light mb-0">
+                        <p class="mb-0" th:text="${order.returnReason}"></p>
+                    </div>
+                </div>
+                
+                <!-- Lý do từ chối của admin -->
+                <div class="mb-3">
+                    <p class="mb-1"><strong>Lý do admin từ chối:</strong></p>
+                    <div class="alert alert-light mb-0">
+                        <p class="mb-0" th:text="${order.adminNotes}"></p>
+                    </div>
+                </div>
+                
+                <p class="text-muted small mb-0">
+                    <i class="fas fa-info-circle"></i> Đơn hàng vẫn giữ ở trạng thái đã giao và khách hàng không thể yêu cầu trả hàng lại.
+                </p>
+            </div>
+        </div>
 
         <!-- ⚠️ TRẠNG THÁI ĐƠN HÀNG TỰ ĐỘNG - ADMIN KHÔNG ĐƯỢC SỬA THỦ CÔNG -->
         <div class="card border-warning">
@@ -238,6 +310,18 @@
                         </tbody>
                         <tfoot>
                             <tr>
+                                <td colspan="6" class="text-end"><strong>Tạm tính:</strong></td>
+                                <td class="fw-bold" th:text="${#numbers.formatDecimal(order.subtotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="6" class="text-end"><strong>Phí vận chuyển:</strong></td>
+                                <td class="fw-bold" th:text="${#numbers.formatDecimal(order.shippingFee != null ? order.shippingFee : 0, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                            </tr>
+                            <tr th:if="${order.discountAmount != null && order.discountAmount > 0}">
+                                <td colspan="6" class="text-end"><strong>Giảm giá:</strong></td>
+                                <td class="text-success fw-bold" th:text="'-' + ${#numbers.formatDecimal(order.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                            </tr>
+                            <tr class="table-light">
                                 <td colspan="6" class="text-end"><strong>TỔNG CỘNG:</strong></td>
                                 <td class="text-danger fw-bold fs-5" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
                             </tr>

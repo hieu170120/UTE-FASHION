@@ -330,8 +330,9 @@ public class OrderServiceImpl implements OrderService {
     private OrderDTO mapToOrderDTO(Order order) {
         OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
         
-        // Lấy lý do trả hàng nếu có
-        if ("Return_Requested".equals(order.getOrderStatus())) {
+        // Lấy lý do trả hàng nếu có (bao gồm cả trường hợp đã reject)
+        if ("Return_Requested".equals(order.getOrderStatus()) || 
+            ("Delivered".equals(order.getOrderStatus()) && order.getAdminNotes() != null && order.getAdminNotes().contains("Lý do từ chối trả hàng"))) {
             returnRequestRepository.findByOrderId(order.getId())
                 .stream()
                 .findFirst()

@@ -141,6 +141,30 @@
         #dynamic-content {
             min-height: 400px;
         }
+        
+        /* Notification styles */
+        .notification-item {
+            padding: 12px 16px !important;
+            border-bottom: 1px solid #E2E8F0;
+            transition: background 0.2s;
+        }
+        
+        .notification-item:hover {
+            background: #F8FAFC;
+        }
+        
+        .notification-item.unread {
+            background: #EFF6FF;
+            font-weight: 600;
+        }
+        
+        .notification-item.unread strong {
+            color: #1E40AF;
+        }
+        
+        .notification-item:not(.unread) {
+            opacity: 0.6;
+        }
     </style>
 </head>
 <body>

@@ -73,7 +73,36 @@ public class ShipperOrderController {
         try {
             Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
             OrderDTO order = orderManagementService.getOrderById(id);
+            
+            // Mark notification as read for this order
+            notificationService.markNotificationAsReadByOrder(shipperId, id);
+            
+            // Kiểm tra xem có hiển thị "Shipper hủy" không
+            // CHỈ hiển thị "Shipper hủy" nếu:
+            // 1. Shipper này đã hủy đơn (có trong lịch sử hủy)
+            // 2. VÀ đơn CHƯA được giao lại cho shipper này
+            //    (tức là: shipperId != shipperId hiện tại HOẶC orderStatus == Processing)
+            
+            com.example.demo.dto.ShipperCancelHistoryDTO shipperCancel = null;
+            
+            // Kiểm tra xem đơn có được giao (lại) cho shipper này không
+            boolean isCurrentlyAssigned = order.getShipperId() != null 
+                && order.getShipperId().equals(shipperId) 
+                && !"Processing".equals(order.getOrderStatus());
+            
+            // Chỉ kiểm tra lịch sử hủy nếu đơn KHÔNG được giao cho shipper này
+            if (!isCurrentlyAssigned) {
+                java.util.List<com.example.demo.dto.ShipperCancelHistoryDTO> shipperCancelHistory = 
+                    orderManagementService.getShipperCancelHistory(shipperId);
+                
+                shipperCancel = shipperCancelHistory.stream()
+                    .filter(h -> h.getOrderId().equals(id))
+                    .findFirst()
+                    .orElse(null);
+            }
+            
             model.addAttribute("order", order);
+            model.addAttribute("shipperCancel", shipperCancel);
             model.addAttribute("shipperName", currentUser.getFullName() != null ? currentUser.getFullName() : currentUser.getUsername());
             model.addAttribute("cancelCount", orderManagementService.getShipperCancelCount(shipperId));
             return "shipper/order/detail";

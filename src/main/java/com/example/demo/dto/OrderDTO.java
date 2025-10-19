@@ -48,6 +48,7 @@ public class OrderDTO {
     private LocalDateTime deliveredAt;
     private LocalDateTime cancelledAt;
     private String cancelReason;
+    private String cancelledBy; // "CUSTOMER" hoặc "SHIPPER"
     private String returnReason; // Lý do trả hàng
     private List<OrderItemDTO> orderItems;
     private String paymentMethod; // Phương thức thanh toán

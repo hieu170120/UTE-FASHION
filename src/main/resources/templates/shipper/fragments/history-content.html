@@ -130,6 +130,7 @@
                     <option value="">-- Tất cả --</option>
                     <option value="Delivered">Đã giao</option>
                     <option value="Shipping">Đang giao</option>
+                    <option value="ShipperCancelled">Shipper hủy</option>
                     <option value="Cancelled">Đã hủy</option>
                     <option value="Return_Requested">Yêu cầu trả hàng</option>
                     <option value="Returned">Đã trả hàng</option>
@@ -155,7 +156,7 @@
 
     <!-- Orders Table -->
     <div class="history-table">
-        <table>
+        <table id="ordersTable">
             <thead>
                 <tr>
                     <th>Mã đơn</th>
@@ -164,46 +165,61 @@
                     <th>Tổng tiền</th>
                     <th>Trạng thái</th>
                     <th>Ngày</th>
+                    <th>Thao tác</th>
                 </tr>
             </thead>
             <tbody id="orderTableBody">
-                <tr th:if="${orders.isEmpty()}">
-                    <td colspan="6" class="text-center py-5" style="color: #64748B;">
+                <tr th:if="${combinedHistory.isEmpty()}">
+                    <td colspan="7" class="text-center py-5" style="color: #64748B;">
                         <i class="fas fa-inbox fa-3x mb-3"></i>
                         <p>Chưa có lịch sử giao hàng</p>
                     </td>
                 </tr>
-                <tr th:each="order : ${orders}" class="order-row" 
-                    th:attr="data-status=${order.orderStatus}, data-date=${#temporals.format(order.orderDate, 'yyyy-MM-dd')}">
+                <!-- Hiển thị tất cả đơn hàng đã sắp xếp -->
+                <tr th:each="item : ${combinedHistory}" class="order-row" 
+                    th:attr="data-status=${item.orderStatus}, data-date=${#temporals.format(item.displayDate, 'yyyy-MM-dd')}">
                     <td>
-                        <strong th:text="${order.orderNumber}">ORD-001</strong>
+                        <strong th:text="${item.orderNumber}">ORD-001</strong>
                     </td>
                     <td>
-                        <div th:text="${order.recipientName}">Nguyễn Văn A</div>
-                        <small style="color: #64748B;" th:text="${order.phoneNumber}">0123456789</small>
+                        <div th:text="${item.recipientName}">Nguyễn Văn A</div>
+                        <small style="color: #64748B;" th:text="${item.phoneNumber != null ? item.phoneNumber : '-'}">0123456789</small>
                     </td>
                     <td>
-                        <small th:text="${order.shippingAddress}">123 Đường ABC, Quận 1</small>
+                        <small th:text="${item.shippingAddress != null ? item.shippingAddress : '-'}">123 Đường ABC, Quận 1</small>
                     </td>
                     <td>
-                        <strong style="color: #EF4444;" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'">100,000 ₫</strong>
+                        <strong style="color: #EF4444;" th:text="${#numbers.formatDecimal(item.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'">100,000 ₫</strong>
                     </td>
                     <td>
-                        <span th:if="${order.orderStatus == 'Delivered'}" class="status-delivered">
+                        <span th:if="${item.orderStatus == 'Delivered'}" class="status-delivered">
                             <i class="fas fa-check"></i> Đã giao
                         </span>
-                        <span th:if="${order.orderStatus == 'Cancelled'}" class="status-cancelled">
+                        <span th:if="${item.orderStatus == 'Shipping'}" class="badge bg-primary">
+                            <i class="fas fa-truck"></i> Đang giao
+                        </span>
+                        <span th:if="${item.orderStatus == 'ShipperCancelled'}" class="status-cancelled">
+                            <i class="fas fa-times"></i> Shipper hủy
+                        </span>
+                        <span th:if="${item.orderStatus == 'Cancelled'}" class="status-cancelled">
                             <i class="fas fa-times"></i> Đã hủy
                         </span>
-                        <span th:if="${order.orderStatus == 'Return_Requested'}" class="status-return-requested">
+                        <span th:if="${item.orderStatus == 'Return_Requested'}" class="status-return-requested">
                             <i class="fas fa-undo"></i> Yêu cầu trả hàng
                         </span>
-                        <span th:if="${order.orderStatus == 'Returned'}" class="status-returned">
+                        <span th:if="${item.orderStatus == 'Returned'}" class="status-returned">
                             <i class="fas fa-box-open"></i> Đã trả hàng
                         </span>
                     </td>
                     <td>
-                        <small th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy')}">01/01/2024</small>
+                        <small th:text="${#temporals.format(item.displayDate, 'dd/MM/yyyy')}">01/01/2024</small>
+                    </td>
+                    <td>
+                        <a th:href="@{/shipper/orders/{id}/detail(id=${item.orderId})}" 
+                           class="btn btn-sm btn-primary" 
+                           style="padding: 6px 12px; border-radius: 6px; text-decoration: none;">
+                            <i class="fas fa-eye"></i> Chi tiết
+                        </a>
                     </td>
                 </tr>
             </tbody>
