@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Thêm sản phẩm mới</title>
+    <!-- Include your CSS/JS here -->
+</head>
+<body>
+
+<h1>Thêm sản phẩm mới</h1>
+
+<div th:if="${errorMessage}" class="alert alert-danger">
+    <p th:text="${errorMessage}"></p>
+</div>
+
+<form th:action="@{/vendor/products/add}" th:object="${productDTO}" method="post">
+
+    <div>
+        <label for="name">Tên sản phẩm:</label>
+        <input type="text" id="name" th:field="*{name}"/>
+        <p th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="error"></p>
+    </div>
+
+    <div>
+        <label for="price">Giá:</label>
+        <input type="number" id="price" th:field="*{price}"/>
+        <p th:if="${#fields.hasErrors('price')}" th:errors="*{price}" class="error"></p>
+    </div>
+
+    <div>
+        <label for="stock">Số lượng tồn kho:</label>
+        <input type="number" id="stock" th:field="*{stock}"/>
+        <p th:if="${#fields.hasErrors('stock')}" th:errors="*{stock}" class="error"></p>
+    </div>
+
+    <div>
+        <label for="category">Danh mục:</label>
+        <select id="category" th:field="*{categoryId}">
+            <option value="">-- Chọn danh mục --</option>
+            <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.categoryName}"></option>
+        </select>
+        <p th:if="${#fields.hasErrors('categoryId')}" th:errors="*{categoryId}" class="error"></p>
+    </div>
+
+    <div>
+        <label for="description">Mô tả:</label>
+        <textarea id="description" th:field="*{description}"></textarea>
+    </div>
+
+    <div>
+        <button type="submit">Thêm sản phẩm</button>
+    </div>
+
+</form>
+
+</body>
+</html>

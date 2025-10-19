@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Chỉnh sửa sản phẩm</title>
+    <!-- Include your CSS/JS here -->
+    <style>
+        .variant-section { margin-top: 40px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+
+<h1>Chỉnh sửa sản phẩm</h1>
+
+<div th:if="${successMessage}" class="alert alert-success" style="color: green;">
+    <p th:text="${successMessage}"></p>
+</div>
+
+<div th:if="${errorMessage}" class="alert alert-danger" style="color: red;">
+    <p th:text="${errorMessage}"></p>
+</div>
+
+<!-- Edit Product Form -->
+<form th:action="@{/vendor/products/edit/{id}(id=${productDTO.id})}" th:object="${productDTO}" method="post">
+    <input type="hidden" th:field="*{id}" />
+
+    <div>
+        <label for="productName">Tên sản phẩm:</label>
+        <input type="text" id="productName" th:field="*{name}"/>
+        <p th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="error"></p>
+    </div>
+    
+    <div>
+        <label for="description">Mô tả:</label>
+        <textarea id="description" th:field="*{description}"></textarea>
+    </div>
+
+    <div>
+        <label for="category">Danh mục:</label>
+        <select id="category" th:field="*{categoryId}">
+            <option value="">-- Chọn danh mục --</option>
+            <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.categoryName}" th:selected="${cat.id == productDTO.categoryId}"></option>
+        </select>
+        <p th:if="${#fields.hasErrors('categoryId')}" th:errors="*{categoryId}" class="error"></p>
+    </div>
+
+    <!-- These fields might be calculated from variants later, but for now we keep them -->
+    <div>
+        <label for="price">Giá (cơ bản):</label>
+        <input type="number" id="price" th:field="*{price}"/>
+        <p th:if="${#fields.hasErrors('price')}" th:errors="*{price}" class="error"></p>
+    </div>
+
+    <div>
+        <label for="stock">Số lượng tồn kho (tổng):</label>
+        <input type="number" id="stock" th:field="*{stock}" readonly/> <!-- Make it readonly if calculated from variants -->
+    </div>
+
+    <div>
+        <label for="isActive">Trạng thái bán:</label>
+        <input type="checkbox" id="isActive" th:field="*{active}" />
+    </div>
+
+    <div>
+        <button type="submit">Cập nhật thông tin sản phẩm</button>
+    </div>
+</form>
+
+<hr class="variant-section">
+
+<!-- Variants Section -->
+<div class="variant-section">
+    <h2>Quản lý biến thể</h2>
+
+    <!-- List of Existing Variants -->
+    <div th:if="${not #lists.isEmpty(variants)}">
+        <h3>Các biến thể hiện có</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>Màu sắc</th>
+                    <th>Kích thước</th>
+                    <th>Giá</th>
+                    <th>Số lượng</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="variant : ${variants}">
+                    <td th:text="${variant.sku}"></td>
+                    <td th:text="${variant.color}"></td>
+                    <td th:text="${variant.size}"></td>
+                    <td th:text="${variant.price}"></td>
+                    <td th:text="${variant.stockQuantity}"></td>
+                    <td>
+                        <a th:href="@{/vendor/products/{productId}/variants/edit/{variantId}(productId=${productDTO.id}, variantId=${variant.id})}">Sửa</a>
+                        <a th:href="@{/vendor/products/{productId}/variants/delete/{variantId}(productId=${productDTO.id}, variantId=${variant.id})}"
+                           onclick="return confirm('Bạn có chắc chắn muốn xóa biến thể này không?');"
+                           style="margin-left: 10px; color: red;">Xóa</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div th:if="${#lists.isEmpty(variants)}">
+        <p>Sản phẩm này chưa có biến thể nào.</p>
+    </div>
+
+    <!-- Add New Variant Form -->
+    <div style="margin-top: 30px;">
+        <h3>Thêm biến thể mới</h3>
+        <!-- The form will post to a new endpoint -->
+        <form th:action="@{/vendor/products/{productId}/variants/add(productId=${productDTO.id})}" th:object="${newVariant}" method="post">
+            <div>
+                <label for="variant-sku">SKU:</label>
+                <input type="text" id="variant-sku" th:field="*{sku}"/>
+            </div>
+            <div>
+                <label for="variant-color">Màu sắc:</label>
+                <input type="text" id="variant-color" th:field="*{color}"/>
+            </div>
+            <div>
+                <label for="variant-size">Kích thước:</label>
+                <input type="text" id="variant-size" th:field="*{size}"/>
+            </div>
+            <div>
+                <label for="variant-price">Giá:</label>
+                <input type="number" step="0.01" id="variant-price" th:field="*{price}"/>
+            </div>
+            <div>
+                <label for="variant-stock">Số lượng:</label>
+                <input type="number" id="variant-stock" th:field="*{stockQuantity}"/>
+            </div>
+            <div>
+                <button type="submit">Thêm biến thể</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div style="margin-top: 20px;">
+    <a th:href="@{/vendor/products}">Quay lại danh sách sản phẩm</a>
+</div>
+
+</body>
+</html>

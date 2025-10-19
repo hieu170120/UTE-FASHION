@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.dto.*;
 import com.example.demo.entity.Order;
+import com.example.demo.entity.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -33,6 +34,9 @@ public interface ProductService {
 
     void deleteProduct(Integer id);
 
+    // --- Vendor Specific ---
+    List<Product> getProductsByShopId(Integer shopId);
+
     // --- Review and Order Related ---
     List<Order> findEligibleOrdersForReview(Integer userId, Integer productId);
 
@@ -42,4 +46,7 @@ public interface ProductService {
     List<ProductVariantDTO> getVariantsByProductId(Integer productId);
 
     Map<Integer, List<ProductImageDTO>> getImagesForProducts(List<Integer> productIds);
+
+    // --- Stock Management ---
+    void updateProductStock(Integer productId);
 }

@@ -183,4 +183,27 @@ public class ProductServiceImpl implements ProductService {
 		}
 		productRepository.deleteById(id);
 	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<Product> getProductsByShopId(Integer shopId) {
+		return productRepository.findAllByShop_ShopId(shopId);
+	}
+
+    @Override
+    @Transactional
+    public void updateProductStock(Integer productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
+
+        // Calculate the total stock from all its variants
+        int totalStock = product.getVariants().stream()
+                .mapToInt(ProductVariant::getStockQuantity)
+                .sum();
+
+        // Update the parent product's stock
+        product.setStock(totalStock);
+
+        productRepository.save(product);
+    }
 }
