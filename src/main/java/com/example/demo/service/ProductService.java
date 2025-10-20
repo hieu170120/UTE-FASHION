@@ -2,7 +2,6 @@ package com.example.demo.service;
 
 import com.example.demo.dto.*;
 import com.example.demo.entity.Order;
-import com.example.demo.entity.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -30,12 +29,12 @@ public interface ProductService {
     // --- CRUD Operations ---
     ProductDTO createProduct(ProductDTO productDTO, List<ProductImageDTO> images, Integer shopId);
 
-    ProductDTO updateProduct(Integer id, ProductDTO productDTO, Integer shopId);
+    ProductDTO updateProduct(Integer id, ProductDTO productDTO, List<ProductImageDTO> images, Integer shopId);
 
     void deleteProduct(Integer id);
 
     // --- Vendor Specific ---
-    List<Product> getProductsByShopId(Integer shopId);
+    List<ProductDTO> getProductsByShopId(Integer shopId);
 
     // --- Review and Order Related ---
     List<Order> findEligibleOrdersForReview(Integer userId, Integer productId);

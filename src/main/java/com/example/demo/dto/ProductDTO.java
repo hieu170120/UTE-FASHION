@@ -1,7 +1,6 @@
 package com.example.demo.dto;
 
 import java.math.BigDecimal;
-
 import lombok.Data;
 
 @Data
@@ -23,12 +22,16 @@ public class ProductDTO {
 	private BigDecimal weight;
 	private String dimensions;
 	private String material;
-	private boolean isFeatured;
-	private boolean isNewArrival;
-	private boolean isBestSeller;
-	private boolean isActive;
+
 	private Integer viewCount;
 	private Integer soldCount;
 	private BigDecimal averageRating;
 	private Integer reviewCount;
+
+    // Renamed fields to avoid Lombok/JavaBean convention conflicts
+    private boolean featured;
+    private boolean newArrival;
+    private boolean bestSeller;
+    private boolean active;
+
 }

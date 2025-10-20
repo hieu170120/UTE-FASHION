@@ -5,69 +5,71 @@
 <head>
     <meta charset="UTF-8">
     <title>Thêm sản phẩm mới</title>
+    <th:block layout:fragment="css">
+        <style>
+            body {
+                font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+                color: #111;
+                background-color: #f8f9fa;
+            }
 
-    <style>
-        body {
-            font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
-            color: #111;
-            background-color: #f8f9fa;
-        }
+            h1, h2, h3, h4 {
+                font-weight: 700;
+                letter-spacing: 0.5px;
+                text-transform: uppercase;
+            }
 
-        h1, h2, h3, h4 {
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
+            .form-label {
+                font-weight: 600;
+                font-size: 14px;
+            }
 
-        .form-label {
-            font-weight: 600;
-            font-size: 14px;
-        }
-        
-        .form-control, .form-select {
-            border-radius: 6px;
-            border-color: #ddd;
-            background-color: #fff;
-            padding: .5rem .75rem;
-            color: #111;
-        }
+            .form-control, .form-select {
+                border-radius: 6px;
+                border-color: #ddd;
+                background-color: #fff;
+                padding: .5rem .75rem;
+                color: #111;
+            }
 
-        .form-control:focus, .form-select:focus {
-            border-color: #000;
-            box-shadow: 0 0 0 0.25rem rgba(0,0,0,.1);
-        }
-        
-        .btn-dark {
-            background-color: #000;
-            border: none;
-            font-size: 14px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            transition: all 0.2s;
-            padding: 10px 25px;
-            border-radius: 6px;
-        }
+            .form-control:focus, .form-select:focus {
+                border-color: #000;
+                box-shadow: 0 0 0 0.25rem rgba(0,0,0,.1);
+            }
 
-        .btn-dark:hover {
-            background-color: #333;
-        }
-        
-        .card {
-            border: 1px solid #e5e5e5;
-            border-radius: 8px;
-        }
-        
-        .card-header {
-            background-color: #f8f9fa;
-            border-bottom: 2px solid #000;
-        }
-        
-        .form-check-input:checked {
-            background-color: #000;
-            border-color: #000;
-        }
+            .btn-dark {
+                background-color: #000;
+                border: none;
+                font-size: 14px;
+                font-weight: 600;
+                letter-spacing: 0.5px;
+                transition: all 0.2s;
+                padding: 10px 25px;
+                border-radius: 6px;
+            }
 
-    </style>
+            .btn-dark:hover {
+                background-color: #333;
+            }
+
+            .card {
+                border: 1px solid #e5e5e5;
+                border-radius: 8px;
+            }
+
+            .card-header {
+                background-color: #f8f9fa;
+                border-bottom: 2px solid #000;
+            }
+
+            .form-check-input:checked {
+                background-color: #000;
+                border-color: #000;
+            }
+
+        </style>
+    </th:block>
+
 </head>
 <body>
 
@@ -75,13 +77,16 @@
     <div class="row justify-content-center">
         <div class="col-lg-10">
 
-            <h1 class="mb-4 text-center">Thêm sản phẩm mới</h1>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="mb-4 text-center">Thêm sản phẩm mới</h1>
+                <a th:href="@{/vendor/products}" class="btn btn-outline-dark"><i class="fas fa-arrow-left me-2"></i> Quay lại</a>
+            </div>
 
             <div th:if="${errorMessage}" class="alert alert-danger">
                 <p th:text="${errorMessage}"></p>
             </div>
 
-            <form th:action="@{/vendor/products/add}" th:object="${productDTO}" method="post">
+            <form th:action="@{/vendor/products/add}" th:object="${form}" method="post">
 
                 <!-- Product Core Info -->
                 <div class="card mb-4">
@@ -93,24 +98,24 @@
                             <div class="col-md-8">
                                 <div class="mb-3">
                                     <label for="productName" class="form-label">Tên sản phẩm (*)</label>
-                                    <input type="text" id="productName" class="form-control" th:field="*{productName}" required>
-                                    <p th:if="${#fields.hasErrors('productName')}" th:errors="*{productName}" class="text-danger small"></p>
+                                    <input type="text" id="productName" class="form-control" th:field="*{product.productName}" required>
+                                    <p th:if="${#fields.hasErrors('product.productName')}" th:errors="*{product.productName}" class="text-danger small"></p>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     <label for="sku" class="form-label">SKU (Mã sản phẩm)</label>
-                                    <input type="text" id="sku" class="form-control" th:field="*{sku}">
+                                    <input type="text" id="sku" class="form-control" th:field="*{product.sku}">
                                 </div>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label for="shortDescription" class="form-label">Mô tả ngắn</label>
-                            <textarea id="shortDescription" class="form-control" rows="3" th:field="*{shortDescription}"></textarea>
+                            <textarea id="shortDescription" class="form-control" rows="3" th:field="*{product.shortDescription}"></textarea>
                         </div>
                         <div class="mb-3">
                             <label for="description" class="form-label">Mô tả chi tiết</label>
-                            <textarea id="description" class="form-control" rows="6" th:field="*{description}"></textarea>
+                            <textarea id="description" class="form-control" rows="6" th:field="*{product.description}"></textarea>
                         </div>
                     </div>
                 </div>
@@ -125,21 +130,21 @@
                             <div class="col-md-4">
                                 <label for="price" class="form-label">Giá gốc (*)</label>
                                 <div class="input-group">
-                                    <input type="number" id="price" class="form-control" th:field="*{price}" required step="any">
+                                    <input type="number" id="price" class="form-control" th:field="*{product.price}" required step="any">
                                     <span class="input-group-text">VNĐ</span>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <label for="salePrice" class="form-label">Giá khuyến mãi</label>
                                 <div class="input-group">
-                                     <input type="number" id="salePrice" class="form-control" th:field="*{salePrice}" step="any">
+                                     <input type="number" id="salePrice" class="form-control" th:field="*{product.salePrice}" step="any">
                                      <span class="input-group-text">VNĐ</span>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <label for="costPrice" class="form-label">Giá vốn</label>
                                 <div class="input-group">
-                                    <input type="number" id="costPrice" class="form-control" th:field="*{costPrice}" step="any">
+                                    <input type="number" id="costPrice" class="form-control" th:field="*{product.costPrice}" step="any">
                                     <span class="input-group-text">VNĐ</span>
                                 </div>
                             </div>
@@ -156,27 +161,27 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <label for="stockQuantity" class="form-label">Số lượng tồn kho</label>
-                                <input type="number" id="stockQuantity" class="form-control" th:field="*{stockQuantity}">
+                                <input type="number" id="stockQuantity" class="form-control" th:field="*{product.stockQuantity}">
                             </div>
                             <div class="col-md-6">
                                 <label for="lowStockThreshold" class="form-label">Ngưỡng tồn kho thấp</label>
-                                <input type="number" id="lowStockThreshold" class="form-control" th:field="*{lowStockThreshold}">
+                                <input type="number" id="lowStockThreshold" class="form-control" th:field="*{product.lowStockThreshold}">
                             </div>
                         </div>
                         <div class="row mt-3">
                             <div class="col-md-6">
                                 <label for="weight" class="form-label">Cân nặng (gram)</label>
-                                <input type="number" id="weight" class="form-control" th:field="*{weight}" step="any">
+                                <input type="number" id="weight" class="form-control" th:field="*{product.weight}" step="any">
                             </div>
                             <div class="col-md-6">
                                 <label for="dimensions" class="form-label">Kích thước (D x R x C)</label>
-                                <input type="text" id="dimensions" class="form-control" th:field="*{dimensions}" placeholder="e.g. 20x15x10">
+                                <input type="text" id="dimensions" class="form-control" th:field="*{product.dimensions}" placeholder="e.g. 20x15x10">
                             </div>
                         </div>
                          <div class="row mt-3">
                              <div class="col-md-12">
                                 <label for="material" class="form-label">Chất liệu</label>
-                                <input type="text" id="material" class="form-control" th:field="*{material}">
+                                <input type="text" id="material" class="form-control" th:field="*{product.material}">
                             </div>
                         </div>
                     </div>
@@ -191,15 +196,15 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <label for="category" class="form-label">Danh mục (*)</label>
-                                <select id="category" class="form-select" th:field="*{categoryId}" required>
+                                <select id="category" class="form-select" th:field="*{product.categoryId}" required>
                                     <option value="">-- Chọn danh mục --</option>
                                     <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.categoryName}"></option>
                                 </select>
-                                <p th:if="${#fields.hasErrors('categoryId')}" th:errors="*{categoryId}" class="text-danger small"></p>
+                                <p th:if="${#fields.hasErrors('product.categoryId')}" th:errors="*{product.categoryId}" class="text-danger small"></p>
                             </div>
                             <div class="col-md-6">
                                  <label for="brand" class="form-label">Thương hiệu</label>
-                                <select id="brand" class="form-select" th:field="*{brandId}">
+                                <select id="brand" class="form-select" th:field="*{product.brandId}">
                                     <option value="">-- Chọn thương hiệu --</option>
                                     <option th:each="brand : ${brands}" th:value="${brand.id}" th:text="${brand.brandName}"></option>
                                 </select>
@@ -270,19 +275,19 @@
                     <div class="card-body">
                         <div class="d-flex flex-wrap gap-4">
                              <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" id="isActive" th:field="*{isActive}" checked>
+                                <input class="form-check-input" type="checkbox" role="switch" id="isActive" th:field="*{product.active}" checked>
                                 <label class="form-check-label" for="isActive">Kích hoạt sản phẩm</label>
                             </div>
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" id="isFeatured" th:field="*{isFeatured}">
+                                <input class="form-check-input" type="checkbox" role="switch" id="isFeatured" th:field="*{product.featured}">
                                 <label class="form-check-label" for="isFeatured">Sản phẩm nổi bật</label>
                             </div>
                              <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" id="isNewArrival" th:field="*{isNewArrival}">
+                                <input class="form-check-input" type="checkbox" role="switch" id="isNewArrival" th:field="*{product.newArrival}">
                                 <label class="form-check-label" for="isNewArrival">Sản phẩm mới về</label>
                             </div>
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" id="isBestSeller" th:field="*{isBestSeller}">
+                                <input class="form-check-input" type="checkbox" role="switch" id="isBestSeller" th:field="*{product.bestSeller}">
                                 <label class="form-check-label" for="isBestSeller">Sản phẩm bán chạy</label>
                             </div>
                         </div>

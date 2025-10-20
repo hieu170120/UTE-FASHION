@@ -21,6 +21,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import jakarta.validation.Valid;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,26 +41,27 @@ public class VendorProductController {
     @Autowired
     private BrandService brandService;
 
+    private static final int MAX_IMAGES = 3;
+
     private void authorizeVendorForProduct(Principal principal, Integer productId) {
         Integer shopId = vendorService.getShopIdByUsername(principal.getName());
         ProductDTO product = productService.getProductById(productId);
-        if (!product.getShopId().equals(shopId)) {
-            throw new UnauthorizedException("Bạn không có quyền thực hiện hành động này trên sản phẩm này.");
+        if (product == null || !product.getShopId().equals(shopId)) {
+            throw new UnauthorizedException("Bạn không có quyền truy cập sản phẩm này.");
         }
     }
 
     @GetMapping
-    public String showProductList(Model model, Principal principal) {
+    public String showProductList(Model model, Principal principal, RedirectAttributes redirectAttributes) {
         try {
             Integer shopId = vendorService.getShopIdByUsername(principal.getName());
-            List<Product> products = productService.getProductsByShopId(shopId);
+            List<ProductDTO> products = productService.getProductsByShopId(shopId);
             model.addAttribute("products", products);
             model.addAttribute("isProductListEmpty", products.isEmpty());
         } catch (UnauthorizedException e) {
-            model.addAttribute("errorMessage", "Bạn chưa có cửa hàng. Vui lòng tạo cửa hàng trước.");
-            model.addAttribute("isProductListEmpty", true);
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần tạo một cửa hàng trước khi có thể quản lý sản phẩm.");
+            return "redirect:/vendor/profile";
         }
-
         return "vendor/products/list";
     }
 
@@ -67,18 +69,21 @@ public class VendorProductController {
     public String showAddProductForm(Model model, Principal principal, RedirectAttributes redirectAttributes) {
         try {
             vendorService.getShopIdByUsername(principal.getName());
-            model.addAttribute("form", new ProductFormDTO());
-            model.addAttribute("categories", categoryService.findAllActive());
-            model.addAttribute("brands", brandService.findAllActive());
-            return "vendor/products/add";
         } catch (UnauthorizedException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: Không tìm thấy cửa hàng của bạn.");
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: Không tìm thấy cửa hàng của bạn để thêm sản phẩm.");
             return "redirect:/vendor/products";
         }
+
+        if (!model.containsAttribute("form")) {
+            model.addAttribute("form", new ProductFormDTO());
+        }
+        model.addAttribute("categories", categoryService.findAllActive());
+        model.addAttribute("brands", brandService.findAllActive());
+        return "vendor/products/add";
     }
 
     @PostMapping("/add")
-    public String addProduct(@Valid @ModelAttribute("form") ProductFormDTO form, BindingResult result, Principal principal, Model model, RedirectAttributes redirectAttributes) {
+    public String addProduct(@Valid @ModelAttribute("form") ProductFormDTO form, BindingResult result, Principal principal, RedirectAttributes redirectAttributes, Model model) {
         Integer shopId;
         try {
             shopId = vendorService.getShopIdByUsername(principal.getName());
@@ -97,12 +102,14 @@ public class VendorProductController {
             ProductDTO productDTO = form.getProduct();
 
             List<ProductImageDTO> images = form.getImages().stream()
-                .filter(img -> img.getImageUrl() != null && !img.getImageUrl().trim().isEmpty())
-                .collect(Collectors.toList());
+                    .filter(img -> img.getImageUrl() != null && !img.getImageUrl().trim().isEmpty())
+                    .collect(Collectors.toList());
 
             Integer primaryIndex = form.getPrimaryImageIndex();
             if (primaryIndex != null && primaryIndex >= 0 && primaryIndex < images.size()) {
-                images.get(primaryIndex).setPrimary(true);
+                for (int i = 0; i < images.size(); i++) {
+                    images.get(i).setPrimary(i == primaryIndex);
+                }
             }
 
             ProductDTO newProduct = productService.createProduct(productDTO, images, shopId);
@@ -110,10 +117,9 @@ public class VendorProductController {
             redirectAttributes.addFlashAttribute("successMessage", "Thêm sản phẩm thành công! Giờ bạn có thể thêm các biến thể.");
             return "redirect:/vendor/products/edit/" + newProduct.getId();
         } catch (Exception e) {
-            model.addAttribute("categories", categoryService.findAllActive());
-            model.addAttribute("brands", brandService.findAllActive());
-            model.addAttribute("errorMessage", "Đã xảy ra lỗi khi thêm sản phẩm: " + e.getMessage());
-            return "vendor/products/add";
+            redirectAttributes.addFlashAttribute("errorMessage", "Đã xảy ra lỗi khi thêm sản phẩm: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("form", form);
+            return "redirect:/vendor/products/add";
         }
     }
 
@@ -124,32 +130,40 @@ public class VendorProductController {
 
             ProductDTO productDTO = productService.getProductById(id);
             List<ProductImageDTO> images = productService.getImagesByProductId(id);
-            List<CategoryDTO> categories = categoryService.findAllActive();
-            List<BrandDTO> brands = brandService.findAllActive();
-            List<ProductVariantDTO> variants = productService.getVariantsByProductId(id);
+
+            // Ensure the images list always has MAX_IMAGES elements for the form
+            List<ProductImageDTO> formImages = new ArrayList<>(images);
+            while (formImages.size() < MAX_IMAGES) {
+                formImages.add(new ProductImageDTO());
+            }
 
             ProductFormDTO form = new ProductFormDTO();
             form.setProduct(productDTO);
-            form.setImages(images);
+            form.setImages(formImages);
+
+            // Determine the primary image index for the radio button
+            for (int i = 0; i < formImages.size(); i++) {
+                if (formImages.get(i).isPrimary()) {
+                    form.setPrimaryImageIndex(i);
+                    break;
+                }
+            }
 
             model.addAttribute("form", form);
-            model.addAttribute("categories", categories);
-            model.addAttribute("brands", brands);
-            model.addAttribute("variants", variants);
+            model.addAttribute("categories", categoryService.findAllActive());
+            model.addAttribute("brands", brandService.findAllActive());
+            model.addAttribute("variants", productService.getVariantsByProductId(id));
             model.addAttribute("newVariant", new ProductVariantDTO());
 
             return "vendor/products/edit";
         } catch (UnauthorizedException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/vendor/products";
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy sản phẩm hoặc đã có lỗi xảy ra.");
-            return "redirect:/vendor/products";
         }
     }
 
     @PostMapping("/edit/{id}")
-    public String updateProduct(@PathVariable("id") Integer id, @Valid @ModelAttribute("productDTO") ProductDTO productDTO, BindingResult result, Principal principal, Model model, RedirectAttributes redirectAttributes) {
+    public String updateProduct(@PathVariable("id") Integer id, @Valid @ModelAttribute("form") ProductFormDTO form, BindingResult result, Principal principal, RedirectAttributes redirectAttributes, Model model) {
         try {
             authorizeVendorForProduct(principal, id);
         } catch (UnauthorizedException e) {
@@ -160,19 +174,30 @@ public class VendorProductController {
         if (result.hasErrors()) {
             model.addAttribute("categories", categoryService.findAllActive());
             model.addAttribute("brands", brandService.findAllActive());
+            model.addAttribute("variants", productService.getVariantsByProductId(id));
+            model.addAttribute("newVariant", new ProductVariantDTO());
+            model.addAttribute("form", form);
             return "vendor/products/edit";
         }
 
         try {
             Integer shopId = vendorService.getShopIdByUsername(principal.getName());
-            productService.updateProduct(id, productDTO, shopId);
+
+            List<ProductImageDTO> images = form.getImages().stream()
+                    .filter(img -> (img.getImageUrl() != null && !img.getImageUrl().trim().isEmpty()) || img.getId() != null)
+                    .collect(Collectors.toList());
+
+            Integer primaryIndex = form.getPrimaryImageIndex();
+            for (int i = 0; i < images.size(); i++) {
+                images.get(i).setPrimary(primaryIndex != null && i == primaryIndex);
+            }
+
+            productService.updateProduct(id, form.getProduct(), images, shopId);
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật sản phẩm thành công!");
             return "redirect:/vendor/products/edit/" + id;
         } catch (Exception e) {
-            model.addAttribute("categories", categoryService.findAllActive());
-            model.addAttribute("brands", brandService.findAllActive());
-            model.addAttribute("errorMessage", "Đã xảy ra lỗi khi cập nhật sản phẩm: " + e.getMessage());
-            return "vendor/products/edit";
+            redirectAttributes.addFlashAttribute("errorMessage", "Đã xảy ra lỗi khi cập nhật sản phẩm: " + e.getMessage());
+            return "redirect:/vendor/products/edit/" + id;
         }
     }
 

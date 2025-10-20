@@ -18,7 +18,12 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.concurrent.CompletableFuture;
 import com.example.demo.dto.ProductDTO;
 import com.example.demo.dto.ProductImageDTO;
 import com.example.demo.dto.ProductSearchCriteria;
@@ -58,6 +63,16 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private Slugify slugify;
+    private ProductDTO convertToDto(Product product) {
+        ProductDTO dto = modelMapper.map(product, ProductDTO.class);
+        if (product.getShop() != null) {
+            dto.setShopId(product.getShop().getId());
+        }
+        if (product.getCategory() != null) {
+            dto.setCategoryId(product.getCategory().getId());
+        }
+        return dto;
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -122,7 +137,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductDTO getProductById(Integer id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
-        return modelMapper.map(product, ProductDTO.class);
+        return convertToDto(product);
     }
 
     @Override
@@ -192,24 +207,21 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public ProductDTO updateProduct(Integer id, ProductDTO productDTO, Integer shopId) {
+    public ProductDTO updateProduct(Integer id, ProductDTO productDTO, List<ProductImageDTO> imageDTOs, Integer shopId) {
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
 
         modelMapper.map(productDTO, existingProduct);
-
+        existingProduct.setId(id); // Ensure ID is not lost
         existingProduct.setSlug(slugify.slugify(productDTO.getProductName()));
+        existingProduct.setShop(shopRepository.findById(shopId).orElseThrow(() -> new ResourceNotFoundException("Shop not found")));
+        existingProduct.setCategory(categoryRepository.findById(productDTO.getCategoryId()).orElseThrow(() -> new ResourceNotFoundException("Category not found")));
 
-        existingProduct.setShop(
-                shopRepository.findById(shopId).orElseThrow(() -> new ResourceNotFoundException("Shop not found")));
-        existingProduct.setCategory(
-                categoryRepository.findById(productDTO.getCategoryId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Category not found")));
+        updateProductImages(existingProduct, imageDTOs);
 
         Product updatedProduct = productRepository.save(existingProduct);
-        return modelMapper.map(updatedProduct, ProductDTO.class);
+        return convertToDto(updatedProduct);
     }
-
     @Override
     public void deleteProduct(Integer id) {
         if (!productRepository.existsById(id)) {
@@ -220,8 +232,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Product> getProductsByShopId(Integer shopId) {
-        return productRepository.findAllByShop_Id(shopId);
+    public List<ProductDTO> getProductsByShopId(Integer shopId) {
+        return productRepository.findAllByShop_Id(shopId).stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -237,5 +251,26 @@ public class ProductServiceImpl implements ProductService {
         product.setStockQuantity(totalStock);
 
         productRepository.save(product);
+    }
+    private void updateProductImages(Product product, List<ProductImageDTO> imageDTOs) {
+        Map<Integer, ProductImage> existingImagesMap = product.getImages().stream()
+                .collect(Collectors.toMap(ProductImage::getId, Function.identity()));
+
+        List<ProductImageDTO> imagesToProcess = imageDTOs.stream()
+                .filter(dto -> (dto.getImageUrl() != null && !dto.getImageUrl().trim().isEmpty()) || dto.getId() != null)
+                .collect(Collectors.toList());
+
+        // Update existing images and add new ones
+        for (ProductImageDTO dto : imagesToProcess) {
+            ProductImage image = existingImagesMap.get(dto.getId());
+            if (image != null) { // It's an existing image
+                modelMapper.map(dto, image);
+                existingImagesMap.remove(dto.getId());
+            } else { // It's a new image
+                image = modelMapper.map(dto, ProductImage.class);
+                image.setProduct(product);
+                product.getImages().add(image);
+            }
+        }
     }
 }
