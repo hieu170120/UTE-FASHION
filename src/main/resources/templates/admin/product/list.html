@@ -85,7 +85,6 @@
                     <tr>
                         <th>Tên sản phẩm</th>
                         <th class="text-end">Giá</th>
-                        <th class="text-center">Ảnh</th>
                         <th class="text-center">Trạng thái (Is Active)</th>
                     </tr>
                     </thead>
@@ -93,10 +92,6 @@
                     <tr th:each="product : ${products}">
                         <td th:text="${product.productName}"></td>
                         <td class="text-end" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
-                        <td class="text-center">
-                            <img th:src="${!#lists.isEmpty(product.images)} ? ${product.images[0].imageUrl} : 'https://via.placeholder.com/60'"
-                                 alt="Product Image" class="product-image">
-                        </td>
                         <td class="text-center">
                             <form th:action="@{/admin/products/toggle-active/{id}(id=${product.id})}" method="post" class="form-check form-switch d-inline-block">
                                 <input class="form-check-input" type="checkbox" role="switch"
@@ -138,7 +133,7 @@
                 "lengthMenu": [ [10, 25, 50, -1], [10, 25, 50, "Tất cả"] ],
                 "pageLength": 10,
                  "columnDefs": [ {
-                    "targets": [2, 3], // Image and Action columns
+                    "targets": 2,
                     "orderable": false,
                     "searchable": false
                 } ]
