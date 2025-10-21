@@ -350,6 +350,7 @@ CREATE TABLE Orders (
     user_id INT NOT NULL, -- Liên kết người mua
     carrier_id INT, -- Liên kết nhà vận chuyển
     shipper_id INT, -- Liên kết shipper
+    shop_id INT, 
     shipping_time INT, -- Thời gian giao hàng dự kiến (phút)
     recipient_name NVARCHAR(100) NOT NULL, -- Tên người nhận
     phone_number NVARCHAR(20) NOT NULL, -- Số điện thoại người nhận
@@ -379,7 +380,8 @@ CREATE TABLE Orders (
     updated_at DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
     FOREIGN KEY (carrier_id) REFERENCES Carriers(carrier_id),
-    FOREIGN KEY (shipper_id) REFERENCES Shippers(shipper_id)
+    FOREIGN KEY (shipper_id) REFERENCES Shippers(shipper_id),
+    FOREIGN KEY (shop_id)	 REFERENCES Shops(shop_id)
 );
 
 -- Bảng Order_Items: Lưu chi tiết sản phẩm trong đơn hàng
