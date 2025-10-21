@@ -37,17 +37,13 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     boolean existsByEmail(String email);
     
     /**
-     * Tìm kiếm user theo username, email hoặc fullName
+     * Tìm kiếm user theo keyword (username, email hoặc fullName)
      */
     @Query("SELECT u FROM User u WHERE " +
            "LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))")
-    Page<User> findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(
-        @Param("keyword") String keyword1, 
-        @Param("keyword") String keyword2, 
-        @Param("keyword") String keyword3, 
-        Pageable pageable);
+    Page<User> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
     
     /**
      * Lọc user theo trạng thái active

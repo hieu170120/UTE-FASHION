@@ -43,15 +43,14 @@ public class SecurityConfig {
 								"/static/**", "/css/**", "/js/**", "/images/**", "/products", "/products/**", "/cart",
 								"/cart/**", "/api/cart/**", "/checkout", "/checkout/**", "/payment", "/payment/**",
 								"/payment-test", "/payment-test/**", "/api/auth/**", "/api/**", // Public product APIs
-								"/verify-email", "/verify-email/**", "/resend-otp", "/error", // Allow error page
-								"/admin/**", // TODO: TEMPORARY - Remove this line in production
-								"/shipper/**") // TODO: TEMPORARY - Remove this line in production
+								"/verify-email", "/verify-email/**", "/resend-otp", "/error" // Allow error page
+							)
 						.permitAll().requestMatchers("/api/v1/reviews/**").authenticated() // Review APIs need auth
 						// .requestMatchers("/admin/**").hasRole("ADMIN") // Admin only - COMMENTED FOR
 						// TESTING
 						// .requestMatchers("/shipper/**").hasRole("SHIPPER") // Shipper only -
 						// COMMENTED FOR TESTING
-						.requestMatchers("/profile", "/profile/**", "/orders", "/orders/**", "/vendor/**")
+						.requestMatchers("/profile", "/profile/**", "/orders", "/orders/**", "/vendor/**", "/admin/**", "/shipper/**")
 						.authenticated().anyRequest().authenticated())
 				.formLogin(form -> form.disable()).logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/")
 						.invalidateHttpSession(true).deleteCookies("UTE_FASHION_SESSION").permitAll());

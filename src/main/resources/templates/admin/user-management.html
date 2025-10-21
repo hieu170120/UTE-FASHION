@@ -127,7 +127,7 @@
             <div class="col-md-3">
                 <div class="card stat-card bg-danger">
                     <div class="stat-icon"><i class="fas fa-user-lock"></i></div>
-                    <div class="stat-number" th:text="${statistics.inactiveUsers}">0</div>
+                    <div class="stat-number" th:text="${statistics.lockedUsers}">0</div>
                     <div>Bị Khóa</div>
                 </div>
             </div>
@@ -212,7 +212,7 @@
                                 </td>
                                 <td th:text="${user.email}">email</td>
                                 <td th:text="${user.fullName}">fullName</td>
-                                <td th:text="${user.phoneNumber}">phone</td>
+                                <td th:text="${user.phone}">phone</td>
                                 <td>
                                     <span class="status-badge" 
                                           th:classappend="${user.isActive} ? 'status-active' : 'status-inactive'"

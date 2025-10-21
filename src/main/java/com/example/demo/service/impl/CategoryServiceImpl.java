@@ -29,6 +29,13 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    public List<CategoryDTO> findAllActive() {
+        return categoryRepository.findAllByIsActive(true).stream()
+                .map(category -> modelMapper.map(category, CategoryDTO.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public CategoryDTO getCategoryById(Integer id) {
         Category category = categoryRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
         return modelMapper.map(category, CategoryDTO.class);

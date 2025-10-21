@@ -6,6 +6,7 @@ import com.example.demo.dto.UserOrderHistoryDTO;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.OrderRepository;
+import com.example.demo.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +28,7 @@ public class AdminService {
 
     @Autowired
     private UserRepository userRepository;
-    
+
     @Autowired
     private OrderRepository orderRepository;
     
@@ -35,7 +36,7 @@ public class AdminService {
     private OrderService orderService;
 
     /**
-     * Tìm kiếm user với các bộ lọc
+     * Tìm kiếm và phân trang danh sách user
      */
     @Transactional(readOnly = true)
     public Page<UserManagementDTO> searchUsers(String keyword, Boolean isActive, Pageable pageable) {
@@ -44,16 +45,15 @@ public class AdminService {
         Page<User> userPage;
         
         if (keyword != null && !keyword.trim().isEmpty()) {
-            // Tìm kiếm theo username, email, hoặc fullName
-            userPage = userRepository.findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(
-                keyword.trim(), keyword.trim(), keyword.trim(), pageable);
+            // Tìm kiếm theo keyword
+            userPage = userRepository.findByKeyword(keyword.trim(), pageable);
             System.out.println("DEBUG: Search by keyword found " + userPage.getTotalElements() + " users");
         } else if (isActive != null) {
-            // Lọc theo trạng thái active
+            // Lọc theo trạng thái
             userPage = userRepository.findByIsActive(isActive, pageable);
             System.out.println("DEBUG: Filter by isActive=" + isActive + " found " + userPage.getTotalElements() + " users");
         } else {
-            // Lấy tất cả user
+            // Lấy tất cả
             userPage = userRepository.findAll(pageable);
             System.out.println("DEBUG: Get all users found " + userPage.getTotalElements() + " users");
         }
@@ -64,17 +64,18 @@ public class AdminService {
     /**
      * Khóa tài khoản user
      */
+    @Transactional
     public void lockUser(Integer userId) {
         System.out.println("DEBUG: lockUser called for userId=" + userId);
         
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy user với ID: " + userId));
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
         
         System.out.println("DEBUG: Found user: " + user.getUsername() + ", current isActive=" + user.getIsActive());
         
         if (!user.getIsActive()) {
             System.out.println("DEBUG: User is already locked, throwing exception");
-            throw new RuntimeException("Tài khoản đã bị khóa");
+            throw new RuntimeException("User is already locked");
         }
         
         user.setIsActive(false);
@@ -87,17 +88,18 @@ public class AdminService {
     /**
      * Mở khóa tài khoản user
      */
+    @Transactional
     public void unlockUser(Integer userId) {
         System.out.println("DEBUG: unlockUser called for userId=" + userId);
         
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy user với ID: " + userId));
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
         
         System.out.println("DEBUG: Found user: " + user.getUsername() + ", current isActive=" + user.getIsActive());
         
         if (user.getIsActive()) {
             System.out.println("DEBUG: User is already unlocked, throwing exception");
-            throw new RuntimeException("Tài khoản đã được mở khóa");
+            throw new RuntimeException("User is already unlocked");
         }
         
         user.setIsActive(true);
@@ -114,27 +116,15 @@ public class AdminService {
     public Map<String, Object> getUserStatistics() {
         Map<String, Object> stats = new HashMap<>();
         
-        // Tổng số user
         long totalUsers = userRepository.count();
-        stats.put("totalUsers", totalUsers);
-        
-        // Số user active
         long activeUsers = userRepository.countByIsActive(true);
+        long lockedUsers = userRepository.countByIsActive(false);
+        long newUsersToday = userRepository.countByCreatedAtAfter(LocalDateTime.now().toLocalDate().atStartOfDay());
+        
+        stats.put("totalUsers", totalUsers);
         stats.put("activeUsers", activeUsers);
-        
-        // Số user inactive
-        long inactiveUsers = userRepository.countByIsActive(false);
-        stats.put("inactiveUsers", inactiveUsers);
-        
-        // User mới đăng ký hôm nay
-        LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
-        long newUsersToday = userRepository.countByCreatedAtAfter(startOfDay);
+        stats.put("lockedUsers", lockedUsers);
         stats.put("newUsersToday", newUsersToday);
-        
-        // User mới đăng ký trong tuần
-        LocalDateTime startOfWeek = startOfDay.minusDays(7);
-        long newUsersThisWeek = userRepository.countByCreatedAtAfter(startOfWeek);
-        stats.put("newUsersThisWeek", newUsersThisWeek);
         
         return stats;
     }
@@ -144,14 +134,10 @@ public class AdminService {
      */
     @Transactional(readOnly = true)
     public Page<UserOrderHistoryDTO> getUserOrderHistory(Integer userId, Pageable pageable) {
+        System.out.println("DEBUG: getUserOrderHistory called for userId=" + userId + ", page=" + pageable.getPageNumber());
+        
         try {
-            // Kiểm tra user tồn tại
-            userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy user với ID: " + userId));
-            
-            // Lấy đơn hàng của user
             Page<OrderDTO> orderPage = orderService.getUserOrdersPageable(userId, pageable);
-            
             System.out.println("DEBUG: Found " + orderPage.getTotalElements() + " orders for user " + userId);
             
             return orderPage.map(this::mapToUserOrderHistoryDTO);
@@ -169,9 +155,8 @@ public class AdminService {
     public Map<String, Object> getUserOrderStatistics(Integer userId) {
         System.out.println("DEBUG: getUserOrderStatistics called for userId=" + userId);
         
-        // Kiểm tra user tồn tại
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy user với ID: " + userId));
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
         
         System.out.println("DEBUG: Found user: " + user.getUsername());
         
@@ -182,9 +167,9 @@ public class AdminService {
         stats.put("totalOrders", totalOrders);
         System.out.println("DEBUG: Total orders: " + totalOrders);
         
-        // Tổng tiền đã chi
+        // Tổng chi tiêu
         BigDecimal totalSpent = orderRepository.getTotalSpentByUserId(userId);
-        stats.put("totalSpent", totalSpent != null ? totalSpent : BigDecimal.ZERO);
+        stats.put("totalSpent", totalSpent);
         System.out.println("DEBUG: Total spent: " + (totalSpent != null ? totalSpent : BigDecimal.ZERO));
         
         // Đơn hàng gần nhất
@@ -238,13 +223,11 @@ public class AdminService {
             user.setCreatedAt(now.minusDays(30));
             userChanged = true;
         }
-        
         if (user.getLastLogin() == null && user.getIsActive()) {
             int randomDays = (int) (Math.random() * 7) + 1;
             user.setLastLogin(now.minusDays(randomDays));
             userChanged = true;
         }
-        
         if (userChanged) {
             user.setUpdatedAt(now);
             userRepository.save(user);
@@ -255,23 +238,11 @@ public class AdminService {
         dto.setUsername(user.getUsername());
         dto.setEmail(user.getEmail());
         dto.setFullName(user.getFullName());
-        dto.setPhoneNumber(user.getPhoneNumber());
-        dto.setAvatarUrl(user.getAvatarUrl());
+        dto.setPhone(user.getPhoneNumber());
         dto.setIsActive(user.getIsActive());
-        dto.setIsEmailVerified(user.getIsEmailVerified());
-        dto.setLastLogin(user.getLastLogin());
         dto.setCreatedAt(user.getCreatedAt());
+        dto.setLastLogin(user.getLastLogin());
         dto.setUpdatedAt(user.getUpdatedAt());
-        
-        // Lấy thống kê đơn hàng nhanh
-        long totalOrders = orderRepository.countByUserUserId(user.getUserId());
-        dto.setTotalOrders(totalOrders);
-        
-        BigDecimal totalSpent = orderRepository.getTotalSpentByUserId(user.getUserId());
-        dto.setTotalSpent(totalSpent != null ? totalSpent : BigDecimal.ZERO);
-        
-        LocalDateTime lastOrderDate = orderRepository.getLastOrderDateByUserId(user.getUserId());
-        dto.setLastOrderDate(lastOrderDate);
         
         return dto;
     }

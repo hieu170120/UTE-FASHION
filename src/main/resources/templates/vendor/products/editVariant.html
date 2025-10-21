@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>Chỉnh sửa biến thể</title>
+</head>
+<body>
+
+<div layout:fragment="content" class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <h1 class="mb-4">Chỉnh sửa biến thể</h1>
+
+            <!-- Messages -->
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+            <div class="card border-dark">
+                <div class="card-header bg-light border-bottom border-dark">
+                    <h4 class="mb-0">Chi tiết biến thể</h4>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/vendor/products/{productId}/variants/edit/{variantId}(productId=${productId}, variantId=${variant.id})}"
+                          th:object="${variant}"
+                          method="post">
+
+                        <input type="hidden" th:field="*{id}">
+
+                        <!-- SKU -->
+                        <div class="mb-3">
+                            <label for="sku" class="form-label fw-bold">SKU (*)</label>
+                            <input type="text" id="sku" class="form-control border-dark" th:field="*{sku}" required>
+                            <div th:if="${#fields.hasErrors('sku')}" th:errors="*{sku}" class="text-danger small mt-1"></div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Color -->
+                            <div class="col-md-6 mb-3">
+                                <label for="color" class="form-label fw-bold">Màu sắc</label>
+                                <select id="color" name="color.id" class="form-select border-dark">
+                                    <option value="">-- Chọn màu --</option>
+                                    <option th:each="c : ${allColors}"
+                                            th:value="${c.id}"
+                                            th:text="${c.colorName}"
+                                            th:selected="${variant.color != null && c.id == variant.color.id}"></option>
+                                </select>
+                            </div>
+
+                            <!-- Size -->
+                            <div class="col-md-6 mb-3">
+                                <label for="size" class="form-label fw-bold">Kích thước</label>
+                                <select id="size" name="size.id" class="form-select border-dark">
+                                    <option value="">-- Chọn size --</option>
+                                    <option th:each="s : ${allSizes}"
+                                            th:value="${s.id}"
+                                            th:text="${s.sizeName}"
+                                            th:selected="${variant.size != null && s.id == variant.size.id}"></option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Price Adjustment -->
+                            <div class="col-md-6 mb-3">
+                                <label for="priceAdjustment" class="form-label fw-bold">Điều chỉnh giá</label>
+                                <div class="input-group">
+                                    <input type="number" id="priceAdjustment" class="form-control border-dark" th:field="*{priceAdjustment}" step="any">
+                                    <span class="input-group-text border-dark">VNĐ</span>
+                                </div>
+                            </div>
+
+                            <!-- Stock Quantity -->
+                            <div class="col-md-6 mb-3">
+                                <label for="stockQuantity" class="form-label fw-bold">Số lượng tồn kho</label>
+                                <input type="number" id="stockQuantity" class="form-control border-dark" th:field="*{stockQuantity}">
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a th:href="@{/vendor/products/edit/{id}(id=${productId})}" class="btn btn-outline-dark">Hủy</a>
+                            <button type="submit" class="btn btn-dark">Cập nhật biến thể</button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
