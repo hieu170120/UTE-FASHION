@@ -86,13 +86,15 @@ public class ProductServiceImpl implements ProductService {
 		Pageable adjustedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
 				getSortOrder(criteria.getSort()));
 
+		// Using a custom repository method to fetch summaries directly
 		return productRepository.findSummaries(spec, adjustedPageable);
 	}
 
 	private Sort getSortOrder(String sort) {
+		if (sort == null || sort.isBlank()) {
+			return Sort.by("createdAt").descending(); // Default sort
+		}
 		switch (sort) {
-		case "newest":
-			return Sort.by("createdAt").descending();
 		case "bestseller":
 			return Sort.by("soldCount").descending();
 		case "toprated":
@@ -101,6 +103,7 @@ public class ProductServiceImpl implements ProductService {
 			return Sort.by("salePrice").ascending();
 		case "price-desc":
 			return Sort.by("salePrice").descending();
+		case "newest":
 		default:
 			return Sort.by("createdAt").descending();
 		}
@@ -125,6 +128,12 @@ public class ProductServiceImpl implements ProductService {
 	public ProductDTO findProductDetailBySlug(String slug) {
 		Product product = productRepository.findBySlug(slug)
 				.orElseThrow(() -> new ResourceNotFoundException("Product not found with slug: " + slug));
+
+		// For customer-facing views, ensure the product is active.
+		if (!product.isActive()) {
+			throw new ResourceNotFoundException("Product not found with slug: " + slug);
+		}
+
 		return convertToDto(product);
 	}
 
@@ -259,22 +268,33 @@ public class ProductServiceImpl implements ProductService {
 	}
 
 	private void updateProductImages(Product product, List<ProductImageDTO> imageDTOs) {
-		Map<Integer, ProductImage> existingImagesMap = product.getImages().stream()
-				.collect(Collectors.toMap(ProductImage::getId, Function.identity()));
+		Map<String, ProductImage> existingImagesMap = product.getImages().stream()
+				.filter(img -> img.getImageUrl() != null)
+				.collect(Collectors.toMap(ProductImage::getImageUrl, Function.identity(), (first, second) -> first));
 
-		List<ProductImageDTO> imagesToProcess = imageDTOs.stream().filter(
-				dto -> (dto.getImageUrl() != null && !dto.getImageUrl().trim().isEmpty()) || dto.getId() != null)
-				.collect(Collectors.toList());
+		List<String> newImageUrls = imageDTOs != null
+				? imageDTOs.stream().map(ProductImageDTO::getImageUrl).collect(Collectors.toList())
+				: Collections.emptyList();
 
-		for (ProductImageDTO dto : imagesToProcess) {
-			ProductImage image = existingImagesMap.get(dto.getId());
-			if (image != null) {
-				modelMapper.map(dto, image);
-				existingImagesMap.remove(dto.getId());
-			} else {
-				image = modelMapper.map(dto, ProductImage.class);
-				image.setProduct(product);
-				product.getImages().add(image);
+		product.getImages().removeIf(img -> !newImageUrls.contains(img.getImageUrl()));
+
+		if (imageDTOs != null) {
+			for (int i = 0; i < imageDTOs.size(); i++) {
+				ProductImageDTO dto = imageDTOs.get(i);
+				String imageUrl = dto.getImageUrl();
+
+				ProductImage image = existingImagesMap.get(imageUrl);
+				if (image != null) {
+					image.setDisplayOrder(i);
+					image.setPrimary(i == 0);
+				} else {
+					image = new ProductImage();
+					image.setProduct(product);
+					image.setImageUrl(imageUrl);
+					image.setDisplayOrder(i);
+					image.setPrimary(i == 0);
+					product.getImages().add(image);
+				}
 			}
 		}
 	}
