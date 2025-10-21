@@ -17,4 +17,6 @@ public interface NotificationService {
     void markAsRead(Integer notificationId);
     
     void markAllAsRead(Integer shipperId);
+    
+    void markNotificationAsReadByOrder(Integer shipperId, Integer orderId);
 }

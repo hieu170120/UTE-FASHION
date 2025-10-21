@@ -24,4 +24,5 @@ public interface OrderService {
     void approveReturn(Integer orderId, String notes, Integer adminId);
     void rejectReturn(Integer orderId, String notes, Integer adminId);
     void completeDelivery(Integer orderId);
+    Page<OrderDTO> findOrdersByFilters(String status, String fromDate, String toDate, Pageable pageable);
 }
