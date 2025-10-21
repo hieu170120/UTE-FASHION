@@ -2,7 +2,9 @@ package com.example.demo.controller.admin;
 
 import com.example.demo.dto.OrderDTO;
 import com.example.demo.dto.OrderReturnRequestDTO;
+import com.example.demo.dto.ShipperCancelHistoryDTO;
 import com.example.demo.dto.ShipperDTO;
+import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.service.CarrierService;
 import com.example.demo.service.OrderManagementService;
 import com.example.demo.service.OrderService;
@@ -10,6 +12,7 @@ import com.example.demo.service.ShipperService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -42,9 +45,20 @@ public class AdminOrderController {
     @GetMapping
     public String listOrders(Model model,
                            @RequestParam(name = "page", defaultValue = "0") int page, 
-                           @RequestParam(name = "size", defaultValue = "10") int size) {
-        Page<OrderDTO> orderPage = orderService.getAllOrders(PageRequest.of(page, size));
+                           @RequestParam(name = "size", defaultValue = "10") int size,
+                           @RequestParam(name = "status", required = false) String status,
+                           @RequestParam(name = "fromDate", required = false) String fromDate,
+                           @RequestParam(name = "toDate", required = false) String toDate) {
+        // Sort by orderDate DESC (newest first) and filter in database
+        Page<OrderDTO> orderPage = orderService.findOrdersByFilters(
+            status, fromDate, toDate,
+            PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "orderDate"))
+        );
+        
         model.addAttribute("orderPage", orderPage);
+        model.addAttribute("selectedStatus", status);
+        model.addAttribute("fromDate", fromDate);
+        model.addAttribute("toDate", toDate);
         return "admin/order/list";
     }
     
@@ -62,9 +76,14 @@ public class AdminOrderController {
             OrderDTO order = orderService.getOrderById(id);
             model.addAttribute("order", order);
             
-            // Nếu đơn đang chờ xử lý, load danh sách shipper theo carrier
-            if ("Processing".equals(order.getOrderStatus()) && order.getCarrierId() != null) {
-                List<ShipperDTO> shippers = shipperService.getShippersByCarrier(order.getCarrierId());
+            // Luôn load lịch sử hủy để admin xem (dù đơn đã được giao lại)
+            List<ShipperCancelHistoryDTO> cancelHistory = orderManagementService.getOrderCancelHistory(id);
+            model.addAttribute("cancelHistory", cancelHistory);
+            
+            // Nếu đơn đang chờ xử lý hoặc shipper hủy, load danh sách shipper đang hoạt động theo carrier
+            if (("Processing".equals(order.getOrderStatus()) || "Shipper_Cancelled".equals(order.getOrderStatus())) 
+                && order.getCarrierId() != null) {
+                List<ShipperDTO> shippers = shipperService.getActiveShippersByCarrier(order.getCarrierId());
                 model.addAttribute("shippers", shippers);
             }
             
@@ -144,15 +163,98 @@ public class AdminOrderController {
         return "redirect:/admin/orders/returns";
     }
     
-    // Từ chối trả hàng
-    @PostMapping("/returns/{id}/reject")
-    public String rejectReturn(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+    // Hiển thị trang nhập lý do từ chối
+    @GetMapping("/returns/{id}/reject")
+    public String showRejectReturnReasonPage(@PathVariable Integer id, Model model, RedirectAttributes redirectAttributes) {
         try {
-            orderManagementService.rejectReturnRequest(id);
+            // Lấy thông tin return request
+            java.util.List<OrderReturnRequestDTO> allRequests = orderManagementService.getPendingReturnRequests();
+            OrderReturnRequestDTO returnRequest = allRequests.stream()
+                .filter(req -> req.getId().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu"));
+            
+            model.addAttribute("returnRequest", returnRequest);
+            return "admin/order/reject-return-reason";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+            return "redirect:/admin/orders/returns";
+        }
+    }
+    
+    // Xử lý từ chối trả hàng
+    @PostMapping("/returns/{id}/reject")
+    public String rejectReturn(@PathVariable Integer id, 
+                              @RequestParam String rejectionReason,
+                              RedirectAttributes redirectAttributes) {
+        try {
+            orderManagementService.rejectReturnRequest(id, rejectionReason);
             redirectAttributes.addFlashAttribute("successMessage", "Đã từ chối yêu cầu trả hàng!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
         }
         return "redirect:/admin/orders/returns";
+    }
+    
+    // ===== APPROVE/REJECT TỪ ORDER DETAIL PAGE =====
+    
+    // Approve return từ detail page
+    @PostMapping("/{orderId}/returns/approve")
+    public String approveReturnFromDetail(@PathVariable Integer orderId, RedirectAttributes redirectAttributes) {
+        try {
+            // Tìm return request theo orderId
+            java.util.List<OrderReturnRequestDTO> allRequests = orderManagementService.getPendingReturnRequests();
+            OrderReturnRequestDTO returnRequest = allRequests.stream()
+                .filter(req -> req.getOrderId().equals(orderId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu trả hàng"));
+            
+            orderManagementService.approveReturnRequest(returnRequest.getId());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã chấp nhận trả hàng!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/admin/orders/" + orderId;
+    }
+    
+    // Hiển thị trang từ chối từ detail page
+    @GetMapping("/{orderId}/returns/reject")
+    public String showRejectReturnReasonFromDetail(@PathVariable Integer orderId, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            // Lấy thông tin return request theo orderId
+            java.util.List<OrderReturnRequestDTO> allRequests = orderManagementService.getPendingReturnRequests();
+            OrderReturnRequestDTO returnRequest = allRequests.stream()
+                .filter(req -> req.getOrderId().equals(orderId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu trả hàng"));
+            
+            model.addAttribute("returnRequest", returnRequest);
+            model.addAttribute("fromDetailPage", true); // Flag để biết redirect về đâu
+            return "admin/order/reject-return-reason";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+            return "redirect:/admin/orders/" + orderId;
+        }
+    }
+    
+    // Xử lý từ chối từ detail page
+    @PostMapping("/{orderId}/returns/reject")
+    public String rejectReturnFromDetail(@PathVariable Integer orderId,
+                                         @RequestParam String rejectionReason,
+                                         RedirectAttributes redirectAttributes) {
+        try {
+            // Tìm return request theo orderId
+            java.util.List<OrderReturnRequestDTO> allRequests = orderManagementService.getPendingReturnRequests();
+            OrderReturnRequestDTO returnRequest = allRequests.stream()
+                .filter(req -> req.getOrderId().equals(orderId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu trả hàng"));
+            
+            orderManagementService.rejectReturnRequest(returnRequest.getId(), rejectionReason);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã từ chối yêu cầu trả hàng!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/admin/orders/" + orderId;
     }
 }

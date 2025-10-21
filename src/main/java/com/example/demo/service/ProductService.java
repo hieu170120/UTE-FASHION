@@ -27,11 +27,14 @@ public interface ProductService {
     CompletableFuture<List<ProductSummaryDTO>> getNewestProducts();
 
     // --- CRUD Operations ---
-    ProductDTO createProduct(ProductDTO productDTO, Integer shopId);
+    ProductDTO createProduct(ProductDTO productDTO, List<ProductImageDTO> images, Integer shopId);
 
-    ProductDTO updateProduct(Integer id, ProductDTO productDTO, Integer shopId);
+    ProductDTO updateProduct(Integer id, ProductDTO productDTO, List<ProductImageDTO> images, Integer shopId);
 
     void deleteProduct(Integer id);
+
+    // --- Vendor Specific ---
+    List<ProductDTO> getProductsByShopId(Integer shopId);
 
     // --- Review and Order Related ---
     List<Order> findEligibleOrdersForReview(Integer userId, Integer productId);
@@ -42,4 +45,7 @@ public interface ProductService {
     List<ProductVariantDTO> getVariantsByProductId(Integer productId);
 
     Map<Integer, List<ProductImageDTO>> getImagesForProducts(List<Integer> productIds);
+
+    // --- Stock Management ---
+    void updateProductStock(Integer productId);
 }

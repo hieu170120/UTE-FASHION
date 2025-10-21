@@ -106,6 +106,15 @@ public class AuthController {
             securityContextRepository.saveContext(securityContext, request, response);
             
             redirectAttributes.addFlashAttribute("successMessage", "Đăng nhập thành công!");
+            
+            // Kiểm tra role và redirect phù hợp
+            boolean isShipper = user.getRoles().stream()
+                .anyMatch(role -> "SHIPPER".equals(role.getRoleName()));
+            
+            if (isShipper) {
+                return "redirect:/shipper";
+            }
+            
             return "redirect:/"; // Chuyển hướng về trang chủ mới
             
         } catch (Exception e) {

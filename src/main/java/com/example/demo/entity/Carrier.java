@@ -32,7 +32,7 @@ public class Carrier {
     @Column(name = "contact_phone", length = 20)
     private String contactPhone;
 
-    @Column(name = "website_url", length = 255)
+    @Column(name = "website_url", length = 500)
     private String websiteUrl;
 
     @Column(name = "is_active")

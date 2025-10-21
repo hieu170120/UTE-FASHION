@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>Hủy Đơn Hàng</title>
+    <th:block layout:fragment="styles">
+        <style>
+            .cancel-card {
+                max-width: 700px;
+                margin: 50px auto;
+                border-radius: 16px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            }
+            .cancel-header {
+                background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+                color: white;
+                padding: 30px;
+                border-radius: 16px 16px 0 0;
+            }
+        </style>
+    </th:block>
+</head>
+<body>
+<div layout:fragment="content" class="container my-5">
+    <div class="card cancel-card">
+        <div class="cancel-header text-center">
+            <i class="fas fa-times-circle fa-3x mb-3"></i>
+            <h2 class="mb-2">Hủy Đơn Hàng</h2>
+            <p class="mb-0 opacity-75">
+                Mã đơn: <strong th:text="${order.orderNumber}"></strong>
+            </p>
+        </div>
+        
+        <div class="card-body p-4">
+            <!-- Order Info -->
+            <div class="alert alert-warning mb-4">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Lưu ý:</strong> Đơn hàng sẽ bị hủy ngay lập tức và không thể khôi phục.
+            </div>
+            
+            <div class="mb-4 p-3 bg-light rounded">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <i class="fas fa-user text-primary me-2"></i>
+                        <strong>Người nhận:</strong> <span th:text="${order.recipientName}"></span>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <i class="fas fa-money-bill-wave text-success me-2"></i>
+                        <strong>Tổng tiền:</strong> 
+                        <span class="text-danger fw-bold" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Form -->
+            <form th:action="@{/orders/{orderId}/cancel(orderId=${order.id})}" method="post">
+                <div class="mb-4">
+                    <label class="form-label fw-bold fs-5">
+                        <i class="fas fa-edit me-2"></i>Lý do hủy đơn 
+                        <span class="text-danger">*</span>
+                    </label>
+                    <textarea name="cancelReason" 
+                              class="form-control form-control-lg" 
+                              rows="6" 
+                              placeholder="Vui lòng cho biết lý do bạn muốn hủy đơn hàng. Ví dụ: Đổi ý mua hàng, đặt nhầm sản phẩm, tìm được giá tốt hơn..."
+                              required
+                              style="resize: none;"></textarea>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Vui lòng nhập ít nhất 10 ký tự
+                    </small>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-danger btn-lg">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Xác Nhận Hủy Đơn
+                    </button>
+                    <a th:href="@{/orders/{orderId}/detail(orderId=${order.id})}" 
+                       class="btn btn-outline-secondary btn-lg">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Quay Lại
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,6 +1,8 @@
 package com.example.demo.repository;
 
 import com.example.demo.entity.Order;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -52,6 +54,11 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "ORDER BY o.orderDate DESC")
     List<Order> findByUserUserIdWithDetails(@Param("userId") Integer userId);
     
+    @Query("SELECT o FROM Order o " +
+           "WHERE o.user.userId = :userId " +
+           "ORDER BY o.orderDate DESC")
+    Page<Order> findByUserUserIdOrderByOrderDateDesc(@Param("userId") Integer userId, Pageable pageable);
+    
     @Query("SELECT DISTINCT o FROM Order o " +
            "LEFT JOIN FETCH o.orderItems oi " +
            "LEFT JOIN FETCH oi.product " +
@@ -60,4 +67,13 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "LEFT JOIN FETCH o.carrier " +
            "WHERE o.id = :orderId")
     java.util.Optional<Order> findByIdWithDetails(@Param("orderId") Integer orderId);
+    
+    @Query("SELECT o FROM Order o WHERE " +
+           "(:status IS NULL OR :status = '' OR o.orderStatus = :status) AND " +
+           "(:fromDate IS NULL OR o.orderDate >= :fromDate) AND " +
+           "(:toDate IS NULL OR o.orderDate <= :toDate)")
+    Page<Order> findByFilters(@Param("status") String status,
+                              @Param("fromDate") java.time.LocalDateTime fromDate,
+                              @Param("toDate") java.time.LocalDateTime toDate,
+                              Pageable pageable);
 }

@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.dto.OrderDTO;
 import com.example.demo.dto.OrderReturnRequestDTO;
+import com.example.demo.dto.ShipperCancelHistoryDTO;
 
 import java.util.List;
 
@@ -34,7 +35,7 @@ public interface OrderManagementService {
     /**
      * Admin từ chối yêu cầu trả hàng
      */
-    void rejectReturnRequest(Integer requestId);
+    void rejectReturnRequest(Integer requestId, String rejectionReason);
     
     
     // === SHIPPER FUNCTIONS ===
@@ -62,6 +63,16 @@ public interface OrderManagementService {
     Long getShipperCancelCount(Integer shipperId);
     
     /**
+     * Lấy danh sách lịch sử hủy đơn của shipper
+     */
+    List<ShipperCancelHistoryDTO> getShipperCancelHistory(Integer shipperId);
+    
+    /**
+     * Lấy lịch sử hủy của một đơn hàng cụ thể (cho admin xem)
+     */
+    List<ShipperCancelHistoryDTO> getOrderCancelHistory(Integer orderId);
+    
+    /**
      * Lấy danh sách đơn đang giao của shipper (DANG_GIAO)
      */
     List<OrderDTO> getShipperDeliveringOrders(Integer shipperId);
@@ -82,7 +93,7 @@ public interface OrderManagementService {
     /**
      * Khách hàng hủy đơn (chỉ khi DON_DANG_XU_LY hoặc DA_XU_LY_DON_HANG)
      */
-    void customerCancelOrder(Integer orderId, Integer userId);
+    void customerCancelOrder(Integer orderId, Integer userId, String cancelReason);
     
     /**
      * Khách hàng yêu cầu trả hàng (chỉ khi DA_GIAO)

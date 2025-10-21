@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>Quản lý Cửa hàng</title>
+    <th:block layout:fragment="styles">
+        <style>
+            body {
+                background-color: #f8f9fa; /* Light gray background */
+            }
+            .card {
+                border: 1px solid #e9ecef;
+            }
+            .card-header {
+                background-color: #fff;
+                border-bottom: 1px solid #e9ecef;
+            }
+            .table {
+                color: #212529; /* Standard text color */
+            }
+            .table thead {
+                background-color: #f8f9fa;
+            }
+            .table-hover tbody tr:hover {
+                background-color: #f1f3f5;
+            }
+            .btn-outline-success {
+                color: #198754;
+                border-color: #198754;
+            }
+            .btn-outline-success:hover {
+                background-color: #198754;
+                color: #fff;
+            }
+            .btn-outline-danger {
+                color: #dc3545;
+                border-color: #dc3545;
+            }
+            .btn-outline-danger:hover {
+                background-color: #dc3545;
+                color: #fff;
+            }
+            .badge.bg-success {
+                background-color: #198754 !important;
+            }
+            .badge.bg-warning {
+                background-color: #ffc107 !important;
+            }
+        </style>
+    </th:block>
+</head>
+<body>
+
+<div layout:fragment="content">
+    <div class="container my-5">
+
+        <!-- Page Heading -->
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">Quản lý Cửa hàng</h2>
+            <p class="text-muted">Duyệt và quản lý các cửa hàng đăng ký trên hệ thống.</p>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div th:if="${successMessage}" class="alert alert-success" role="alert" th:text="${successMessage}"></div>
+                <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
+            </div>
+        </div>
+
+        <!-- Shops Table -->
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card shadow-sm">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-dark">Tất cả Cửa hàng</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tên Shop</th>
+                                    <th>Logo</th>
+                                    <th>Chủ sở hữu</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày tạo</th>
+                                    <th class="text-center">Hành động</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="shop : ${shops}">
+                                    <td class="fw-bold" th:text="${shop.Id}"></td>
+                                    <td th:text="${shop.shopName}"></td>
+                                    <td><img th:src="${shop.logoUrl != null ? shop.logoUrl : 'https://via.placeholder.com/80x40.png?text=Logo'}" alt="Logo" class="img-fluid rounded" style="max-width: 80px;"/></td>
+                                    <td th:text="${shop.vendor.username}"></td>
+                                    <td>
+                                        <span th:if="${shop.active}" class="badge bg-success">Đã duyệt</span>
+                                        <span th:unless="${shop.active}" class="badge bg-warning text-dark">Chờ duyệt</span>
+                                    </td>
+                                    <td th:text="${#temporals.format(shop.createdAt, 'dd/MM/yyyy')}"></td>
+                                    <td class="text-center">
+                                        <form th:action="@{/admin/shops/approve/{id}(id=${shop.Id})}" method="post" class="d-inline-block m-1">
+                                            <button type="submit" class="btn btn-sm btn-outline-success" th:disabled="${shop.active}">Duyệt</button>
+                                        </form>
+                                        <form th:action="@{/admin/shops/reject/{id}(id=${shop.Id})}" method="post" class="d-inline-block m-1">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" th:disabled="not ${shop.active}">Khóa</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -112,6 +112,12 @@ public class Order {
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
 
+    @Column(name = "cancel_reason", columnDefinition = "NVARCHAR(MAX)")
+    private String cancelReason;
+    
+    @Column(name = "cancelled_by", length = 50)
+    private String cancelledBy; // "CUSTOMER" hoặc "SHIPPER"
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

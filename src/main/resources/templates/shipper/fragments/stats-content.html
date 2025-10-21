@@ -82,6 +82,14 @@
             </div>
             
             <div class="big-stat-card">
+                <div class="big-stat-icon" style="background: #E0E7FF; color: #3730A3;">
+                    <i class="fas fa-undo"></i>
+                </div>
+                <div class="big-stat-value" style="color: #8B5CF6;" th:text="${returnedCount}">0</div>
+                <div class="big-stat-label">Đơn đã trả hàng</div>
+            </div>
+            
+            <div class="big-stat-card">
                 <div class="big-stat-icon" style="background: #FEF3C7; color: #92400E;">
                     <i class="fas fa-money-bill-wave"></i>
                 </div>
@@ -90,19 +98,109 @@
             </div>
         </div>
 
-        <!-- Success Rate -->
+        <!-- Order Status Distribution -->
         <div class="chart-section">
-            <h4 style="margin-bottom: 20px;"><i class="fas fa-chart-pie"></i> Tỷ lệ giao hàng thành công</h4>
-            <div style="text-align: center; padding: 40px;">
-                <div style="width: 200px; height: 200px; margin: 0 auto; border-radius: 50%; background: conic-gradient(#10B981 0% [[${successRate}]]%, #E2E8F0 [[${successRate}]]% 100%); display: flex; align-items: center; justify-content: center;">
-                    <div style="width: 160px; height: 160px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-                        <div style="font-size: 48px; font-weight: 700; color: #10B981;" th:text="${#numbers.formatDecimal(successRate, 1, 'COMMA', 2, 'POINT')} + '%'">0%</div>
-                        <div style="font-size: 14px; color: #64748B;">Thành công</div>
+            <h4 style="margin-bottom: 20px;"><i class="fas fa-chart-pie"></i> Phân bố trạng thái đơn hàng</h4>
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <!-- SVG Donut Chart -->
+                    <div style="position: relative; width: 280px; height: 280px; margin: 0 auto;">
+                        <svg width="280" height="280" viewBox="0 0 280 280" style="transform: rotate(-90deg);">
+                            <circle cx="140" cy="140" r="90" fill="none" stroke="#F1F5F9" stroke-width="60"/>
+                            
+                            <!-- Delivered segment -->
+                            <circle th:if="${deliveredPercent > 0}" cx="140" cy="140" r="90" fill="none" 
+                                stroke="#10B981" stroke-width="60" 
+                                th:attr="stroke-dasharray=${565.5 * deliveredPercent / 100} + ' 565.5'"
+                                stroke-dashoffset="0"/>
+                            
+                            <!-- Shipping segment -->
+                            <circle th:if="${shippingPercent > 0}" cx="140" cy="140" r="90" fill="none" 
+                                stroke="#3B82F6" stroke-width="60" 
+                                th:attr="stroke-dasharray=${565.5 * shippingPercent / 100} + ' 565.5',
+                                           stroke-dashoffset=${-565.5 * deliveredPercent / 100}"/>
+                            
+                            <!-- Cancelled segment -->
+                            <circle th:if="${cancelledPercent > 0}" cx="140" cy="140" r="90" fill="none" 
+                                stroke="#EF4444" stroke-width="60" 
+                                th:attr="stroke-dasharray=${565.5 * cancelledPercent / 100} + ' 565.5',
+                                           stroke-dashoffset=${-565.5 * (deliveredPercent + shippingPercent) / 100}"/>
+                            
+                            <!-- Returned segment -->
+                            <circle th:if="${returnedPercent > 0}" cx="140" cy="140" r="90" fill="none" 
+                                stroke="#8B5CF6" stroke-width="60" 
+                                th:attr="stroke-dasharray=${565.5 * returnedPercent / 100} + ' 565.5',
+                                           stroke-dashoffset=${-565.5 * (deliveredPercent + shippingPercent + cancelledPercent) / 100}"/>
+                            
+                            <!-- Confirmed segment -->
+                            <circle th:if="${confirmedPercent > 0}" cx="140" cy="140" r="90" fill="none" 
+                                stroke="#F59E0B" stroke-width="60" 
+                                th:attr="stroke-dasharray=${565.5 * confirmedPercent / 100} + ' 565.5',
+                                           stroke-dashoffset=${-565.5 * (deliveredPercent + shippingPercent + cancelledPercent + returnedPercent) / 100}"/>
+                        </svg>
+                        
+                        <!-- Center text -->
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                            <div style="font-size: 40px; font-weight: 700; color: #1E293B;" th:text="${totalOrders}">0</div>
+                            <div style="font-size: 14px; color: #64748B;">Tổng đơn</div>
+                        </div>
                     </div>
                 </div>
-                <p style="margin-top: 24px; color: #64748B;">
-                    <span th:text="${deliveredCount}">0</span> giao thành công / <span th:text="${totalOrders}">0</span> tổng đơn
-                </p>
+                <div class="col-md-6">
+                    <!-- Legend -->
+                    <div style="padding: 20px;">
+                        <div style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center;">
+                                <div style="width: 16px; height: 16px; border-radius: 4px; background: #10B981; margin-right: 12px;"></div>
+                                <span style="font-weight: 500;">Đã giao</span>
+                            </div>
+                            <div>
+                                <strong style="color: #10B981;" th:text="${deliveredCount}">0</strong>
+                                <span style="color: #64748B; font-size: 14px;" th:text="' (' + ${#numbers.formatDecimal(deliveredPercent, 1, 'COMMA', 1, 'POINT')} + '%)'"> (0%)</span>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center;">
+                                <div style="width: 16px; height: 16px; border-radius: 4px; background: #3B82F6; margin-right: 12px;"></div>
+                                <span style="font-weight: 500;">Đang giao</span>
+                            </div>
+                            <div>
+                                <strong style="color: #3B82F6;" th:text="${shippingCount}">0</strong>
+                                <span style="color: #64748B; font-size: 14px;" th:text="' (' + ${#numbers.formatDecimal(shippingPercent, 1, 'COMMA', 1, 'POINT')} + '%)'"> (0%)</span>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center;">
+                                <div style="width: 16px; height: 16px; border-radius: 4px; background: #EF4444; margin-right: 12px;"></div>
+                                <span style="font-weight: 500;">Đã hủy</span>
+                            </div>
+                            <div>
+                                <strong style="color: #EF4444;" th:text="${cancelledCount}">0</strong>
+                                <span style="color: #64748B; font-size: 14px;" th:text="' (' + ${#numbers.formatDecimal(cancelledPercent, 1, 'COMMA', 1, 'POINT')} + '%)'"> (0%)</span>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center;">
+                                <div style="width: 16px; height: 16px; border-radius: 4px; background: #8B5CF6; margin-right: 12px;"></div>
+                                <span style="font-weight: 500;">Đã trả hàng</span>
+                            </div>
+                            <div>
+                                <strong style="color: #8B5CF6;" th:text="${returnedCount}">0</strong>
+                                <span style="color: #64748B; font-size: 14px;" th:text="' (' + ${#numbers.formatDecimal(returnedPercent, 1, 'COMMA', 1, 'POINT')} + '%)'"> (0%)</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center;">
+                                <div style="width: 16px; height: 16px; border-radius: 4px; background: #F59E0B; margin-right: 12px;"></div>
+                                <span style="font-weight: 500;">Chờ xác nhận</span>
+                            </div>
+                            <div>
+                                <strong style="color: #F59E0B;" th:text="${confirmedCount}">0</strong>
+                                <span style="color: #64748B; font-size: 14px;" th:text="' (' + ${#numbers.formatDecimal(confirmedPercent, 1, 'COMMA', 1, 'POINT')} + '%)'"> (0%)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -124,22 +222,26 @@
                         <tr th:if="${recentOrders.isEmpty()}">
                             <td colspan="5" class="text-center text-muted">Chưa có đơn hàng nào</td>
                         </tr>
-                        <tr th:each="order : ${recentOrders}">
+                        <tr th:each="item : ${recentOrders}">
                             <td>
-                                <strong th:text="${order.orderNumber}">ORD-001</strong>
+                                <strong th:text="${item.orderNumber}">ORD-001</strong>
                             </td>
-                            <td th:text="${order.recipientName}">Khách hàng</td>
+                            <td th:text="${item.recipientName}">Khách hàng</td>
                             <td>
-                                <strong style="color: #EF4444;" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'">100,000 ₫</strong>
-                            </td>
-                            <td>
-                                <span th:if="${order.orderStatus == 'Confirmed'}" class="badge bg-warning">Chờ xác nhận</span>
-                                <span th:if="${order.orderStatus == 'Shipping'}" class="badge bg-info">Đang giao</span>
-                                <span th:if="${order.orderStatus == 'Delivered'}" class="badge bg-success">Đã giao</span>
-                                <span th:if="${order.orderStatus == 'Cancelled'}" class="badge bg-danger">Đã hủy</span>
+                                <strong style="color: #EF4444;" th:text="${#numbers.formatDecimal(item.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'">100,000 ₫</strong>
                             </td>
                             <td>
-                                <small th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}">01/01/2024</small>
+                                <span th:if="${item.orderStatus == 'Processing'}" class="badge bg-warning text-dark">Đang xử lý</span>
+                                <span th:if="${item.orderStatus == 'Confirmed'}" class="badge bg-info">Chờ xác nhận</span>
+                                <span th:if="${item.orderStatus == 'Shipping'}" class="badge bg-primary">Đang giao</span>
+                                <span th:if="${item.orderStatus == 'Delivered'}" class="badge bg-success">Đã giao</span>
+                                <span th:if="${item.orderStatus == 'Return_Requested'}" class="badge bg-warning">Yêu cầu trả hàng</span>
+                                <span th:if="${item.orderStatus == 'Returned'}" class="badge bg-secondary">Đã trả hàng</span>
+                                <span th:if="${item.orderStatus == 'ShipperCancelled'}" class="badge bg-danger">Shipper hủy</span>
+                                <span th:if="${item.orderStatus == 'Cancelled'}" class="badge bg-danger">Đã hủy</span>
+                            </td>
+                            <td>
+                                <small th:text="${#temporals.format(item.displayDate, 'dd/MM/yyyy HH:mm')}">01/01/2024</small>
                             </td>
                         </tr>
                     </tbody>
@@ -151,25 +253,55 @@
         <div class="row">
             <div class="col-md-6 mb-4">
                 <div class="chart-section">
-                    <h5><i class="fas fa-trophy"></i> Hiệu suất</h5>
-                    <div style="padding: 20px;">
-                        <div style="margin-bottom: 16px;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                <span>Đơn đã giao</span>
-                                <strong style="color: #10B981;" th:text="${deliveredCount}">0</strong>
+                    <h5 style="margin-bottom: 24px;"><i class="fas fa-trophy text-warning"></i> Hiệu suất giao hàng</h5>
+                    <div style="padding: 0 20px 20px;">
+                        <div style="margin-bottom: 24px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <div style="display: flex; align-items: center;">
+                                    <i class="fas fa-check-circle" style="color: #10B981; margin-right: 8px;"></i>
+                                    <span style="font-weight: 500;">Đơn đã giao</span>
+                                </div>
+                                <div>
+                                    <strong style="color: #10B981; font-size: 18px;" th:text="${deliveredCount}">0</strong>
+                                    <span style="color: #64748B; font-size: 14px;" th:text="' / ' + ${totalOrders}"> / 0</span>
+                                </div>
                             </div>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar bg-success" role="progressbar" th:style="'width: ' + ${successRate} + '%'"></div>
+                            <div class="progress" style="height: 12px; border-radius: 10px;">
+                                <div class="progress-bar" style="background: linear-gradient(90deg, #10B981 0%, #059669 100%);" role="progressbar" th:style="'width: ' + ${deliveredPercent} + '%'"></div>
                             </div>
+                            <small style="color: #64748B; margin-top: 4px; display: block;" th:text="${#numbers.formatDecimal(deliveredPercent, 1, 'COMMA', 1, 'POINT')} + '% tỉ lệ thành công'">0% tỉ lệ thành công</small>
+                        </div>
+                        <div style="margin-bottom: 24px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <div style="display: flex; align-items: center;">
+                                    <i class="fas fa-times-circle" style="color: #EF4444; margin-right: 8px;"></i>
+                                    <span style="font-weight: 500;">Đơn đã hủy</span>
+                                </div>
+                                <div>
+                                    <strong style="color: #EF4444; font-size: 18px;" th:text="${cancelledCount}">0</strong>
+                                    <span style="color: #64748B; font-size: 14px;" th:text="' / ' + ${totalOrders}"> / 0</span>
+                                </div>
+                            </div>
+                            <div class="progress" style="height: 12px; border-radius: 10px;">
+                                <div class="progress-bar" style="background: linear-gradient(90deg, #EF4444 0%, #DC2626 100%);" role="progressbar" th:style="'width: ' + ${cancelledPercent} + '%'"></div>
+                            </div>
+                            <small style="color: #64748B; margin-top: 4px; display: block;" th:text="${#numbers.formatDecimal(cancelledPercent, 1, 'COMMA', 1, 'POINT')} + '% tỉ lệ hủy'">0% tỉ lệ hủy</small>
                         </div>
                         <div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                <span>Đơn đã hủy</span>
-                                <strong style="color: #EF4444;" th:text="${cancelledCount}">0</strong>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <div style="display: flex; align-items: center;">
+                                    <i class="fas fa-undo" style="color: #8B5CF6; margin-right: 8px;"></i>
+                                    <span style="font-weight: 500;">Đơn đã trả</span>
+                                </div>
+                                <div>
+                                    <strong style="color: #8B5CF6; font-size: 18px;" th:text="${returnedCount}">0</strong>
+                                    <span style="color: #64748B; font-size: 14px;" th:text="' / ' + ${totalOrders}"> / 0</span>
+                                </div>
                             </div>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar bg-danger" role="progressbar" th:style="'width: ' + ${cancelledCount * 100.0 / (totalOrders > 0 ? totalOrders : 1)} + '%'"></div>
+                            <div class="progress" style="height: 12px; border-radius: 10px;">
+                                <div class="progress-bar" style="background: linear-gradient(90deg, #8B5CF6 0%, #7C3AED 100%);" role="progressbar" th:style="'width: ' + ${returnedPercent} + '%'"></div>
                             </div>
+                            <small style="color: #64748B; margin-top: 4px; display: block;" th:text="${#numbers.formatDecimal(returnedPercent, 1, 'COMMA', 1, 'POINT')} + '% tỉ lệ trả hàng'">0% tỉ lệ trả hàng</small>
                         </div>
                     </div>
                 </div>
@@ -177,21 +309,36 @@
             
             <div class="col-md-6 mb-4">
                 <div class="chart-section">
-                    <h5><i class="fas fa-star"></i> Đánh giá</h5>
-                    <div style="padding: 20px; text-align: center;">
-                        <div style="font-size: 48px; color: #F59E0B;">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star-half-alt"></i>
+                    <h5 style="margin-bottom: 24px;"><i class="fas fa-award text-success"></i> Thành tích</h5>
+                    <div style="padding: 20px;">
+                        <!-- Stars Display -->
+                        <div style="text-align: center; margin-bottom: 24px;">
+                            <div style="font-size: 48px; color: #F59E0B; margin-bottom: 12px;">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                            </div>
+                            <div style="font-size: 32px; font-weight: 700; color: #1E293B; margin-bottom: 4px;">4.5<span style="font-size: 18px; color: #64748B;"> / 5.0</span></div>
+                            <p style="color: #64748B; font-size: 14px; margin-bottom: 0;">
+                                Đánh giá trung bình
+                            </p>
                         </div>
-                        <p style="margin-top: 16px; color: #64748B; font-size: 18px;">
-                            <strong>4.5</strong> / 5.0
-                        </p>
-                        <p style="color: #64748B; font-size: 14px;">
-                            Dựa trên <span th:text="${deliveredCount}">0</span> đơn đã giao
-                        </p>
+                        
+                        <!-- Achievement Badges -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); padding: 16px; border-radius: 12px; text-align: center;">
+                                <i class="fas fa-trophy" style="color: #F59E0B; font-size: 24px; margin-bottom: 8px;"></i>
+                                <div style="font-size: 20px; font-weight: 700; color: #92400E;" th:text="${deliveredCount}">0</div>
+                                <small style="color: #92400E;">Đơn thành công</small>
+                            </div>
+                            <div style="background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%); padding: 16px; border-radius: 12px; text-align: center;">
+                                <i class="fas fa-bolt" style="color: #3B82F6; font-size: 24px; margin-bottom: 8px;"></i>
+                                <div style="font-size: 20px; font-weight: 700; color: #1E40AF;" th:text="${#numbers.formatDecimal(successRate, 1, 'COMMA', 1, 'POINT')} + '%'">0%</div>
+                                <small style="color: #1E40AF;">Tỉ lệ hoàn thành</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

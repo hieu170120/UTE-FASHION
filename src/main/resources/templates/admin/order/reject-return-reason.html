@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Từ Chối Trả Hàng - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f8f9fa; }
+        .navbar-custom { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .reject-card {
+            max-width: 800px;
+            margin: 50px auto;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .reject-header {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 16px 16px 0 0;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-custom navbar-dark mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" th:href="@{/admin/dashboard}">
+                <i class="fas fa-shopping-bag"></i> UTE Fashion Admin
+            </a>
+            <a th:href="@{${fromDetailPage != null ? '/admin/orders/' + returnRequest.orderId : '/admin/orders/returns'}}" class="btn btn-light btn-sm">
+                <i class="fas fa-arrow-left me-2"></i>Quay Lại
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card reject-card">
+            <div class="reject-header text-center">
+                <i class="fas fa-times-circle fa-3x mb-3"></i>
+                <h2 class="mb-2">Từ Chối Yêu Cầu Trả Hàng</h2>
+                <p class="mb-0 opacity-75">
+                    Đơn hàng: <strong th:text="${returnRequest.orderCode}"></strong>
+                </p>
+            </div>
+            
+            <div class="card-body p-4">
+                <!-- Return Request Info -->
+                <div class="alert alert-info mb-4">
+                    <h5><i class="fas fa-info-circle me-2"></i>Thông tin yêu cầu</h5>
+                    <p class="mb-1"><strong>Khách hàng:</strong> <span th:text="${returnRequest.userName}"></span></p>
+                    <p class="mb-1"><strong>Email:</strong> <span th:text="${returnRequest.userEmail}"></span></p>
+                    <p class="mb-0"><strong>Yêu cầu lúc:</strong> <span th:text="${#temporals.format(returnRequest.requestDate, 'dd/MM/yyyy HH:mm')}"></span></p>
+                </div>
+                
+                <div class="mb-4 p-3 bg-light rounded">
+                    <h6 class="fw-bold mb-2">Lý do trả hàng của khách:</h6>
+                    <p class="mb-0" th:text="${returnRequest.reason}"></p>
+                </div>
+                
+                <!-- Form -->
+                <form th:action="@{${fromDetailPage != null ? '/admin/orders/' + returnRequest.orderId + '/returns/reject' : '/admin/orders/returns/' + returnRequest.id + '/reject'}}" method="post">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold fs-5">
+                            <i class="fas fa-edit me-2"></i>Lý do từ chối 
+                            <span class="text-danger">*</span>
+                        </label>
+                        <textarea name="rejectionReason" 
+                                  class="form-control form-control-lg" 
+                                  rows="6" 
+                                  placeholder="Vui lòng nêu rõ lý do từ chối yêu cầu trả hàng. Ví dụ: Sản phẩm không bị lỗi, quá thời hạn đổi trả, sản phẩm đã qua sử dụng..."
+                                  required
+                                  style="resize: none;"></textarea>
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Lý do này sẽ được gửi đến khách hàng
+                        </small>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Lưu ý:</strong> Sau khi từ chối, trạng thái đơn hàng sẽ quay về "Đã Giao" và khách hàng KHÔNG thể yêu cầu trả hàng lại lần nữa.
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger btn-lg" onclick="return confirm('Bạn có chắc chắn muốn từ chối yêu cầu trả hàng này không?');">
+                            <i class="fas fa-times-circle me-2"></i>
+                            Xác Nhận Từ Chối
+                        </button>
+                        <a th:href="@{${fromDetailPage != null ? '/admin/orders/' + returnRequest.orderId : '/admin/orders/returns'}}" 
+                           class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Hủy & Quay Lại
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

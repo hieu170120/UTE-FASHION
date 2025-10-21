@@ -26,9 +26,16 @@ public class AdminShipperController {
     @GetMapping
     public String listShippers(Model model,
                                @RequestParam(defaultValue = "0") int page,
-                               @RequestParam(defaultValue = "10") int size) {
+                               @RequestParam(defaultValue = "10") int size,
+                               @RequestParam(required = false) String search,
+                               @RequestParam(required = false) Boolean active,
+                               @RequestParam(required = false) Integer carrierId) {
         Pageable pageable = PageRequest.of(page, size);
-        model.addAttribute("shipperPage", shipperService.getAllShippersPaged(pageable));
+        model.addAttribute("shipperPage", shipperService.getAllShippersPagedWithFilters(pageable, search, active, carrierId));
+        model.addAttribute("carriers", carrierService.getAllCarriers());
+        model.addAttribute("searchQuery", search != null ? search : "");
+        model.addAttribute("activeFilter", active);
+        model.addAttribute("carrierIdFilter", carrierId);
         return "admin/shipper/list";
     }
 
@@ -42,14 +49,21 @@ public class AdminShipperController {
     @PostMapping
     public String createShipper(@Valid @ModelAttribute("shipperDTO") ShipperDTO shipperDTO,
                                 BindingResult bindingResult,
+                                @RequestParam(required = false) String username,
+                                @RequestParam(required = false) String password,
                                 RedirectAttributes redirectAttributes,
                                 Model model) {
         if (bindingResult.hasErrors()) {
             model.addAttribute("carriers", carrierService.getAllCarriers());
             return "admin/shipper/form";
         }
-        shipperService.createShipper(shipperDTO);
-        redirectAttributes.addFlashAttribute("successMessage", "Tạo shipper thành công!");
+        
+        try {
+            shipperService.createShipperWithUser(shipperDTO, username, password);
+            redirectAttributes.addFlashAttribute("successMessage", "Tạo shipper và tài khoản thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
         return "redirect:/admin/shippers";
     }
 
@@ -58,6 +72,19 @@ public class AdminShipperController {
         ShipperDTO shipperDTO = shipperService.getShipperById(id);
         model.addAttribute("shipperDTO", shipperDTO);
         model.addAttribute("carriers", carrierService.getAllCarriers());
+        
+        // Kiểm tra carrier có đang hoạt động không
+        if (shipperDTO.getCarrierId() != null) {
+            try {
+                com.example.demo.dto.CarrierDTO carrier = carrierService.getCarrierById(shipperDTO.getCarrierId());
+                model.addAttribute("carrierActive", carrier.isActive());
+            } catch (Exception e) {
+                model.addAttribute("carrierActive", false);
+            }
+        } else {
+            model.addAttribute("carrierActive", true);
+        }
+        
         return "admin/shipper/form";
     }
 
@@ -83,6 +110,17 @@ public class AdminShipperController {
             redirectAttributes.addFlashAttribute("successMessage", "Xóa shipper thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi xóa: " + e.getMessage());
+        }
+        return "redirect:/admin/shippers";
+    }
+    
+    @PostMapping("/{id}/toggle-active")
+    public String toggleActive(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+        try {
+            shipperService.toggleShipperActive(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật trạng thái shipper thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi cập nhật: " + e.getMessage());
         }
         return "redirect:/admin/shippers";
     }

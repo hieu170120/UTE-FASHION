@@ -44,6 +44,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getShipperNotifications(Integer shipperId) {
         List<ShipperNotification> notifications = notificationRepository
             .findByShipperIdOrderByCreatedAtDesc(shipperId);
@@ -57,8 +58,14 @@ public class NotificationServiceImpl implements NotificationService {
                 map.put("isRead", notification.isRead());
                 map.put("createdAt", notification.getCreatedAt());
                 map.put("timeAgo", formatTimeAgo(notification.getCreatedAt()));
-                map.put("orderId", notification.getOrder().getId());
-                map.put("orderNumber", notification.getOrder().getOrderNumber());
+                // Safely access Order fields
+                if (notification.getOrder() != null) {
+                    map.put("orderId", notification.getOrder().getId());
+                    map.put("orderNumber", notification.getOrder().getOrderNumber());
+                } else {
+                    map.put("orderId", null);
+                    map.put("orderNumber", "N/A");
+                }
                 return map;
             })
             .collect(Collectors.toList());
@@ -87,6 +94,19 @@ public class NotificationServiceImpl implements NotificationService {
         });
         
         notificationRepository.saveAll(notifications);
+    }
+    
+    @Override
+    @Transactional
+    public void markNotificationAsReadByOrder(Integer shipperId, Integer orderId) {
+        ShipperNotification notification = notificationRepository
+            .findByShipper_IdAndOrder_IdAndIsReadFalse(shipperId, orderId);
+        
+        if (notification != null) {
+            notification.setRead(true);
+            notification.setReadAt(LocalDateTime.now());
+            notificationRepository.save(notification);
+        }
     }
     
     private String formatTimeAgo(LocalDateTime dateTime) {

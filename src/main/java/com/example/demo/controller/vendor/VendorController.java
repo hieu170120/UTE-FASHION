@@ -1,4 +1,4 @@
-package com.example.demo.controller;
+package com.example.demo.controller.vendor;
 
 import com.example.demo.dto.ShopRegistrationDTO;
 import com.example.demo.entity.Shop;

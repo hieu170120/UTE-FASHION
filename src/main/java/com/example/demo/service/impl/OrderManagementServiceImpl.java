@@ -2,6 +2,7 @@ package com.example.demo.service.impl;
 
 import com.example.demo.dto.OrderDTO;
 import com.example.demo.dto.OrderReturnRequestDTO;
+import com.example.demo.dto.ShipperCancelHistoryDTO;
 import com.example.demo.entity.*;
 import com.example.demo.enums.OrderStatus;
 import com.example.demo.exception.ResourceNotFoundException;
@@ -61,10 +62,14 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         Shipper shipper = shipperRepository.findById(shipperId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy shipper"));
         
-        // Kiểm tra trạng thái đơn hàng
-        if (!OrderStatus.PROCESSING.getValue().equals(order.getOrderStatus())) {
-            throw new IllegalStateException("Đơn hàng không ở trạng thái chờ xử lý");
+        // Kiểm tra trạng thái đơn hàng (cho phép Processing hoặc Shipper_Cancelled)
+        if (!OrderStatus.PROCESSING.getValue().equals(order.getOrderStatus()) 
+            && !OrderStatus.SHIPPER_CANCELLED.getValue().equals(order.getOrderStatus())) {
+            throw new IllegalStateException("Đơn hàng không ở trạng thái chờ xử lý hoặc shipper hủy");
         }
+        
+        // KHÔNG xóa thông tin hủy cũ - giữ lại để admin xem lịch sử
+        // Shipper mới sẽ không thấy vì chỉ hiển thị khi orderStatus = Shipper_Cancelled
         
         // Gán shipper và cập nhật trạng thái
         order.setShipper(shipper);
@@ -78,6 +83,7 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrderReturnRequestDTO> getPendingReturnRequests() {
         List<OrderReturnRequest> requests = returnRequestRepository.findByStatus("Pending");
         return requests.stream()
@@ -116,14 +122,20 @@ public class OrderManagementServiceImpl implements OrderManagementService {
 
     @Override
     @Transactional
-    public void rejectReturnRequest(Integer requestId) {
+    public void rejectReturnRequest(Integer requestId, String rejectionReason) {
         OrderReturnRequest request = returnRequestRepository.findById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu"));
         
         request.setStatus("Rejected");
         request.setRejectedAt(LocalDateTime.now());
         
+        // Khôi phục trạng thái đơn hàng về Đã giao và lưu lý do từ chối
+        Order order = request.getOrder();
+        order.setOrderStatus(OrderStatus.DELIVERED.getValue());
+        order.setAdminNotes("Lý do từ chối trả hàng: " + rejectionReason);
+        
         returnRequestRepository.save(request);
+        orderRepository.save(order);
     }
 
     // === SHIPPER FUNCTIONS ===
@@ -186,10 +198,17 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         history.setReason(reason);
         cancelHistoryRepository.save(history);
         
-        // Quay lại trạng thái chờ admin chọn shipper khác
-        order.setOrderStatus(OrderStatus.PROCESSING.getValue());
+        // Tăng số lần hủy của shipper
+        shipper.setCancelCount(shipper.getCancelCount() + 1);
+        shipperRepository.save(shipper);
+        
+        // Chuyển sang trạng thái SHIPPER_CANCELLED (chỉ hiện với admin và shipper)
+        order.setOrderStatus(OrderStatus.SHIPPER_CANCELLED.getValue());
         order.setShipper(null);
         order.setConfirmedAt(null);
+        order.setCancelledBy("SHIPPER");
+        order.setCancelReason(reason);
+        order.setCancelledAt(LocalDateTime.now());
         
         orderRepository.save(order);
     }
@@ -197,6 +216,48 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     @Override
     public Long getShipperCancelCount(Integer shipperId) {
         return cancelHistoryRepository.countByShipperId(shipperId);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<ShipperCancelHistoryDTO> getShipperCancelHistory(Integer shipperId) {
+        List<ShipperCancelHistory> history = cancelHistoryRepository.findByShipperIdOrderByCancelledAtDesc(shipperId);
+        return history.stream()
+                .map(h -> {
+                    ShipperCancelHistoryDTO dto = new ShipperCancelHistoryDTO();
+                    dto.setId(h.getId());
+                    dto.setOrderId(h.getOrder().getId());
+                    dto.setOrderNumber(h.getOrder().getOrderNumber());
+                    dto.setShipperName(h.getShipper().getFullName());
+                    dto.setReason(h.getReason());
+                    dto.setCancelledAt(h.getCancelledAt());
+                    dto.setOrderStatus(h.getOrder().getOrderStatus());
+                    dto.setRecipientName(h.getOrder().getRecipientName());
+                    dto.setTotalAmount(h.getOrder().getTotalAmount());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<ShipperCancelHistoryDTO> getOrderCancelHistory(Integer orderId) {
+        List<ShipperCancelHistory> history = cancelHistoryRepository.findByOrderIdOrderByCancelledAtDesc(orderId);
+        return history.stream()
+                .map(h -> {
+                    ShipperCancelHistoryDTO dto = new ShipperCancelHistoryDTO();
+                    dto.setId(h.getId());
+                    dto.setOrderId(h.getOrder().getId());
+                    dto.setOrderNumber(h.getOrder().getOrderNumber());
+                    dto.setShipperName(h.getShipper().getFullName());
+                    dto.setReason(h.getReason());
+                    dto.setCancelledAt(h.getCancelledAt());
+                    dto.setOrderStatus(h.getOrder().getOrderStatus());
+                    dto.setRecipientName(h.getOrder().getRecipientName());
+                    dto.setTotalAmount(h.getOrder().getTotalAmount());
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
 
@@ -216,7 +277,7 @@ public class OrderManagementServiceImpl implements OrderManagementService {
 
     @Override
     @Transactional
-    public void customerCancelOrder(Integer orderId, Integer userId) {
+    public void customerCancelOrder(Integer orderId, Integer userId, String cancelReason) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
         
@@ -225,15 +286,18 @@ public class OrderManagementServiceImpl implements OrderManagementService {
             throw new IllegalStateException("Bạn không có quyền hủy đơn này");
         }
         
-        // Chỉ cho phép hủy khi đơn đang xử lý hoặc đã xử lý (chưa giao)
+        // Chỉ cho phép hủy khi đơn đang xử lý, đã xử lý hoặc shipper hủy (chưa giao)
         String status = order.getOrderStatus();
         if (!OrderStatus.PROCESSING.getValue().equals(status) && 
-            !OrderStatus.CONFIRMED.getValue().equals(status)) {
+            !OrderStatus.CONFIRMED.getValue().equals(status) &&
+            !OrderStatus.SHIPPER_CANCELLED.getValue().equals(status)) {
             throw new IllegalStateException("Không thể hủy đơn ở trạng thái này");
         }
         
         order.setOrderStatus(OrderStatus.CANCELLED.getValue());
         order.setCancelledAt(LocalDateTime.now());
+        order.setCancelReason(cancelReason);
+        order.setCancelledBy("CUSTOMER");
         
         orderRepository.save(order);
     }
@@ -295,10 +359,23 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     }
     
     @Override
+    @Transactional(readOnly = true)
     public List<OrderDTO> getShipperAllOrders(Integer shipperId) {
         List<Order> orders = orderRepository.findByShipperId(shipperId);
         return orders.stream()
-                .map(order -> modelMapper.map(order, OrderDTO.class))
+                .map(order -> {
+                    OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+                    // Lấy lý do trả hàng nếu có (bao gồm cả trường hợp đã reject)
+                    if ("Return_Requested".equals(order.getOrderStatus()) || 
+                        "Returned".equals(order.getOrderStatus()) ||
+                        ("Delivered".equals(order.getOrderStatus()) && order.getAdminNotes() != null && order.getAdminNotes().contains("Lý do từ chối trả hàng"))) {
+                        returnRequestRepository.findByOrderId(order.getId())
+                            .stream()
+                            .findFirst()
+                            .ifPresent(returnRequest -> orderDTO.setReturnReason(returnRequest.getReason()));
+                    }
+                    return orderDTO;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -307,6 +384,24 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     public OrderDTO getOrderById(Integer orderId) {
         Order order = orderRepository.findByIdWithDetails(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
-        return modelMapper.map(order, OrderDTO.class);
+        
+        OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+        
+        // Explicitly map shipperId (ModelMapper có thể không tự động map)
+        if (order.getShipper() != null) {
+            orderDTO.setShipperId(order.getShipper().getId());
+        }
+        
+        // Lấy lý do trả hàng nếu có (bao gồm cả trường hợp đã reject)
+        if ("Return_Requested".equals(order.getOrderStatus()) || 
+            "Returned".equals(order.getOrderStatus()) ||
+            ("Delivered".equals(order.getOrderStatus()) && order.getAdminNotes() != null && order.getAdminNotes().contains("Lý do từ chối trả hàng"))) {
+            returnRequestRepository.findByOrderId(order.getId())
+                .stream()
+                .findFirst()
+                .ifPresent(returnRequest -> orderDTO.setReturnReason(returnRequest.getReason()));
+        }
+        
+        return orderDTO;
     }
 }

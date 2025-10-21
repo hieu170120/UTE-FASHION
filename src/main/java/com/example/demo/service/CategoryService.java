@@ -6,6 +6,7 @@ import java.util.List;
 
 public interface CategoryService {
     List<CategoryDTO> getAllCategories();
+    List<CategoryDTO> findAllActive();
     CategoryDTO getCategoryById(Integer id);
     CategoryDTO getCategoryBySlug(String slug);
     CategoryDTO createCategory(CategoryDTO categoryDTO);

@@ -65,7 +65,9 @@ public class ShipperOrderController {
     // }
 
     @GetMapping("/{id}/detail")
-    public String getOrderDetail(@PathVariable Integer id, Model model, HttpSession session) {
+    public String getOrderDetail(@PathVariable Integer id, 
+                                 @RequestParam(required = false) Boolean fromHistory,
+                                 Model model, HttpSession session) {
         User currentUser = (User) session.getAttribute("currentUser");
         if (currentUser == null || currentUser.getRoles() == null || currentUser.getRoles().stream().noneMatch(role -> "SHIPPER".equals(role.getRoleName()))) {
             return "redirect:/login";
@@ -73,6 +75,28 @@ public class ShipperOrderController {
         try {
             Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
             OrderDTO order = orderManagementService.getOrderById(id);
+            
+            // Mark notification as read for this order
+            notificationService.markNotificationAsReadByOrder(shipperId, id);
+            
+            // Nếu xem từ lịch sử hủy, cần hiển thị trạng thái "Shipper hủy" dù đơn đã được giao lại
+            if (Boolean.TRUE.equals(fromHistory)) {
+                // Lấy thông tin hủy từ lịch sử
+                java.util.List<com.example.demo.dto.ShipperCancelHistoryDTO> shipperCancelHistory = 
+                    orderManagementService.getShipperCancelHistory(shipperId);
+                
+                com.example.demo.dto.ShipperCancelHistoryDTO shipperCancel = shipperCancelHistory.stream()
+                    .filter(h -> h.getOrderId().equals(id))
+                    .findFirst()
+                    .orElse(null);
+                
+                if (shipperCancel != null) {
+                    // Ghi đè trạng thái để hiển thị "Shipper hủy"
+                    order.setOrderStatus("Shipper_Cancelled");
+                    model.addAttribute("viewFromHistory", true);
+                }
+            }
+            
             model.addAttribute("order", order);
             model.addAttribute("shipperName", currentUser.getFullName() != null ? currentUser.getFullName() : currentUser.getUsername());
             model.addAttribute("cancelCount", orderManagementService.getShipperCancelCount(shipperId));
@@ -101,9 +125,29 @@ public class ShipperOrderController {
         return "redirect:/shipper";
     }
 
+    @GetMapping("/{id}/cancel")
+    public String showCancelReasonPage(@PathVariable Integer id, Model model, HttpSession session, RedirectAttributes redirectAttributes) {
+        User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser == null || currentUser.getRoles() == null || currentUser.getRoles().stream().noneMatch(role -> "SHIPPER".equals(role.getRoleName()))) {
+            return "redirect:/login";
+        }
+        try {
+            Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
+            OrderDTO order = orderManagementService.getOrderById(id);
+            Long cancelCount = orderManagementService.getShipperCancelCount(shipperId);
+            
+            model.addAttribute("order", order);
+            model.addAttribute("cancelCount", cancelCount);
+            return "shipper/order/cancel-reason";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+            return "redirect:/shipper/orders/" + id + "/detail";
+        }
+    }
+    
     @PostMapping("/{id}/cancel")
     public String cancelOrder(@PathVariable Integer id, 
-                             @RequestParam(required = false, defaultValue = "Shipper cancel") String reason,
+                             @RequestParam String reason,
                              HttpSession session,
                              RedirectAttributes redirectAttributes) {
         User currentUser = (User) session.getAttribute("currentUser");
