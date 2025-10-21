@@ -2,6 +2,58 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout/default}">
 <head>
     <title>Đăng Ký Bán Hàng</title>
+    <th:block layout:fragment="css">
+	    <style>
+	    .btn-primary {
+	        background-color: #000 !important;
+	        color: #fff !important;
+	        border: none !important;
+	        transition: background-color 0.3s ease;
+		    }
+		
+		    .btn-primary:hover {
+		        background-color: #333 !important;
+		    }
+
+            /* --- Image Upload Styles --- */
+            .upload-area {
+                transition: background-color .2s ease-in-out;
+            }
+            .upload-area:hover {
+                background-color: #f2f2f2;
+            }
+            .preview-image-wrapper {
+                position: relative;
+                display: inline-block;
+                width: 150px;
+                height: 150px;
+            }
+            .preview-image {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                border-radius: 8px;
+                border: 1px solid #ddd;
+            }
+            .btn-remove-image {
+                position: absolute;
+                top: -10px;
+                right: -10px;
+                width: 28px;
+                height: 28px;
+                background-color: black;
+                color: white;
+                border-radius: 50%;
+                border: 2px solid white;
+                font-weight: bold;
+                line-height: 1;
+                cursor: pointer;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+		</style>
+    </th:block>
 </head>
 <body>
 
@@ -15,14 +67,11 @@
                 </div>
                 <div class="card-body">
 
-                    <!-- Success/Error Messages -->
-                    <div th:if="${successMessage}" class="alert alert-success" role="alert"
-                         th:text="${successMessage}"></div>
-                    <div th:if="${errorMessage}" class="alert alert-danger" role="alert"
-                         th:text="${errorMessage}"></div>
+                    <div th:if="${successMessage}" class="alert alert-success" role="alert" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
 
                     <form th:action="@{/vendor/register}" th:object="${shopRegistrationDTO}" method="post">
-                        <div class.="mb-3">
+                        <div class="mb-3">
                             <label for="shopName" class="form-label">Tên cửa hàng</label>
                             <input type="text" class="form-control" id="shopName" th:field="*{shopName}" required>
                             <div class="form-text">Tên này sẽ được hiển thị công khai cho khách hàng.</div>
@@ -36,13 +85,22 @@
                             <div th:if="${#fields.hasErrors('description')}" th:errors="*{description}" class="text-danger"></div>
                         </div>
 
-                        <!-- Optional: Logo URL for simplicity. In a real app, this would be a file upload. -->
+                        <!-- Logo Upload -->
                         <div class="mb-4">
-                            <label for="logoUrl" class="form-label">URL Logo</label>
-                            <input type="text" class="form-control" id="logoUrl" th:field="*{logoUrl}">
-                            <div class="form-text">Dán đường dẫn đến logo của bạn.</div>
+                            <label class="form-label">Logo cửa hàng</label>
+                            <div class="upload-area border rounded p-4 text-center" id="logoUploadArea" style="cursor: pointer;">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-primary"></i>
+                                <p class="mt-2 mb-0"><strong>Nhấp hoặc kéo thả logo vào đây</strong></p>
+                                <small class="text-muted">Chỉ một ảnh duy nhất. Hỗ trợ JPG, PNG, GIF.</small>
+                                <input type="file" id="logoInput" accept="image/*" class="d-none">
+                            </div>
+                            <div id="logoPreviewContainer" class="mt-3 text-center">
+                                <!-- Preview will be shown here -->
+                            </div>
+                            <input type="hidden" id="logoUrl" th:field="*{logoUrl}">
                             <div th:if="${#fields.hasErrors('logoUrl')}" th:errors="*{logoUrl}" class="text-danger"></div>
                         </div>
+
 
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary btn-lg">Hoàn tất Đăng ký</button>
@@ -53,6 +111,89 @@
         </div>
     </div>
 </div>
+
+<th:block layout:fragment="scripts">
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- CLOUDINARY CONFIG ---
+            const CLOUDINARY_CLOUD_NAME = /*[[${@environment.getProperty('cloudinaryProduct.cloud-name')}]]*/ 'dins132fr';
+            const CLOUDINARY_UPLOAD_PRESET = /*[[${@environment.getProperty('cloudinaryProduct.upload-preset')}]]*/ 'ml_default';
+            const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+
+            // --- DOM ELEMENTS ---
+            const uploadArea = document.getElementById('logoUploadArea');
+            const fileInput = document.getElementById('logoInput');
+            const previewContainer = document.getElementById('logoPreviewContainer');
+            const hiddenUrlInput = document.getElementById('logoUrl');
+
+            // --- EVENT LISTENERS ---
+            uploadArea.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleFileSelect);
+
+            function handleFileSelect(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                // Clear previous preview and URL
+                previewContainer.innerHTML = '';
+                hiddenUrlInput.value = '';
+
+                uploadToCloudinary(file);
+                event.target.value = ''; // Reset input
+            }
+
+            function uploadToCloudinary(file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+                // Show spinner
+                previewContainer.innerHTML = `
+                    <div class="d-flex align-items-center justify-content-center h-100">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>`;
+
+                fetch(CLOUDINARY_API_URL, { method: 'POST', body: formData })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.secure_url) {
+                            addPreviewAndHiddenInput(data.secure_url);
+                        } else {
+                            previewContainer.innerHTML = ''; // Clear spinner
+                            console.error('Cloudinary upload error:', data);
+                            alert('Có lỗi xảy ra khi tải ảnh. Vui lòng thử lại.');
+                        }
+                    })
+                    .catch(error => {
+                        previewContainer.innerHTML = ''; // Clear spinner
+                        console.error('API fetch error:', error);
+                        alert('Lỗi mạng. Không thể tải ảnh lên.');
+                    });
+            }
+
+            function addPreviewAndHiddenInput(imageUrl) {
+                // Set hidden input value
+                hiddenUrlInput.value = imageUrl;
+
+                // Create preview content
+                previewContainer.innerHTML = `
+                    <div class="preview-image-wrapper">
+                        <img src="${imageUrl}" class="preview-image" alt="Logo Preview">
+                        <button type="button" class="btn-remove-image">&times;</button>
+                    </div>
+                `;
+
+                // Add event listener for remove button
+                previewContainer.querySelector('.btn-remove-image').addEventListener('click', function() {
+                    hiddenUrlInput.value = '';
+                    previewContainer.innerHTML = '';
+                });
+            }
+        });
+    </script>
+</th:block>
 
 </body>
 </html>

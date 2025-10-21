@@ -2,12 +2,13 @@ package com.example.demo.repository.specification;
 
 import com.example.demo.dto.ProductSearchCriteria;
 import com.example.demo.entity.Product;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 public class ProductSpecification {
 
     public static Specification<Product> fromCriteria(ProductSearchCriteria criteria) {
-        Specification<Product> spec = Specification.where(null);
+        Specification<Product> spec = Specification.where(isActive());
 
         if (criteria.getKeyword() != null && !criteria.getKeyword().isEmpty()) {
             spec = spec.and(hasKeyword(criteria.getKeyword()));
@@ -22,6 +23,13 @@ public class ProductSpecification {
         }
 
         return spec;
+    }
+
+    /**
+     * Returns a Specification to filter for products where 'isActive' is true.
+     */
+    private static Specification<Product> isActive() {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.isTrue(root.get("isActive"));
     }
 
     private static Specification<Product> hasKeyword(String keyword) {

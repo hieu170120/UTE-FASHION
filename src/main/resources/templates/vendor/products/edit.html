@@ -4,7 +4,7 @@
       layout:decorate="~{layout/default}">
 <head>
     <title>Chỉnh sửa sản phẩm</title>
-    <th:block layout:fragment="css">
+    <th:block layout:fragment="styles">
         <style>
             body {
                 font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
@@ -22,14 +22,15 @@
             .card-header { background-color: #f8f9fa; border-bottom: 2px solid #000; }
             .form-check-input:checked { background-color: #000; border-color: #000; }
             .variant-table .btn-sm { padding: .2rem .4rem; font-size: .8rem; }
-            .color-dot {
-                display: inline-block;
-                width: 15px;
-                height: 15px;
-                border-radius: 50%;
-                vertical-align: middle;
-                border: 1px solid #ccc;
-            }
+            .color-dot { display: inline-block; width: 15px; height: 15px; border-radius: 50%; vertical-align: middle; border: 1px solid #ccc; }
+
+            /* --- Image Upload Styles --- */
+            .upload-area { transition: background-color .2s ease-in-out; }
+            .upload-area:hover { background-color: #e9ecef; }
+            .preview-image-wrapper { position: relative; width: 120px; height: 120px; }
+            .preview-image { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 1px solid #ddd; }
+            .btn-remove-image { position: absolute; top: -5px; right: -5px; width: 24px; height: 24px; background-color: black; color: white; border-radius: 50%; border: 2px solid white; font-weight: bold; line-height: 1; cursor: pointer; display: flex; justify-content: center; align-items: center; z-index: 10;}
+            .sortable-ghost { background-color: #e9ecef; border-radius: 8px; }
         </style>
     </th:block>
 </head>
@@ -47,7 +48,7 @@
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-            <form th:action="@{/vendor/products/edit/{id}(id=${form.product.id})}" th:object="${form}" method="post">
+            <form th:action="@{/vendor/products/edit/{id}(id=${form.product.id})}" th:object="${form}" method="post" id="productForm">
 
                 <div class="card mb-4">
                     <div class="card-header">
@@ -110,12 +111,38 @@
                     </div>
                 </div>
 
+                <!-- NEW IMAGES SECTION -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4 class="mb-0">Hình ảnh</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Tải ảnh lên</label>
+                            <p class="text-muted small">Tải lên tối đa 5 ảnh. Kéo thả để sắp xếp. Ảnh đầu tiên sẽ là ảnh đại diện.</p>
+                            <div class="upload-area border rounded p-4 text-center" id="imageUploadArea" style="cursor: pointer;">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-primary"></i>
+                                <p class="mt-2 mb-0"><strong>Nhấp hoặc kéo thả ảnh vào đây</strong></p>
+                                <small class="text-muted">Hỗ trợ JPG, PNG, GIF</small>
+                                <input type="file" id="imageInput" accept="image/*" multiple class="d-none">
+                            </div>
+                        </div>
+                        <div id="imagePreview" class="mt-3 d-flex flex-wrap gap-3">
+                            <!-- Previews will be appended here -->
+                        </div>
+                        <div id="hiddenImageInputsContainer">
+                            <!-- Hidden inputs for submitted URLs will be appended here -->
+                        </div>
+                    </div>
+                </div>
+                <!-- END NEW IMAGES SECTION -->
+
                 <div class="card mb-4">
                     <div class="card-header">
                         <h4 class="mb-0">Tồn kho & Vận chuyển</h4>
                     </div>
                     <div class="card-body">
-                        <div class="row">
+                         <div class="row">
                             <div class="col-md-6">
                                 <label for="stockQuantity" class="form-label">Số lượng tồn kho</label>
                                 <input type="number" id="stockQuantity" class="form-control" th:field="*{product.stockQuantity}">
@@ -174,30 +201,6 @@
                     </div>
                 </div>
 
-
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h4 class="mb-0">Hình ảnh</h4>
-                    </div>
-                    <div class="card-body">
-                        <div th:each="i : ${#numbers.sequence(0, 2)}">
-                             <div class="row align-items-center mb-3 p-2 border rounded">
-                                 <div class="col-md-8">
-                                     <label class="form-label" th:text="'URL Hình ảnh ' + ${i+1}"></label>
-                                     <input type="hidden" th:field="*{images[__${i}__].id}"/>
-                                     <input type="text" class="form-control" th:field="*{images[__${i}__].imageUrl}">
-                                 </div>
-                                 <div class="col-md-4">
-                                    <div class="form-check mt-4">
-                                        <input class="form-check-input" type="radio" th:field="*{primaryImageIndex}" th:id="'primaryImage' + ${i}" th:value="${i}">
-                                        <label class="form-check-label" th:for="'primaryImage' + ${i}">Đặt làm ảnh chính</label>
-                                    </div>
-                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="card mb-4">
                      <div class="card-header">
                         <h4 class="mb-0">Tùy chọn hiển thị</h4>
@@ -216,8 +219,8 @@
             </form>
 
             <!-- Variants Section -->
-             <div class="card mt-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card mt-4">
+                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">Biến thể sản phẩm</h4>
                 </div>
                 <div class="card-body">
@@ -286,6 +289,146 @@
         </div>
     </div>
 </div>
+
+<th:block layout:fragment="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- CONFIG ---
+            const CLOUDINARY_CLOUD_NAME = /*[[${@environment.getProperty('cloudinaryProduct.cloud-name')}]]*/ 'dins132fr';
+            const CLOUDINARY_UPLOAD_PRESET = /*[[${@environment.getProperty('cloudinaryProduct.upload-preset')}]]*/ 'ml_default';
+            const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+            const MAX_IMAGES = 5;
+            const existingImages = /*[[${form.images}]]*/ [];
+
+            // --- DOM ELEMENTS ---
+            const imageUploadArea = document.getElementById('imageUploadArea');
+            const imageInput = document.getElementById('imageInput');
+            const imagePreviewContainer = document.getElementById('imagePreview');
+            const hiddenInputsContainer = document.getElementById('hiddenImageInputsContainer');
+            const productForm = document.getElementById('productForm');
+
+            // --- INITIALIZE ---
+            initializeExistingImages();
+            initializeSortable();
+
+            // --- EVENT LISTENERS ---
+            imageUploadArea.addEventListener('click', () => imageInput.click());
+            imageInput.addEventListener('change', handleFileSelect);
+            productForm.addEventListener('submit', syncImageOrderBeforeSubmit);
+
+            // --- FUNCTIONS ---
+            function initializeSortable() {
+                new Sortable(imagePreviewContainer, {
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: updatePrimaryImageBadge
+                });
+            }
+            
+            function initializeExistingImages() {
+                if (existingImages) {
+                    existingImages.forEach(image => {
+                        if(image && image.imageUrl) {
+                            createPreviewElement(image.imageUrl);
+                        }
+                    });
+                }
+                updatePrimaryImageBadge();
+            }
+
+            function handleFileSelect(event) {
+                const files = event.target.files;
+                const currentImageCount = imagePreviewContainer.children.length;
+                if (currentImageCount + files.length > MAX_IMAGES) {
+                    alert(`Lỗi: Bạn chỉ có thể có tối đa ${MAX_IMAGES} ảnh.`);
+                    return;
+                }
+                Array.from(files).forEach(uploadToCloudinary);
+                event.target.value = ''; // Reset the input
+            }
+
+            function uploadToCloudinary(file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+                const previewId = `preview-loading-${Date.now()}`;
+                const loadingHtml = `<div id="${previewId}" class="preview-image-wrapper d-flex justify-content-center align-items-center border rounded"><div class="spinner-border"></div></div>`;
+                imagePreviewContainer.insertAdjacentHTML('beforeend', loadingHtml);
+
+                fetch(CLOUDINARY_API_URL, { method: 'POST', body: formData })
+                    .then(response => response.json())
+                    .then(data => {
+                        const loadingElement = document.getElementById(previewId);
+                        if (data.secure_url) {
+                            const newPreview = createPreviewElement(data.secure_url);
+                            loadingElement.replaceWith(newPreview);
+                            updatePrimaryImageBadge();
+                        } else {
+                            loadingElement.remove();
+                            console.error('Cloudinary upload failed:', data);
+                            alert('Có lỗi xảy ra khi tải ảnh lên.');
+                        }
+                    })
+                    .catch(error => {
+                        document.getElementById(previewId)?.remove();
+                        console.error('Upload fetch error:', error);
+                        alert('Không thể kết nối để tải ảnh.');
+                    });
+            }
+
+            function createPreviewElement(imageUrl) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'preview-image-wrapper';
+                wrapper.dataset.url = imageUrl;
+                wrapper.innerHTML = `
+                    <img src="${imageUrl}" class="preview-image" alt="Product Preview">
+                    <button type="button" class="btn-remove-image">&times;</button>
+                `;
+                wrapper.querySelector('.btn-remove-image').addEventListener('click', function() {
+                    wrapper.remove();
+                    updatePrimaryImageBadge();
+                });
+                imagePreviewContainer.appendChild(wrapper);
+                return wrapper;
+            }
+
+            function updatePrimaryImageBadge() {
+                // Remove existing badge
+                const existingBadge = imagePreviewContainer.querySelector('.primary-badge');
+                if (existingBadge) {
+                    existingBadge.remove();
+                }
+                // Add new badge to the first item
+                const firstImageWrapper = imagePreviewContainer.firstElementChild;
+                if (firstImageWrapper) {
+                    const badge = document.createElement('span');
+                    badge.className = 'primary-badge position-absolute bottom-0 start-0 bg-dark text-white small px-2 py-1 rounded-pill mb-2 ms-2';
+                    badge.textContent = 'Ảnh chính';
+                    firstImageWrapper.appendChild(badge);
+                }
+            }
+            
+            function syncImageOrderBeforeSubmit() {
+                // Clear any existing hidden inputs to prevent duplicates
+                hiddenInputsContainer.innerHTML = ''; 
+                
+                const previewWrappers = imagePreviewContainer.querySelectorAll('.preview-image-wrapper');
+                previewWrappers.forEach(wrapper => {
+                    const imageUrl = wrapper.dataset.url;
+                    if (imageUrl) {
+                        const hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = 'imageUrls';
+                        hiddenInput.value = imageUrl;
+                        hiddenInputsContainer.appendChild(hiddenInput);
+                    }
+                });
+            }
+        });
+    </script>
+</th:block>
 
 </body>
 </html>
