@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import java.util.List;
 
+import com.example.demo.dto.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -12,11 +13,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.example.demo.dto.CategoryDTO;
-import com.example.demo.dto.ProductDTO;
-import com.example.demo.dto.ProductSearchCriteria;
-import com.example.demo.dto.ProductSummaryDTO;
-import com.example.demo.dto.ReviewDTO;
 import com.example.demo.service.BrandService;
 import com.example.demo.service.CategoryService;
 import com.example.demo.service.ProductService;
@@ -105,6 +101,9 @@ public class ProductController {
 			ProductDTO product = productService.findProductDetailBySlug(slug);
 			model.addAttribute("product", product);
 			model.addAttribute("pageTitle", product.getProductName());
+
+            //TODO truyen brand cho view
+//            BrandDTO brand = brandService.get;
 
 			Page<ReviewDTO> reviewPage = reviewService.getReviewsByProductId(product.getId(), PageRequest.of(0, 5));
 			model.addAttribute("reviewPage", reviewPage);

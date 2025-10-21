@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface ColorService {
     List<ColorDTO> findAll();
+    ColorDTO findById(Integer id);
+
 }

@@ -22,7 +22,12 @@ public class ColorServiceImpl implements ColorService {
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
-
+    @Override
+    public ColorDTO findById(Integer id) {
+        return colorRepository.findById(id)
+                .map(this::convertToDto)
+                .orElse(null);
+    }
     private ColorDTO convertToDto(Color color) {
         ColorDTO dto = new ColorDTO();
         dto.setId(color.getId());

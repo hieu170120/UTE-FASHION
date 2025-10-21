@@ -22,12 +22,17 @@ public class SizeServiceImpl implements SizeService {
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
-
+    @Override
+    public SizeDTO findById(Integer id) {
+        return sizeRepository.findById(id)
+                .map(this::convertToDto)
+                .orElse(null);
+    }
     private SizeDTO convertToDto(Size size) {
         SizeDTO dto = new SizeDTO();
         dto.setId(size.getId());
         dto.setSizeName(size.getSizeName());
-        dto.setSizeCode(size.getSizeCode());
+        dto.setSizeType(size.getSizeType());
         return dto;
     }
 }

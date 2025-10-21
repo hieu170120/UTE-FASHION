@@ -184,7 +184,7 @@ public class VendorProductController {
             model.addAttribute("brands", brandService.findAllActive());
             model.addAttribute("variants", productService.getVariantsByProductId(id));
             model.addAttribute("newVariant", new ProductVariantDTO());
-            model.addAttribute("form", form); // Explicitly adding for clarity and safety
+            model.addAttribute("form", form);
             model.addAttribute("allColors", colorService.findAll());
             model.addAttribute("allSizes", sizeService.findAll());
             return "vendor/products/edit";

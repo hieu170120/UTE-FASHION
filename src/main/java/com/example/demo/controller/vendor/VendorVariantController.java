@@ -5,6 +5,8 @@ import com.example.demo.exception.UnauthorizedException;
 import com.example.demo.service.ProductService;
 import com.example.demo.service.ProductVariantService;
 import com.example.demo.service.VendorService;
+import com.example.demo.service.ColorService;
+import com.example.demo.service.SizeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -26,6 +28,12 @@ public class VendorVariantController {
 
     @Autowired
     private ProductService productService;
+
+    @Autowired
+    private ColorService colorService;
+
+    @Autowired
+    private SizeService sizeService;
 
     private void authorizeVendorForProduct(Principal principal, Integer productId) {
         Integer shopId = vendorService.getShopIdByUsername(principal.getName());
@@ -50,14 +58,16 @@ public class VendorVariantController {
     }
 
     @GetMapping("/edit/{variantId}")
-    public String showEditVariantForm(@PathVariable("productId") Integer productId, 
-                                      @PathVariable("variantId") Integer variantId, 
+    public String showEditVariantForm(@PathVariable("productId") Integer productId,
+                                      @PathVariable("variantId") Integer variantId,
                                       Principal principal, Model model, RedirectAttributes redirectAttributes) {
         try {
             authorizeVendorForProduct(principal, productId);
             ProductVariantDTO variantDTO = productVariantService.getVariantById(variantId);
             model.addAttribute("variant", variantDTO);
             model.addAttribute("productId", productId);
+            model.addAttribute("allColors", colorService.findAll());
+            model.addAttribute("allSizes", sizeService.findAll());
             return "vendor/products/editVariant";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Không thể tìm thấy biến thể.");
@@ -67,9 +77,9 @@ public class VendorVariantController {
 
     @PostMapping("/edit/{variantId}")
     public String updateVariant(@PathVariable("productId") Integer productId,
-                              @PathVariable("variantId") Integer variantId,
-                              @Valid @ModelAttribute("variant") ProductVariantDTO variantDTO,
-                              Principal principal, RedirectAttributes redirectAttributes) {
+                                @PathVariable("variantId") Integer variantId,
+                                @Valid @ModelAttribute("variant") ProductVariantDTO variantDTO,
+                                Principal principal, RedirectAttributes redirectAttributes) {
         try {
             authorizeVendorForProduct(principal, productId);
             variantDTO.setId(variantId); // Ensure the ID is set for update
@@ -83,9 +93,9 @@ public class VendorVariantController {
 
     @GetMapping("/delete/{variantId}")
     public String deleteVariant(@PathVariable("productId") Integer productId,
-                              @PathVariable("variantId") Integer variantId,
-                              Principal principal,
-                              RedirectAttributes redirectAttributes) {
+                                @PathVariable("variantId") Integer variantId,
+                                Principal principal,
+                                RedirectAttributes redirectAttributes) {
         try {
             authorizeVendorForProduct(principal, productId);
             productVariantService.deleteVariant(variantId);

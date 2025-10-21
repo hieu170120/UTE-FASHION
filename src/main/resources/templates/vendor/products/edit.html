@@ -152,21 +152,28 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <label for="category" class="form-label">Danh mục (*)</label>
-                                <select id="category" class="form-select" th:field="*{product.categoryId}" required>
+                                <select id="category" name="product.categoryId" class="form-select" required>
                                     <option value="">-- Chọn danh mục --</option>
-                                    <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.categoryName}"></option>
+                                    <option th:each="cat : ${categories}"
+                                            th:value="${cat.id}"
+                                            th:text="${cat.categoryName}"
+                                            th:selected="${form.product.categoryId != null && cat.id == form.product.categoryId}"></option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                 <label for="brand" class="form-label">Thương hiệu</label>
-                                <select id="brand" class="form-select" th:field="*{product.brandId}">
+                                <label for="brand" class="form-label">Thương hiệu</label>
+                                <select id="brand" name="product.brandId" class="form-select">
                                     <option value="">-- Chọn thương hiệu --</option>
-                                    <option th:each="brand : ${brands}" th:value="${brand.id}" th:text="${brand.brandName}"></option>
+                                    <option th:each="brand : ${brands}"
+                                            th:value="${brand.id}"
+                                            th:text="${brand.brandName}"
+                                            th:selected="${form.product.brandId != null && brand.id == form.product.brandId}"></option>
                                 </select>
                             </div>
                         </div>
                     </div>
                 </div>
+
 
                 <div class="card mb-4">
                     <div class="card-header">
@@ -239,7 +246,7 @@
                                         <label class="form-label">Size</label>
                                         <select class="form-select" th:field="*{size}">
                                             <option value="">-- Chọn size --</option>
-                                            <option th:each="s : ${allSizes}" th:value="${s.id}" th:text="${s.name}"></option>
+                                            <option th:each="s : ${allSizes}" th:value="${s.id}" th:text="${s.sizeName}"></option>
                                         </select>
                                      </div>
 
@@ -262,7 +269,7 @@
                                             <span th:text="${variant.color.colorName}" class="ms-2"></span>
                                         </span>
                                     </td>
-                                    <td th:text="${variant.size?.name}"></td>
+                                    <td th:text="${variant.size?.sizeName}"></td>
                                     <td class="text-end" th:text="${#numbers.formatDecimal(variant.priceAdjustment, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
                                     <td class="text-center" th:text="${variant.stockQuantity}"></td>
                                     <td class="text-center">

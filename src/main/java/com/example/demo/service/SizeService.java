@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface SizeService {
     List<SizeDTO> findAll();
+    SizeDTO findById(Integer id);
 }
