@@ -97,11 +97,9 @@ public class ProductVariantServiceImpl implements ProductVariantService {
     public ProductVariantDTO getVariantById(Integer variantId) {
         ProductVariant variant = productVariantRepository.findById(variantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Variant not found with id: " + variantId));
-        ProductVariantDTO dto = modelMapper.map(variant, ProductVariantDTO.class);
-        if(variant.getProduct() != null) {
-            dto.setId(variant.getProduct().getId());
-        }
-        return dto;
+        // ModelMapper correctly maps the variant's own ID to the DTO's ID.
+        // The problematic if-block that overwrote the ID has been removed.
+        return modelMapper.map(variant, ProductVariantDTO.class);
     }
 
     @Override

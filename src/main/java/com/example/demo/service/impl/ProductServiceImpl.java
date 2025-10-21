@@ -1,12 +1,24 @@
 package com.example.demo.service.impl;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-
+import com.example.demo.dto.ProductDTO;
+import com.example.demo.dto.ProductImageDTO;
+import com.example.demo.dto.ProductSearchCriteria;
+import com.example.demo.dto.ProductSummaryDTO;
+import com.example.demo.dto.ProductVariantDTO;
+import com.example.demo.entity.Order;
+import com.example.demo.entity.Product;
+import com.example.demo.entity.ProductImage;
+import com.example.demo.entity.ProductVariant;
+import com.example.demo.exception.ResourceNotFoundException;
+import com.example.demo.repository.BrandRepository;
 import com.example.demo.repository.CategoryRepository;
+import com.example.demo.repository.OrderRepository;
+import com.example.demo.repository.ProductImageRepository;
+import com.example.demo.repository.ProductRepository;
+import com.example.demo.repository.ProductVariantRepository;
+import com.example.demo.repository.ShopRepository;
+import com.example.demo.repository.specification.ProductSpecification;
+import com.example.demo.service.ProductService;
 import com.github.slugify.Slugify;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,29 +30,13 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.concurrent.CompletableFuture;
-import com.example.demo.dto.ProductDTO;
-import com.example.demo.dto.ProductImageDTO;
-import com.example.demo.dto.ProductSearchCriteria;
-import com.example.demo.dto.ProductSummaryDTO;
-import com.example.demo.dto.ProductVariantDTO;
-import com.example.demo.entity.Order;
-import com.example.demo.entity.Product;
-import com.example.demo.entity.ProductImage;
-import com.example.demo.entity.ProductVariant;
-import com.example.demo.exception.ResourceNotFoundException;
-import com.example.demo.repository.OrderRepository;
-import com.example.demo.repository.ProductImageRepository;
-import com.example.demo.repository.ProductRepository;
-import com.example.demo.repository.ProductVariantRepository;
-import com.example.demo.repository.ShopRepository;
-import com.example.demo.repository.specification.ProductSpecification;
-import com.example.demo.service.ProductService;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -57,12 +53,15 @@ public class ProductServiceImpl implements ProductService {
     private OrderRepository orderRepository;
     @Autowired
     private CategoryRepository categoryRepository;
+    @Autowired
+    private BrandRepository brandRepository;
 
     @Autowired
     private ModelMapper modelMapper;
 
     @Autowired
     private Slugify slugify;
+
     private ProductDTO convertToDto(Product product) {
         ProductDTO dto = modelMapper.map(product, ProductDTO.class);
         if (product.getShop() != null) {
@@ -70,6 +69,10 @@ public class ProductServiceImpl implements ProductService {
         }
         if (product.getCategory() != null) {
             dto.setCategoryId(product.getCategory().getId());
+        }
+        if (product.getBrand() != null) {
+            dto.setBrandId(product.getBrand().getId());
+            dto.setBrandName(product.getBrand().getBrandName());
         }
         return dto;
     }
@@ -96,7 +99,6 @@ public class ProductServiceImpl implements ProductService {
                 return Sort.by("salePrice").ascending();
             case "price-desc":
                 return Sort.by("salePrice").descending();
-            case "wishList":
             default:
                 return Sort.by("createdAt").descending();
         }
@@ -121,7 +123,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductDTO findProductDetailBySlug(String slug) {
         Product product = productRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with slug: " + slug));
-        return modelMapper.map(product, ProductDTO.class);
+        return convertToDto(product);
     }
 
     @Override
@@ -129,7 +131,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductDTO getProductBySlug(String slug) {
         Product product = productRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with slug: " + slug));
-        return modelMapper.map(product, ProductDTO.class);
+        return convertToDto(product);
     }
 
     @Override
@@ -184,11 +186,9 @@ public class ProductServiceImpl implements ProductService {
         product.setCategory(
                 categoryRepository.findById(productDTO.getCategoryId())
                         .orElseThrow(() -> new ResourceNotFoundException("Category not found")));
-        
-        // Save the product first to get an ID
+
         Product savedProduct = productRepository.save(product);
 
-        // Now, save the images
         if (images != null && !images.isEmpty()) {
             images.forEach(imageDTO -> {
                 ProductImage productImage = modelMapper.map(imageDTO, ProductImage.class);
@@ -199,11 +199,6 @@ public class ProductServiceImpl implements ProductService {
 
         return modelMapper.map(savedProduct, ProductDTO.class);
     }
-    
-    // Keep the old method for compatibility if it's used elsewhere
-    public ProductDTO createProduct(ProductDTO productDTO, Integer shopId) {
-        return createProduct(productDTO, Collections.emptyList(), shopId);
-    }
 
     @Override
     @Transactional
@@ -212,16 +207,24 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
 
         modelMapper.map(productDTO, existingProduct);
-        existingProduct.setId(id); // Ensure ID is not lost
+        existingProduct.setId(id);
         existingProduct.setSlug(slugify.slugify(productDTO.getProductName()));
         existingProduct.setShop(shopRepository.findById(shopId).orElseThrow(() -> new ResourceNotFoundException("Shop not found")));
         existingProduct.setCategory(categoryRepository.findById(productDTO.getCategoryId()).orElseThrow(() -> new ResourceNotFoundException("Category not found")));
+
+        if (productDTO.getBrandId() != null) {
+            existingProduct.setBrand(brandRepository.findById(productDTO.getBrandId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Brand not found with id: " + productDTO.getBrandId())));
+        } else {
+            existingProduct.setBrand(null);
+        }
 
         updateProductImages(existingProduct, imageDTOs);
 
         Product updatedProduct = productRepository.save(existingProduct);
         return convertToDto(updatedProduct);
     }
+
     @Override
     public void deleteProduct(Integer id) {
         if (!productRepository.existsById(id)) {
@@ -252,6 +255,7 @@ public class ProductServiceImpl implements ProductService {
 
         productRepository.save(product);
     }
+    
     private void updateProductImages(Product product, List<ProductImageDTO> imageDTOs) {
         Map<Integer, ProductImage> existingImagesMap = product.getImages().stream()
                 .collect(Collectors.toMap(ProductImage::getId, Function.identity()));
@@ -260,13 +264,12 @@ public class ProductServiceImpl implements ProductService {
                 .filter(dto -> (dto.getImageUrl() != null && !dto.getImageUrl().trim().isEmpty()) || dto.getId() != null)
                 .collect(Collectors.toList());
 
-        // Update existing images and add new ones
         for (ProductImageDTO dto : imagesToProcess) {
             ProductImage image = existingImagesMap.get(dto.getId());
-            if (image != null) { // It's an existing image
+            if (image != null) { 
                 modelMapper.map(dto, image);
                 existingImagesMap.remove(dto.getId());
-            } else { // It's a new image
+            } else { 
                 image = modelMapper.map(dto, ProductImage.class);
                 image.setProduct(product);
                 product.getImages().add(image);
