@@ -30,6 +30,7 @@
             .preview-image-wrapper { position: relative; width: 120px; height: 120px; }
             .preview-image { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 1px solid #ddd; }
             .btn-remove-image { position: absolute; top: -5px; right: -5px; width: 24px; height: 24px; background-color: black; color: white; border-radius: 50%; border: 2px solid white; font-weight: bold; line-height: 1; cursor: pointer; display: flex; justify-content: center; align-items: center; z-index: 10;}
+            .sortable-ghost { background-color: #e9ecef; border-radius: 8px; }
         </style>
     </th:block>
 </head>
@@ -292,58 +293,59 @@
 <th:block layout:fragment="scripts">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script th:inline="javascript">
-        $(document).ready(function() {
+        document.addEventListener('DOMContentLoaded', function() {
             // --- CONFIG ---
-            const CLOUDINARY_CLOUD_NAME = /*[[${@environment.getProperty('cloudinary.cloud-name')}]]*/ 'dins132fr';
-            const CLOUDINARY_UPLOAD_PRESET = /*[[${@environment.getProperty('cloudinary.upload-preset')}]]*/ 'ml_default';
+            const CLOUDINARY_CLOUD_NAME = /*[[${@environment.getProperty('cloudinaryProduct.cloud-name')}]]*/ 'dins132fr';
+            const CLOUDINARY_UPLOAD_PRESET = /*[[${@environment.getProperty('cloudinaryProduct.upload-preset')}]]*/ 'ml_default';
             const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
             const MAX_IMAGES = 5;
             const existingImages = /*[[${form.images}]]*/ [];
 
             // --- DOM ELEMENTS ---
-            const imageUploadArea = $('#imageUploadArea');
-            const imageInput = $('#imageInput');
-            const imagePreviewContainer = $('#imagePreview');
-            const hiddenInputsContainer = $('#hiddenImageInputsContainer');
-            const productForm = $('#productForm');
+            const imageUploadArea = document.getElementById('imageUploadArea');
+            const imageInput = document.getElementById('imageInput');
+            const imagePreviewContainer = document.getElementById('imagePreview');
+            const hiddenInputsContainer = document.getElementById('hiddenImageInputsContainer');
+            const productForm = document.getElementById('productForm');
 
             // --- INITIALIZE ---
             initializeExistingImages();
             initializeSortable();
 
             // --- EVENT LISTENERS ---
-            imageUploadArea.on('click', () => imageInput.click());
-            imageInput.on('change', handleFileSelect);
-            productForm.on('submit', syncImageOrderBeforeSubmit);
+            imageUploadArea.addEventListener('click', () => imageInput.click());
+            imageInput.addEventListener('change', handleFileSelect);
+            productForm.addEventListener('submit', syncImageOrderBeforeSubmit);
 
             // --- FUNCTIONS ---
             function initializeSortable() {
-                new Sortable(imagePreviewContainer[0], {
+                new Sortable(imagePreviewContainer, {
                     animation: 150,
-                    ghostClass: 'bg-light',
-                    onEnd: function() {
-                        updatePrimaryImageBadge();
-                    }
+                    ghostClass: 'sortable-ghost',
+                    onEnd: updatePrimaryImageBadge
                 });
             }
             
             function initializeExistingImages() {
-                existingImages.forEach(image => {
-                     if(image.imageUrl) {
-                         addPreviewAndHiddenInput(image.imageUrl);
-                     }
-                });
+                if (existingImages) {
+                    existingImages.forEach(image => {
+                        if(image && image.imageUrl) {
+                            createPreviewElement(image.imageUrl);
+                        }
+                    });
+                }
+                updatePrimaryImageBadge();
             }
 
             function handleFileSelect(event) {
                 const files = event.target.files;
-                const currentImageCount = imagePreviewContainer.children().length;
+                const currentImageCount = imagePreviewContainer.children.length;
                 if (currentImageCount + files.length > MAX_IMAGES) {
                     alert(`Lỗi: Bạn chỉ có thể có tối đa ${MAX_IMAGES} ảnh.`);
                     return;
                 }
                 Array.from(files).forEach(uploadToCloudinary);
-                $(this).val('');
+                event.target.value = ''; // Reset the input
             }
 
             function uploadToCloudinary(file) {
@@ -351,69 +353,79 @@
                 formData.append('file', file);
                 formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
-                const previewId = `preview-${Date.now()}`;
+                const previewId = `preview-loading-${Date.now()}`;
                 const loadingHtml = `<div id="${previewId}" class="preview-image-wrapper d-flex justify-content-center align-items-center border rounded"><div class="spinner-border"></div></div>`;
-                imagePreviewContainer.append(loadingHtml);
+                imagePreviewContainer.insertAdjacentHTML('beforeend', loadingHtml);
 
                 fetch(CLOUDINARY_API_URL, { method: 'POST', body: formData })
                     .then(response => response.json())
-                    .then(data => data.secure_url ? updateUploadedPreview(previewId, data.secure_url) : $(`#${previewId}`).remove())
-                    .catch(() => $(`#${previewId}`).remove());
+                    .then(data => {
+                        const loadingElement = document.getElementById(previewId);
+                        if (data.secure_url) {
+                            const newPreview = createPreviewElement(data.secure_url);
+                            loadingElement.replaceWith(newPreview);
+                            updatePrimaryImageBadge();
+                        } else {
+                            loadingElement.remove();
+                            console.error('Cloudinary upload failed:', data);
+                            alert('Có lỗi xảy ra khi tải ảnh lên.');
+                        }
+                    })
+                    .catch(error => {
+                        document.getElementById(previewId)?.remove();
+                        console.error('Upload fetch error:', error);
+                        alert('Không thể kết nối để tải ảnh.');
+                    });
             }
 
-            function addPreviewAndHiddenInput(imageUrl, isNew = false) {
-                const previewId = `preview-${Date.now()}-${Math.random().toString(36).substring(2)}`;
-                const previewContent = `
-                    <div id="${previewId}" class="preview-image-wrapper" data-url="${imageUrl}">
-                        <img src="${imageUrl}" class="preview-image" alt="Product Preview">
-                        <button type="button" class="btn-remove-image">&times;</button>
-                    </div>`;
-                imagePreviewContainer.append(previewContent);
-
-                $(`#${previewId} .btn-remove-image`).on('click', function() {
-                    $(this).closest('.preview-image-wrapper').remove();
-                    updatePrimaryImageBadge();
-                });
-                if (isNew) {
-                     updatePrimaryImageBadge();
-                }
-            }
-
-            function updateUploadedPreview(previewId, imageUrl) {
-                 const previewElement = $(`#${previewId}`);
-                 previewElement.removeClass('d-flex justify-content-center align-items-center border rounded');
-                 previewElement.html(`
+            function createPreviewElement(imageUrl) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'preview-image-wrapper';
+                wrapper.dataset.url = imageUrl;
+                wrapper.innerHTML = `
                     <img src="${imageUrl}" class="preview-image" alt="Product Preview">
                     <button type="button" class="btn-remove-image">&times;</button>
-                `);
-                previewElement.attr('data-url', imageUrl);
-                previewElement.find('.btn-remove-image').on('click', function() {
-                    $(this).closest('.preview-image-wrapper').remove();
+                `;
+                wrapper.querySelector('.btn-remove-image').addEventListener('click', function() {
+                    wrapper.remove();
                     updatePrimaryImageBadge();
                 });
-                updatePrimaryImageBadge();
+                imagePreviewContainer.appendChild(wrapper);
+                return wrapper;
             }
 
-             function updatePrimaryImageBadge() {
-                imagePreviewContainer.find('.primary-badge').remove(); 
-                const firstImage = imagePreviewContainer.children().first();
-                if (firstImage.length) {
-                    firstImage.append('<span class="primary-badge position-absolute bottom-0 start-0 bg-dark text-white small px-2 py-1 rounded-pill mb-2 ms-2">Ảnh chính</span>');
+            function updatePrimaryImageBadge() {
+                // Remove existing badge
+                const existingBadge = imagePreviewContainer.querySelector('.primary-badge');
+                if (existingBadge) {
+                    existingBadge.remove();
+                }
+                // Add new badge to the first item
+                const firstImageWrapper = imagePreviewContainer.firstElementChild;
+                if (firstImageWrapper) {
+                    const badge = document.createElement('span');
+                    badge.className = 'primary-badge position-absolute bottom-0 start-0 bg-dark text-white small px-2 py-1 rounded-pill mb-2 ms-2';
+                    badge.textContent = 'Ảnh chính';
+                    firstImageWrapper.appendChild(badge);
                 }
             }
             
             function syncImageOrderBeforeSubmit() {
-                hiddenInputsContainer.empty(); // Clear old inputs
-                imagePreviewContainer.children('.preview-image-wrapper').each(function() {
-                    const imageUrl = $(this).data('url');
+                // Clear any existing hidden inputs to prevent duplicates
+                hiddenInputsContainer.innerHTML = ''; 
+                
+                const previewWrappers = imagePreviewContainer.querySelectorAll('.preview-image-wrapper');
+                previewWrappers.forEach(wrapper => {
+                    const imageUrl = wrapper.dataset.url;
                     if (imageUrl) {
-                        const hiddenInput = `<input type="hidden" name="imageUrls" value="${imageUrl}">`;
-                        hiddenInputsContainer.append(hiddenInput);
+                        const hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = 'imageUrls';
+                        hiddenInput.value = imageUrl;
+                        hiddenInputsContainer.appendChild(hiddenInput);
                     }
                 });
             }
-            // Call on load
-            updatePrimaryImageBadge();
         });
     </script>
 </th:block>

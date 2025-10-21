@@ -300,25 +300,26 @@
 
 <th:block layout:fragment="scripts">
     <script th:inline="javascript">
-        $(document).ready(function() {
+        document.addEventListener('DOMContentLoaded', function() {
             // --- CLOUDINARY CONFIG ---
-            const CLOUDINARY_CLOUD_NAME = /*[[${@environment.getProperty('cloudinary.cloud-name')}]]*/ 'dins132fr';
-            const CLOUDINARY_UPLOAD_PRESET = /*[[${@environment.getProperty('cloudinary.upload-preset')}]]*/ 'ml_default';
+            const CLOUDINARY_CLOUD_NAME = /*[[${@environment.getProperty('cloudinaryProduct.cloud-name')}]]*/ 'dins132fr';
+            const CLOUDINARY_UPLOAD_PRESET = /*[[${@environment.getProperty('cloudinaryProduct.upload-preset')}]]*/ 'ml_default';
             const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
             const MAX_IMAGES = 5;
 
             // --- DOM ELEMENTS ---
-            const imageUploadArea = $('#imageUploadArea');
-            const imageInput = $('#imageInput');
-            const imagePreviewContainer = $('#imagePreview');
-            const hiddenInputsContainer = $('#hiddenImageInputsContainer');
+            const imageUploadArea = document.getElementById('imageUploadArea');
+            const imageInput = document.getElementById('imageInput');
+            const imagePreviewContainer = document.getElementById('imagePreview');
+            const hiddenInputsContainer = document.getElementById('hiddenImageInputsContainer');
 
-            imageUploadArea.on('click', () => imageInput.click());
-            imageInput.on('change', handleFileSelect);
+            // --- EVENT LISTENERS ---
+            imageUploadArea.addEventListener('click', () => imageInput.click());
+            imageInput.addEventListener('change', handleFileSelect);
 
             function handleFileSelect(event) {
                 const files = event.target.files;
-                const currentImageCount = hiddenInputsContainer.children('input').length;
+                const currentImageCount = hiddenInputsContainer.children.length;
 
                 if (currentImageCount + files.length > MAX_IMAGES) {
                     alert(`Lỗi: Bạn chỉ có thể tải lên tối đa ${MAX_IMAGES} ảnh.`);
@@ -326,7 +327,7 @@
                 }
 
                 Array.from(files).forEach(uploadToCloudinary);
-                $(this).val(''); // Reset input
+                event.target.value = ''; // Reset input
             }
 
             function uploadToCloudinary(file) {
@@ -343,61 +344,68 @@
                             </div>
                         </div>
                     </div>`;
-                imagePreviewContainer.append(loadingHtml);
+                imagePreviewContainer.insertAdjacentHTML('beforeend', loadingHtml);
 
                 fetch(CLOUDINARY_API_URL, { method: 'POST', body: formData })
                     .then(response => response.json())
                     .then(data => {
+                        const loadingElement = document.getElementById(previewId);
                         if (data.secure_url) {
-                            addPreviewAndHiddenInput(previewId, data.secure_url);
+                            addPreviewAndHiddenInput(loadingElement, data.secure_url);
                         } else {
-                            $(`#${previewId}`).remove();
+                            loadingElement.remove();
                             console.error('Cloudinary upload error:', data);
                             alert('Có lỗi xảy ra khi tải ảnh. Vui lòng thử lại.');
                         }
                     })
                     .catch(error => {
-                        $(`#${previewId}`).remove();
+                        const loadingElement = document.getElementById(previewId);
+                        if(loadingElement) loadingElement.remove();
                         console.error('API fetch error:', error);
                         alert('Lỗi mạng. Không thể tải ảnh lên.');
                     });
             }
 
-            function addPreviewAndHiddenInput(previewId, imageUrl) {
-                const previewElement = $(`#${previewId}`);
-                
-                // --- Create hidden input ---
-                // I use a simple name "imageUrls" to send a list of strings to the controller.
-                const hiddenInput = `<input type="hidden" id="hidden-${previewId}" name="imageUrls" value="${imageUrl}">`;
-                hiddenInputsContainer.append(hiddenInput);
+            function addPreviewAndHiddenInput(previewElement, imageUrl) {
+                // Create hidden input
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'imageUrls';
+                hiddenInput.value = imageUrl;
+                hiddenInput.id = `hidden-${previewElement.id}`;
+                hiddenInputsContainer.appendChild(hiddenInput);
 
-                // --- Update preview content ---
-                const previewContent = `
+                // Update preview content
+                previewElement.innerHTML = `
                     <img src="${imageUrl}" class="preview-image" alt="Product Preview">
-                    <button type="button" class="btn-remove-image" data-preview-id="${previewId}">&times;</button>
+                    <button type="button" class="btn-remove-image" data-preview-id="${previewElement.id}">&times;</button>
                 `;
-                previewElement.html(previewContent);
-                 // Add primary image badge if it's the first image
-                if (hiddenInputsContainer.children('input').length === 1) {
+                
+                // Add primary badge if it's the first image
+                if (hiddenInputsContainer.children.length === 1) {
                     addPrimaryBadge(previewElement);
                 }
 
-                // --- Add event listener for remove button ---
-                previewElement.find('.btn-remove-image').on('click', function() {
-                    const wasPrimary = previewElement.find('.primary-badge').length > 0;
+                // Add event listener for remove button
+                previewElement.querySelector('.btn-remove-image').addEventListener('click', function() {
+                    const wasPrimary = previewElement.querySelector('.primary-badge') !== null;
                     
-                    $(`#hidden-${previewId}`).remove();
+                    document.getElementById(hiddenInput.id).remove();
                     previewElement.remove();
 
-                     if (wasPrimary && imagePreviewContainer.children('.preview-image-wrapper').length > 0) {
-                        const newFirstPreview = imagePreviewContainer.children('.preview-image-wrapper').first();
+                    if (wasPrimary && imagePreviewContainer.children.length > 0) {
+                        const newFirstPreview = imagePreviewContainer.firstElementChild;
                         addPrimaryBadge(newFirstPreview);
                     }
                 });
             }
-            
+
             function addPrimaryBadge(previewElement) {
-                previewElement.append('<span class="primary-badge position-absolute bottom-0 start-0 bg-dark text-white small px-2 py-1 rounded-pill mb-2 ms-2">Ảnh chính</span>');
+                 if (previewElement.querySelector('.primary-badge')) return; // Badge already exists
+                const badge = document.createElement('span');
+                badge.className = 'primary-badge position-absolute bottom-0 start-0 bg-dark text-white small px-2 py-1 rounded-pill mb-2 ms-2';
+                badge.textContent = 'Ảnh chính';
+                previewElement.appendChild(badge);
             }
         });
     </script>
