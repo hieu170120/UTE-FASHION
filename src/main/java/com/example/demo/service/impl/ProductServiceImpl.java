@@ -278,4 +278,21 @@ public class ProductServiceImpl implements ProductService {
             }
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductDTO> getAllProducts() {
+        return productRepository.findAll().stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void toggleProductActiveStatus(Integer id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+        product.setActive(!product.isActive());
+        productRepository.save(product);
+    }
 }
