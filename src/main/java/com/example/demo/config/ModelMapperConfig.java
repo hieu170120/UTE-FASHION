@@ -1,6 +1,8 @@
 package com.example.demo.config;
 
 import org.modelmapper.ModelMapper;
+import com.github.slugify.Slugify;
+
 import org.modelmapper.convention.MatchingStrategies;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.modelmapper.spi.MatchingStrategy;
@@ -20,5 +22,9 @@ public class ModelMapperConfig {
         );
 
         return modelMapper;
+    }
+    @Bean
+    public Slugify slugify() {
+        return Slugify.builder().build();
     }
 }

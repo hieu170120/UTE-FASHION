@@ -16,6 +16,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer>, JpaS
 
     Optional<Product> findBySlug(String slug);
 
+    List<Product> findAllByShop_Id(Integer shopId);
     @Query("SELECT new com.example.demo.dto.ProductSummaryDTO(p.id, p.productName, p.slug, p.price, p.salePrice) " +
            "FROM Product p WHERE p.isActive = true ORDER BY p.createdAt DESC")
     List<ProductSummaryDTO> findSummaryNewest(Pageable pageable);

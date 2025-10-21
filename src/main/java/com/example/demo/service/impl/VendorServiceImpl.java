@@ -11,11 +11,12 @@ import com.example.demo.dto.ShopRegistrationDTO;
 import com.example.demo.entity.Role;
 import com.example.demo.entity.Shop;
 import com.example.demo.entity.User;
+import com.example.demo.exception.UnauthorizedException;
 import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.ShopRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.VendorService;
-//import com.github.slugify.Slugify;
+import com.github.slugify.Slugify;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,7 +27,7 @@ public class VendorServiceImpl implements VendorService {
 	private final UserRepository userRepository;
 	private final ShopRepository shopRepository;
 	private final RoleRepository roleRepository;
-//	private final Slugify slugify = Slugify.builder().build();
+	private final Slugify slugify = Slugify.builder().build();
 
 	@Override
 	@Transactional
@@ -60,8 +61,7 @@ public class VendorServiceImpl implements VendorService {
 		Shop newShop = new Shop();
 		newShop.setVendor(currentUser);
 		newShop.setShopName(registrationDTO.getShopName());
-//		slugify.slugify(registrationDTO.getShopName())
-		newShop.setSlug("111");
+		newShop.setSlug(slugify.slugify(registrationDTO.getShopName()));
 		newShop.setDescription(registrationDTO.getDescription());
 		newShop.setLogoUrl(registrationDTO.getLogoUrl());
 		newShop.setActive(false); // Chờ admin duyệt
@@ -92,8 +92,7 @@ public class VendorServiceImpl implements VendorService {
 
 		existingShop.setShopName(shopDTO.getShopName());
 
-//		existingShop.setSlug(slugify.slugify(shopDTO.getShopName()));
-		existingShop.setSlug("111");
+		existingShop.setSlug(slugify.slugify(shopDTO.getShopName()));
 
 		existingShop.setDescription(shopDTO.getDescription());
 		if (shopDTO.getLogoUrl() != null && !shopDTO.getLogoUrl().isEmpty()) {
@@ -101,5 +100,14 @@ public class VendorServiceImpl implements VendorService {
 		}
 
 		return shopRepository.save(existingShop);
+	}
+
+	@Override
+	public Integer getShopIdByUsername(String username) {
+		User user = userRepository.findByUsername(username)
+				.orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+		Shop shop = shopRepository.findByVendorUserId(user.getUserId())
+				.orElseThrow(() -> new UnauthorizedException("User does not have a shop."));
+		return shop.getId();
 	}
 }

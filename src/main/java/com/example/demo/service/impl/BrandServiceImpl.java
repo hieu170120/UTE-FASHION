@@ -1,6 +1,7 @@
 package com.example.demo.service.impl;
 
 import com.example.demo.dto.BrandDTO;
+import com.example.demo.dto.CategoryDTO;
 import com.example.demo.entity.Brand;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.BrandRepository;
@@ -27,7 +28,11 @@ public class BrandServiceImpl implements BrandService {
                 .map(brand -> modelMapper.map(brand, BrandDTO.class))
                 .collect(Collectors.toList());
     }
-
+    public List<BrandDTO> findAllActive() {
+        return brandRepository.findAllByIsActive(true).stream()
+                .map(category -> modelMapper.map(category, BrandDTO.class))
+                .collect(Collectors.toList());
+    }
     @Override
     public BrandDTO getBrandById(Integer id) {
         Brand brand = brandRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Brand not found with id: " + id));
