@@ -65,7 +65,9 @@ public class ShipperOrderController {
     // }
 
     @GetMapping("/{id}/detail")
-    public String getOrderDetail(@PathVariable Integer id, Model model, HttpSession session) {
+    public String getOrderDetail(@PathVariable Integer id, 
+                                 @RequestParam(required = false) Boolean fromHistory,
+                                 Model model, HttpSession session) {
         User currentUser = (User) session.getAttribute("currentUser");
         if (currentUser == null || currentUser.getRoles() == null || currentUser.getRoles().stream().noneMatch(role -> "SHIPPER".equals(role.getRoleName()))) {
             return "redirect:/login";
@@ -77,32 +79,25 @@ public class ShipperOrderController {
             // Mark notification as read for this order
             notificationService.markNotificationAsReadByOrder(shipperId, id);
             
-            // Kiểm tra xem có hiển thị "Shipper hủy" không
-            // CHỈ hiển thị "Shipper hủy" nếu:
-            // 1. Shipper này đã hủy đơn (có trong lịch sử hủy)
-            // 2. VÀ đơn CHƯA được giao lại cho shipper này
-            //    (tức là: shipperId != shipperId hiện tại HOẶC orderStatus == Processing)
-            
-            com.example.demo.dto.ShipperCancelHistoryDTO shipperCancel = null;
-            
-            // Kiểm tra xem đơn có được giao (lại) cho shipper này không
-            boolean isCurrentlyAssigned = order.getShipperId() != null 
-                && order.getShipperId().equals(shipperId) 
-                && !"Processing".equals(order.getOrderStatus());
-            
-            // Chỉ kiểm tra lịch sử hủy nếu đơn KHÔNG được giao cho shipper này
-            if (!isCurrentlyAssigned) {
+            // Nếu xem từ lịch sử hủy, cần hiển thị trạng thái "Shipper hủy" dù đơn đã được giao lại
+            if (Boolean.TRUE.equals(fromHistory)) {
+                // Lấy thông tin hủy từ lịch sử
                 java.util.List<com.example.demo.dto.ShipperCancelHistoryDTO> shipperCancelHistory = 
                     orderManagementService.getShipperCancelHistory(shipperId);
                 
-                shipperCancel = shipperCancelHistory.stream()
+                com.example.demo.dto.ShipperCancelHistoryDTO shipperCancel = shipperCancelHistory.stream()
                     .filter(h -> h.getOrderId().equals(id))
                     .findFirst()
                     .orElse(null);
+                
+                if (shipperCancel != null) {
+                    // Ghi đè trạng thái để hiển thị "Shipper hủy"
+                    order.setOrderStatus("Shipper_Cancelled");
+                    model.addAttribute("viewFromHistory", true);
+                }
             }
             
             model.addAttribute("order", order);
-            model.addAttribute("shipperCancel", shipperCancel);
             model.addAttribute("shipperName", currentUser.getFullName() != null ? currentUser.getFullName() : currentUser.getUsername());
             model.addAttribute("cancelCount", orderManagementService.getShipperCancelCount(shipperId));
             return "shipper/order/detail";

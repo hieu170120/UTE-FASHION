@@ -43,12 +43,14 @@ public class CustomerOrderController {
             return "redirect:/login";
         }
         
-        // Pageable with sorting by orderDate DESC (newest first)
-        Pageable pageable = PageRequest.of(page, 10);
-        Page<OrderDTO> orderPage = orderService.getUserOrdersPageable(currentUser.getUserId(), pageable);
+        // Lấy tất cả đơn hàng của user (không phân trang trước)
+        List<OrderDTO> allOrders = orderManagementService.getCustomerOrders(currentUser.getUserId());
         
-        // Apply filters if provided
-        List<OrderDTO> filteredOrders = orderPage.getContent();
+        // Sắp xếp theo ngày đặt hàng giảm dần (mới nhất trước)
+        allOrders.sort((o1, o2) -> o2.getOrderDate().compareTo(o1.getOrderDate()));
+        
+        // Apply filters nếu có
+        List<OrderDTO> filteredOrders = allOrders;
         
         if (status != null && !status.isEmpty()) {
             filteredOrders = filteredOrders.stream()
@@ -70,8 +72,34 @@ public class CustomerOrderController {
                 .collect(java.util.stream.Collectors.toList());
         }
         
+        // Phân trang thủ công sau khi đã filter
+        int pageSize = 10;
+        int totalElements = filteredOrders.size();
+        int totalPages = (int) Math.ceil((double) totalElements / pageSize);
+        
+        // Đảm bảo page không vượt quá giới hạn
+        if (page >= totalPages && totalPages > 0) {
+            page = totalPages - 1;
+        }
+        if (page < 0) {
+            page = 0;
+        }
+        
+        int fromIndex = page * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, totalElements);
+        
+        List<OrderDTO> pageContent = totalElements > 0 ? 
+            filteredOrders.subList(fromIndex, toIndex) : 
+            java.util.Collections.emptyList();
+        
+        // Tạo Page object thủ công
+        Pageable pageable = PageRequest.of(page, pageSize);
+        Page<OrderDTO> orderPage = new org.springframework.data.domain.PageImpl<>(
+            pageContent, pageable, totalElements
+        );
+        
         model.addAttribute("orderPage", orderPage);
-        model.addAttribute("filteredOrders", filteredOrders);
+        model.addAttribute("filteredOrders", null); // Không cần nữa vì đã có trong orderPage
         model.addAttribute("selectedStatus", status);
         model.addAttribute("fromDate", fromDate);
         model.addAttribute("toDate", toDate);
@@ -134,8 +162,10 @@ public class CustomerOrderController {
                 return "redirect:/orders/my-orders";
             }
             
-            // Kiểm tra trạng thái
-            if (!"Processing".equals(order.getOrderStatus()) && !"Confirmed".equals(order.getOrderStatus())) {
+            // Kiểm tra trạng thái (cho phép hủy khi Processing, Confirmed hoặc Shipper_Cancelled)
+            if (!"Processing".equals(order.getOrderStatus()) 
+                && !"Confirmed".equals(order.getOrderStatus())
+                && !"Shipper_Cancelled".equals(order.getOrderStatus())) {
                 redirectAttributes.addFlashAttribute("errorMessage", "Không thể hủy đơn ở trạng thái này");
                 return "redirect:/orders/" + orderId + "/detail";
             }

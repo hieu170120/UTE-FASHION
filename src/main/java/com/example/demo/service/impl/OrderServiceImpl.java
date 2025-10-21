@@ -326,12 +326,31 @@ public class OrderServiceImpl implements OrderService {
             updateOrderStatus(orderId, OrderStatus.DELIVERED.getValue(), "Delivery completed", null);
         }
     }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<OrderDTO> findOrdersByFilters(String status, String fromDate, String toDate, Pageable pageable) {
+        LocalDateTime fromDateTime = null;
+        LocalDateTime toDateTime = null;
+        
+        if (fromDate != null && !fromDate.isEmpty()) {
+            fromDateTime = java.time.LocalDate.parse(fromDate).atStartOfDay();
+        }
+        
+        if (toDate != null && !toDate.isEmpty()) {
+            toDateTime = java.time.LocalDate.parse(toDate).atTime(23, 59, 59);
+        }
+        
+        return orderRepository.findByFilters(status, fromDateTime, toDateTime, pageable)
+                .map(this::mapToOrderDTO);
+    }
 
     private OrderDTO mapToOrderDTO(Order order) {
         OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
         
-        // Lấy lý do trả hàng nếu có (bao gồm cả trường hợp đã reject)
+        // Lấy lý do trả hàng nếu có (bao gồm cả trường hợp đã reject và đã trả hàng)
         if ("Return_Requested".equals(order.getOrderStatus()) || 
+            "Returned".equals(order.getOrderStatus()) ||
             ("Delivered".equals(order.getOrderStatus()) && order.getAdminNotes() != null && order.getAdminNotes().contains("Lý do từ chối trả hàng"))) {
             returnRequestRepository.findByOrderId(order.getId())
                 .stream()

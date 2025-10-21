@@ -14,5 +14,6 @@ public interface CarrierService {
     CarrierDTO createCarrier(CarrierDTO carrierDTO);
     CarrierDTO updateCarrier(Integer id, CarrierDTO carrierDTO);
     void deleteCarrier(Integer id);
-    Page<CarrierDTO> getAllCarriersPaged(Pageable pageable); // Nếu cần paging
+    Page<CarrierDTO> getAllCarriersPaged(Pageable pageable);
+    Page<CarrierDTO> findCarriersByFilters(String search, Boolean active, Pageable pageable);
 }

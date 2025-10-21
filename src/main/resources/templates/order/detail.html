@@ -106,23 +106,20 @@
                             </p>
                         </div>
                         <span class="status-badge"
-                              th:classappend="${order.orderStatus == 'Processing' ? 'bg-warning text-dark' :
-                                              order.orderStatus == 'Confirmed' ? 'bg-info text-white' :
+                              th:classappend="${order.orderStatus == 'Processing' || order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'bg-warning text-dark' :
                                               order.orderStatus == 'Shipping' ? 'bg-primary text-white' :
                                               order.orderStatus == 'Delivered' ? 'bg-success text-white' :
                                               order.orderStatus == 'Return_Requested' ? 'bg-warning text-white' :
                                               order.orderStatus == 'Returned' ? 'bg-secondary text-white' :
                                               order.orderStatus == 'Cancelled' ? 'bg-danger text-white' : 'bg-secondary text-white'}">
                             <i class="fas"
-                               th:classappend="${order.orderStatus == 'Processing' ? 'fa-hourglass-half' :
-                                                order.orderStatus == 'Confirmed' ? 'fa-check-circle' :
+                               th:classappend="${order.orderStatus == 'Processing' || order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'fa-hourglass-half' :
                                                 order.orderStatus == 'Shipping' ? 'fa-truck' :
                                                 order.orderStatus == 'Delivered' ? 'fa-check-double' :
                                                 order.orderStatus == 'Return_Requested' ? 'fa-undo' :
                                                 order.orderStatus == 'Returned' ? 'fa-box-open' :
                                                 order.orderStatus == 'Cancelled' ? 'fa-times-circle' : 'fa-question-circle'}"></i>
-                            <span th:text="${order.orderStatus == 'Processing' ? 'Đang xử lý' :
-                                            order.orderStatus == 'Confirmed' ? 'Đã xử lý' :
+                            <span th:text="${order.orderStatus == 'Processing' || order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'Đang xử lý' :
                                             order.orderStatus == 'Shipping' ? 'Đang giao' :
                                             order.orderStatus == 'Delivered' ? 'Đã giao' :
                                             order.orderStatus == 'Return_Requested' ? 'Yêu cầu trả hàng' :
@@ -177,8 +174,8 @@
                         <i class="fas fa-cog text-primary me-2"></i>Hành động
                     </h5>
                     
-                    <!-- Nút Hủy Đơn (chỉ khi Processing hoặc Confirmed) -->
-                    <a th:if="${order.orderStatus == 'Processing' or order.orderStatus == 'Confirmed'}"
+                    <!-- Nút Hủy Đơn (khi Processing, Confirmed hoặc Shipper_Cancelled) -->
+                    <a th:if="${order.orderStatus == 'Processing' or order.orderStatus == 'Confirmed' or order.orderStatus == 'Shipper_Cancelled'}"
                        th:href="@{/orders/{orderId}/cancel(orderId=${order.id})}"
                        class="btn btn-danger w-100 mb-2">
                         <i class="fas fa-times-circle me-2"></i> Hủy Đơn Hàng
@@ -193,14 +190,9 @@
                     
                     
                     <!-- Thông báo nếu đơn đang chờ xử lý -->
-                    <div th:if="${order.orderStatus == 'Processing'}" class="alert alert-info mb-0">
+                    <div th:if="${order.orderStatus == 'Processing' || order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled'}" class="alert alert-info mb-0">
                         <i class="fas fa-info-circle me-2"></i>
-                        Đơn hàng đang chờ admin xử lý và phân công shipper.
-                    </div>
-                    
-                    <div th:if="${order.orderStatus == 'Confirmed'}" class="alert alert-success mb-0">
-                        <i class="fas fa-check-circle me-2"></i>
-                        Đơn hàng đã được xác nhận và sắp được giao.
+                        Đơn hàng đang chờ xử lý. Bạn có thể hủy đơn nếu cần.
                     </div>
                     
                     <div th:if="${order.orderStatus == 'Shipping'}" class="alert alert-primary mb-0">
@@ -252,10 +244,13 @@
                     
                     <div th:if="${order.orderStatus == 'Returned'}" class="alert alert-secondary mb-0">
                         <i class="fas fa-box-open me-2"></i>
-                        <strong>Đơn hàng đã được trả lại.</strong>
-                        <div th:if="${order.returnReason != null && !#strings.isEmpty(order.returnReason)}" class="mt-2 pt-2 border-top">
-                            <strong>Lý do trả hàng:</strong><br/>
-                            <span th:text="${order.returnReason}"></span>
+                        <strong>Đơn hàng đã được trả lại thành công.</strong>
+                        <p class="mb-0 mt-2">
+                            <small class="text-muted">Admin đã chấp nhận yêu cầu trả hàng của bạn.</small>
+                        </p>
+                        <div th:if="${order.returnReason != null && !#strings.isEmpty(order.returnReason)}" class="mt-3 p-3 bg-light rounded">
+                            <p class="mb-1"><strong><i class="fas fa-comment-alt me-1"></i> Lý do trả hàng của bạn:</strong></p>
+                            <p class="mb-0" th:text="${order.returnReason}"></p>
                         </div>
                     </div>
                     
