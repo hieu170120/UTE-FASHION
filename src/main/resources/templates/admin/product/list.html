@@ -84,6 +84,7 @@
                     <thead>
                     <tr>
                         <th>Tên sản phẩm</th>
+                        <th>Tên Shop</th>
                         <th class="text-end">Giá</th>
                         <th class="text-center">Trạng thái (Is Active)</th>
                     </tr>
@@ -91,6 +92,7 @@
                     <tbody>
                     <tr th:each="product : ${products}">
                         <td th:text="${product.productName}"></td>
+                        <td th:text="${product.shopName}"></td>
                         <td class="text-end" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
                         <td class="text-center">
                             <form th:action="@{/admin/products/toggle-active/{id}(id=${product.id})}" method="post" class="form-check form-switch d-inline-block">
@@ -133,7 +135,7 @@
                 "lengthMenu": [ [10, 25, 50, -1], [10, 25, 50, "Tất cả"] ],
                 "pageLength": 10,
                  "columnDefs": [ {
-                    "targets": 2,
+                    "targets": [3],
                     "orderable": false,
                     "searchable": false
                 } ]

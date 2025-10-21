@@ -4,7 +4,7 @@
       layout:decorate="~{layout/default}">
 <head>
     <title>Chỉnh sửa sản phẩm</title>
-    <th:block layout:fragment="css">
+    <th:block layout:fragment="styles">
         <style>
             body {
                 font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
@@ -22,14 +22,14 @@
             .card-header { background-color: #f8f9fa; border-bottom: 2px solid #000; }
             .form-check-input:checked { background-color: #000; border-color: #000; }
             .variant-table .btn-sm { padding: .2rem .4rem; font-size: .8rem; }
-            .color-dot {
-                display: inline-block;
-                width: 15px;
-                height: 15px;
-                border-radius: 50%;
-                vertical-align: middle;
-                border: 1px solid #ccc;
-            }
+            .color-dot { display: inline-block; width: 15px; height: 15px; border-radius: 50%; vertical-align: middle; border: 1px solid #ccc; }
+
+            /* --- Image Upload Styles --- */
+            .upload-area { transition: background-color .2s ease-in-out; }
+            .upload-area:hover { background-color: #e9ecef; }
+            .preview-image-wrapper { position: relative; width: 120px; height: 120px; }
+            .preview-image { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 1px solid #ddd; }
+            .btn-remove-image { position: absolute; top: -5px; right: -5px; width: 24px; height: 24px; background-color: black; color: white; border-radius: 50%; border: 2px solid white; font-weight: bold; line-height: 1; cursor: pointer; display: flex; justify-content: center; align-items: center; z-index: 10;}
         </style>
     </th:block>
 </head>
@@ -47,7 +47,7 @@
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-            <form th:action="@{/vendor/products/edit/{id}(id=${form.product.id})}" th:object="${form}" method="post">
+            <form th:action="@{/vendor/products/edit/{id}(id=${form.product.id})}" th:object="${form}" method="post" id="productForm">
 
                 <div class="card mb-4">
                     <div class="card-header">
@@ -110,12 +110,38 @@
                     </div>
                 </div>
 
+                <!-- NEW IMAGES SECTION -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4 class="mb-0">Hình ảnh</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Tải ảnh lên</label>
+                            <p class="text-muted small">Tải lên tối đa 5 ảnh. Kéo thả để sắp xếp. Ảnh đầu tiên sẽ là ảnh đại diện.</p>
+                            <div class="upload-area border rounded p-4 text-center" id="imageUploadArea" style="cursor: pointer;">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-primary"></i>
+                                <p class="mt-2 mb-0"><strong>Nhấp hoặc kéo thả ảnh vào đây</strong></p>
+                                <small class="text-muted">Hỗ trợ JPG, PNG, GIF</small>
+                                <input type="file" id="imageInput" accept="image/*" multiple class="d-none">
+                            </div>
+                        </div>
+                        <div id="imagePreview" class="mt-3 d-flex flex-wrap gap-3">
+                            <!-- Previews will be appended here -->
+                        </div>
+                        <div id="hiddenImageInputsContainer">
+                            <!-- Hidden inputs for submitted URLs will be appended here -->
+                        </div>
+                    </div>
+                </div>
+                <!-- END NEW IMAGES SECTION -->
+
                 <div class="card mb-4">
                     <div class="card-header">
                         <h4 class="mb-0">Tồn kho & Vận chuyển</h4>
                     </div>
                     <div class="card-body">
-                        <div class="row">
+                         <div class="row">
                             <div class="col-md-6">
                                 <label for="stockQuantity" class="form-label">Số lượng tồn kho</label>
                                 <input type="number" id="stockQuantity" class="form-control" th:field="*{product.stockQuantity}">
@@ -174,30 +200,6 @@
                     </div>
                 </div>
 
-
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h4 class="mb-0">Hình ảnh</h4>
-                    </div>
-                    <div class="card-body">
-                        <div th:each="i : ${#numbers.sequence(0, 2)}">
-                             <div class="row align-items-center mb-3 p-2 border rounded">
-                                 <div class="col-md-8">
-                                     <label class="form-label" th:text="'URL Hình ảnh ' + ${i+1}"></label>
-                                     <input type="hidden" th:field="*{images[__${i}__].id}"/>
-                                     <input type="text" class="form-control" th:field="*{images[__${i}__].imageUrl}">
-                                 </div>
-                                 <div class="col-md-4">
-                                    <div class="form-check mt-4">
-                                        <input class="form-check-input" type="radio" th:field="*{primaryImageIndex}" th:id="'primaryImage' + ${i}" th:value="${i}">
-                                        <label class="form-check-label" th:for="'primaryImage' + ${i}">Đặt làm ảnh chính</label>
-                                    </div>
-                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="card mb-4">
                      <div class="card-header">
                         <h4 class="mb-0">Tùy chọn hiển thị</h4>
@@ -216,8 +218,8 @@
             </form>
 
             <!-- Variants Section -->
-             <div class="card mt-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card mt-4">
+                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">Biến thể sản phẩm</h4>
                 </div>
                 <div class="card-body">
@@ -286,6 +288,135 @@
         </div>
     </div>
 </div>
+
+<th:block layout:fragment="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script th:inline="javascript">
+        $(document).ready(function() {
+            // --- CONFIG ---
+            const CLOUDINARY_CLOUD_NAME = /*[[${@environment.getProperty('cloudinary.cloud-name')}]]*/ 'dins132fr';
+            const CLOUDINARY_UPLOAD_PRESET = /*[[${@environment.getProperty('cloudinary.upload-preset')}]]*/ 'ml_default';
+            const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+            const MAX_IMAGES = 5;
+            const existingImages = /*[[${form.images}]]*/ [];
+
+            // --- DOM ELEMENTS ---
+            const imageUploadArea = $('#imageUploadArea');
+            const imageInput = $('#imageInput');
+            const imagePreviewContainer = $('#imagePreview');
+            const hiddenInputsContainer = $('#hiddenImageInputsContainer');
+            const productForm = $('#productForm');
+
+            // --- INITIALIZE ---
+            initializeExistingImages();
+            initializeSortable();
+
+            // --- EVENT LISTENERS ---
+            imageUploadArea.on('click', () => imageInput.click());
+            imageInput.on('change', handleFileSelect);
+            productForm.on('submit', syncImageOrderBeforeSubmit);
+
+            // --- FUNCTIONS ---
+            function initializeSortable() {
+                new Sortable(imagePreviewContainer[0], {
+                    animation: 150,
+                    ghostClass: 'bg-light',
+                    onEnd: function() {
+                        updatePrimaryImageBadge();
+                    }
+                });
+            }
+            
+            function initializeExistingImages() {
+                existingImages.forEach(image => {
+                     if(image.imageUrl) {
+                         addPreviewAndHiddenInput(image.imageUrl);
+                     }
+                });
+            }
+
+            function handleFileSelect(event) {
+                const files = event.target.files;
+                const currentImageCount = imagePreviewContainer.children().length;
+                if (currentImageCount + files.length > MAX_IMAGES) {
+                    alert(`Lỗi: Bạn chỉ có thể có tối đa ${MAX_IMAGES} ảnh.`);
+                    return;
+                }
+                Array.from(files).forEach(uploadToCloudinary);
+                $(this).val('');
+            }
+
+            function uploadToCloudinary(file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+                const previewId = `preview-${Date.now()}`;
+                const loadingHtml = `<div id="${previewId}" class="preview-image-wrapper d-flex justify-content-center align-items-center border rounded"><div class="spinner-border"></div></div>`;
+                imagePreviewContainer.append(loadingHtml);
+
+                fetch(CLOUDINARY_API_URL, { method: 'POST', body: formData })
+                    .then(response => response.json())
+                    .then(data => data.secure_url ? updateUploadedPreview(previewId, data.secure_url) : $(`#${previewId}`).remove())
+                    .catch(() => $(`#${previewId}`).remove());
+            }
+
+            function addPreviewAndHiddenInput(imageUrl, isNew = false) {
+                const previewId = `preview-${Date.now()}-${Math.random().toString(36).substring(2)}`;
+                const previewContent = `
+                    <div id="${previewId}" class="preview-image-wrapper" data-url="${imageUrl}">
+                        <img src="${imageUrl}" class="preview-image" alt="Product Preview">
+                        <button type="button" class="btn-remove-image">&times;</button>
+                    </div>`;
+                imagePreviewContainer.append(previewContent);
+
+                $(`#${previewId} .btn-remove-image`).on('click', function() {
+                    $(this).closest('.preview-image-wrapper').remove();
+                    updatePrimaryImageBadge();
+                });
+                if (isNew) {
+                     updatePrimaryImageBadge();
+                }
+            }
+
+            function updateUploadedPreview(previewId, imageUrl) {
+                 const previewElement = $(`#${previewId}`);
+                 previewElement.removeClass('d-flex justify-content-center align-items-center border rounded');
+                 previewElement.html(`
+                    <img src="${imageUrl}" class="preview-image" alt="Product Preview">
+                    <button type="button" class="btn-remove-image">&times;</button>
+                `);
+                previewElement.attr('data-url', imageUrl);
+                previewElement.find('.btn-remove-image').on('click', function() {
+                    $(this).closest('.preview-image-wrapper').remove();
+                    updatePrimaryImageBadge();
+                });
+                updatePrimaryImageBadge();
+            }
+
+             function updatePrimaryImageBadge() {
+                imagePreviewContainer.find('.primary-badge').remove(); 
+                const firstImage = imagePreviewContainer.children().first();
+                if (firstImage.length) {
+                    firstImage.append('<span class="primary-badge position-absolute bottom-0 start-0 bg-dark text-white small px-2 py-1 rounded-pill mb-2 ms-2">Ảnh chính</span>');
+                }
+            }
+            
+            function syncImageOrderBeforeSubmit() {
+                hiddenInputsContainer.empty(); // Clear old inputs
+                imagePreviewContainer.children('.preview-image-wrapper').each(function() {
+                    const imageUrl = $(this).data('url');
+                    if (imageUrl) {
+                        const hiddenInput = `<input type="hidden" name="imageUrls" value="${imageUrl}">`;
+                        hiddenInputsContainer.append(hiddenInput);
+                    }
+                });
+            }
+            // Call on load
+            updatePrimaryImageBadge();
+        });
+    </script>
+</th:block>
 
 </body>
 </html>

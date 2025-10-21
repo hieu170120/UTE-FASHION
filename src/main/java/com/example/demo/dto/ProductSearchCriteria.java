@@ -1,6 +1,5 @@
 package com.example.demo.dto;
 
-// We are replacing @Data with explicit getters and setters to ensure Spring's data binding works reliably.
 public class ProductSearchCriteria {
 	private String keyword;
 	private String categorySlug;

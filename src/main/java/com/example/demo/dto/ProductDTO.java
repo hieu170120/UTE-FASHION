@@ -13,6 +13,7 @@ public class ProductDTO {
 	private Integer brandId;
     private String brandName;
 	private Integer shopId;
+    private String shopName;
 	private String description;
 	private String shortDescription;
 	private BigDecimal price;
