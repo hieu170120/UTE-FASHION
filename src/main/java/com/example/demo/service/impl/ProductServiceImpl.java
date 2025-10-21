@@ -205,8 +205,10 @@ public class ProductServiceImpl implements ProductService {
     public ProductDTO updateProduct(Integer id, ProductDTO productDTO, List<ProductImageDTO> imageDTOs, Integer shopId) {
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+        boolean originalIsActive = existingProduct.isActive();
 
         modelMapper.map(productDTO, existingProduct);
+        existingProduct.setActive(originalIsActive);
         existingProduct.setId(id);
         existingProduct.setSlug(slugify.slugify(productDTO.getProductName()));
         existingProduct.setShop(shopRepository.findById(shopId).orElseThrow(() -> new ResourceNotFoundException("Shop not found")));

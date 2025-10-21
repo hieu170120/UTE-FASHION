@@ -4,9 +4,10 @@
       layout:decorate="~{layout/default}">
 <head>
     <title>Quản lý sản phẩm</title>
-    <th:block layout:fragment="css">
+    <th:block layout:fragment="styles">
+        <!-- DataTables CSS for Bootstrap 5 -->
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
         <style>
-            /* Giữ nguyên CSS gốc của bạn */
             body {
                 font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
                 color: #111;
@@ -18,13 +19,51 @@
             .card { border: 1px solid #e5e5e5; border-radius: 8px; }
             .card-header { background-color: #fff; border-bottom: 2px solid #000; padding: 1rem 1.5rem; }
             .table { margin-bottom: 0; }
-            .table thead th { background-color: #f8f9fa; font-weight: 600; font-size: 14px; text-transform: uppercase; border-bottom-width: 2px; border-color: #dee2e6; }
             .table tbody tr:hover { background-color: #f1f3f5; }
             .btn-sm { padding: .25rem .5rem; font-size: .8rem; }
             .btn-outline-dark { border-color: #000; color: #000; }
             .btn-outline-dark:hover { background-color: #000; color: #fff; }
             .btn-outline-danger { border-color: #dc3545; color: #dc3545; }
             .btn-outline-danger:hover { background-color: #dc3545; color: #fff; }
+
+            /* Custom styles for table padding and DataTables pagination */
+            .table td, .table th {
+                padding: 0.9rem;
+                vertical-align: middle; /* Center content vertically */
+            }
+            .table thead th {
+                background-color: #f8f9fa;
+                font-weight: 600;
+                font-size: 14px;
+                text-transform: uppercase;
+                border-bottom-width: 2px;
+                border-color: #dee2e6;
+            }
+            .dataTables_wrapper .pagination .page-item .page-link {
+                background-color: #fff;
+                color: #000;
+                border: 1px solid #dee2e6;
+                margin: 0 2px;
+                border-radius: .25rem;
+                transition: all 0.2s ease-in-out;
+            }
+            .dataTables_wrapper .pagination .page-item .page-link:hover {
+                background-color: #e9ecef;
+                color: #000;
+                border-color: #dee2e6;
+            }
+            .dataTables_wrapper .pagination .page-item.active .page-link {
+                background-color: #000;
+                color: #fff;
+                border-color: #000;
+            }
+            .dataTables_wrapper .pagination .page-item.disabled .page-link {
+                background-color: #f8f9fa;
+                color: #6c757d;
+            }
+            .dataTables_wrapper .row:first-of-type > div {
+                padding-bottom: 1rem;
+            }
         </style>
     </th:block>
 </head>
@@ -46,7 +85,7 @@
 
     <!-- Product Table Card -->
     <div class="card">
-        <div class="card-body p-0">
+        <div class="card-body p-3">
 
             <!-- Empty State -->
             <div th:if="${isProductListEmpty}" class="text-center p-5">
@@ -57,7 +96,7 @@
 
             <!-- Product Table -->
             <div th:unless="${isProductListEmpty}" class="table-responsive">
-                <table class="table table-hover align-middle">
+                <table id="productTable" class="table table-hover align-middle" style="width:100%">
                     <thead>
                     <tr>
                         <th class="text-center">ID</th>
@@ -95,6 +134,42 @@
         </div>
     </div>
 </div>
+
+<th:block layout:fragment="scripts">
+    <!-- jQuery (required for DataTables) -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            $('#productTable').DataTable({
+                "language": {
+                    "lengthMenu": "Hiển thị _MENU_ mục",
+                    "zeroRecords": "Không tìm thấy kết quả nào",
+                    "info": "Hiển thị trang _PAGE_ của _PAGES_",
+                    "infoEmpty": "Không có dữ liệu",
+                    "infoFiltered": "(được lọc từ _MAX_ mục)",
+                    "search": "Tìm kiếm:",
+                    "paginate": {
+                        "first": "Đầu",
+                        "last": "Cuối",
+                        "next": "Tiếp",
+                        "previous": "Trước"
+                    }
+                },
+                "lengthMenu": [ [5, 10, 25, 50, -1], [5, 10, 25, 50, "Tất cả"] ],
+                "pageLength": 5,
+                 "columnDefs": [ {
+                    "targets": [5], // Chỉ số cột 'Hành động'
+                    "orderable": false,
+                    "searchable": false
+                } ]
+            });
+        });
+    </script>
+</th:block>
 
 </body>
 </html>

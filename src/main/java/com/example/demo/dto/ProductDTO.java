@@ -11,6 +11,7 @@ public class ProductDTO {
 	private String sku;
 	private Integer categoryId;
 	private Integer brandId;
+    private String brandName;
 	private Integer shopId;
 	private String description;
 	private String shortDescription;
@@ -27,7 +28,6 @@ public class ProductDTO {
 	private Integer soldCount;
 	private BigDecimal averageRating;
 	private Integer reviewCount;
-
     // Renamed fields to avoid Lombok/JavaBean convention conflicts
     private boolean featured;
     private boolean newArrival;

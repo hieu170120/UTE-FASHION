@@ -102,9 +102,6 @@ public class ProductController {
 			model.addAttribute("product", product);
 			model.addAttribute("pageTitle", product.getProductName());
 
-            //TODO truyen brand cho view
-//            BrandDTO brand = brandService.get;
-
 			Page<ReviewDTO> reviewPage = reviewService.getReviewsByProductId(product.getId(), PageRequest.of(0, 5));
 			model.addAttribute("reviewPage", reviewPage);
 			
