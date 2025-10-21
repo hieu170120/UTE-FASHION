@@ -10,7 +10,9 @@ import com.example.demo.entity.Product;
 import com.example.demo.exception.UnauthorizedException;
 import com.example.demo.service.BrandService;
 import com.example.demo.service.CategoryService;
+import com.example.demo.service.ColorService;
 import com.example.demo.service.ProductService;
+import com.example.demo.service.SizeService;
 import com.example.demo.service.VendorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -40,6 +42,12 @@ public class VendorProductController {
 
     @Autowired
     private BrandService brandService;
+
+    @Autowired
+    private ColorService colorService;
+
+    @Autowired
+    private SizeService sizeService;
 
     private static final int MAX_IMAGES = 3;
 
@@ -100,7 +108,6 @@ public class VendorProductController {
 
         try {
             ProductDTO productDTO = form.getProduct();
-
             List<ProductImageDTO> images = form.getImages().stream()
                     .filter(img -> img.getImageUrl() != null && !img.getImageUrl().trim().isEmpty())
                     .collect(Collectors.toList());
@@ -131,7 +138,6 @@ public class VendorProductController {
             ProductDTO productDTO = productService.getProductById(id);
             List<ProductImageDTO> images = productService.getImagesByProductId(id);
 
-            // Ensure the images list always has MAX_IMAGES elements for the form
             List<ProductImageDTO> formImages = new ArrayList<>(images);
             while (formImages.size() < MAX_IMAGES) {
                 formImages.add(new ProductImageDTO());
@@ -141,7 +147,6 @@ public class VendorProductController {
             form.setProduct(productDTO);
             form.setImages(formImages);
 
-            // Determine the primary image index for the radio button
             for (int i = 0; i < formImages.size(); i++) {
                 if (formImages.get(i).isPrimary()) {
                     form.setPrimaryImageIndex(i);
@@ -154,6 +159,9 @@ public class VendorProductController {
             model.addAttribute("brands", brandService.findAllActive());
             model.addAttribute("variants", productService.getVariantsByProductId(id));
             model.addAttribute("newVariant", new ProductVariantDTO());
+
+            model.addAttribute("allColors", colorService.findAll());
+            model.addAttribute("allSizes", sizeService.findAll());
 
             return "vendor/products/edit";
         } catch (UnauthorizedException e) {
@@ -176,12 +184,15 @@ public class VendorProductController {
             model.addAttribute("brands", brandService.findAllActive());
             model.addAttribute("variants", productService.getVariantsByProductId(id));
             model.addAttribute("newVariant", new ProductVariantDTO());
-            model.addAttribute("form", form);
+            model.addAttribute("form", form); // Explicitly adding for clarity and safety
+            model.addAttribute("allColors", colorService.findAll());
+            model.addAttribute("allSizes", sizeService.findAll());
             return "vendor/products/edit";
         }
 
         try {
             Integer shopId = vendorService.getShopIdByUsername(principal.getName());
+            ProductDTO productDTO = form.getProduct();
 
             List<ProductImageDTO> images = form.getImages().stream()
                     .filter(img -> (img.getImageUrl() != null && !img.getImageUrl().trim().isEmpty()) || img.getId() != null)
@@ -192,7 +203,7 @@ public class VendorProductController {
                 images.get(i).setPrimary(primaryIndex != null && i == primaryIndex);
             }
 
-            productService.updateProduct(id, form.getProduct(), images, shopId);
+            productService.updateProduct(id, productDTO, images, shopId);
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật sản phẩm thành công!");
             return "redirect:/vendor/products/edit/" + id;
         } catch (Exception e) {

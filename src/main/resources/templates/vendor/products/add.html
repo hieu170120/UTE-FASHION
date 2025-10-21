@@ -219,7 +219,6 @@
                         <h4 class="mb-0">Hình ảnh</h4>
                     </div>
                     <div class="card-body">
-                        <!-- Image 1 -->
                         <div class="row align-items-center mb-3 p-2 border rounded">
                              <div class="col-md-8">
                                  <label class="form-label">URL Hình ảnh 1</label>
@@ -228,13 +227,10 @@
                              <div class="col-md-4">
                                 <div class="form-check mt-4">
                                     <input class="form-check-input" type="radio" name="primaryImageIndex" id="primaryImage1" value="0" checked>
-                                    <label class="form-check-label" for="primaryImage1">
-                                        Đặt làm ảnh chính
-                                    </label>
+                                    <label class="form-check-label" for="primaryImage1">Đặt làm ảnh chính</label>
                                 </div>
                              </div>
                         </div>
-                        <!-- Image 2 -->
                         <div class="row align-items-center mb-3 p-2 border rounded">
                              <div class="col-md-8">
                                  <label class="form-label">URL Hình ảnh 2</label>
@@ -243,13 +239,10 @@
                              <div class="col-md-4">
                                 <div class="form-check mt-4">
                                     <input class="form-check-input" type="radio" name="primaryImageIndex" id="primaryImage2" value="1">
-                                    <label class="form-check-label" for="primaryImage2">
-                                        Đặt làm ảnh chính
-                                    </label>
+                                    <label class="form-check-label" for="primaryImage2">Đặt làm ảnh chính</label>
                                 </div>
                              </div>
                         </div>
-                        <!-- Image 3 -->
                         <div class="row align-items-center mb-3 p-2 border rounded">
                              <div class="col-md-8">
                                  <label class="form-label">URL Hình ảnh 3</label>
@@ -258,41 +251,26 @@
                              <div class="col-md-4">
                                 <div class="form-check mt-4">
                                     <input class="form-check-input" type="radio" name="primaryImageIndex" id="primaryImage3" value="2">
-                                    <label class="form-check-label" for="primaryImage3">
-                                        Đặt làm ảnh chính
-                                    </label>
+                                    <label class="form-check-label" for="primaryImage3">Đặt làm ảnh chính</label>
                                 </div>
                              </div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Status -->
+                <!-- MODIFICATION START: Re-added isFeatured checkbox -->
                 <div class="card mb-4">
                      <div class="card-header">
-                        <h4 class="mb-0">Trạng thái</h4>
+                        <h4 class="mb-0">Tùy chọn hiển thị</h4>
                     </div>
                     <div class="card-body">
-                        <div class="d-flex flex-wrap gap-4">
-                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" id="isActive" th:field="*{product.active}" checked>
-                                <label class="form-check-label" for="isActive">Kích hoạt sản phẩm</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" id="isFeatured" th:field="*{product.featured}">
-                                <label class="form-check-label" for="isFeatured">Sản phẩm nổi bật</label>
-                            </div>
-                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" id="isNewArrival" th:field="*{product.newArrival}">
-                                <label class="form-check-label" for="isNewArrival">Sản phẩm mới về</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" id="isBestSeller" th:field="*{product.bestSeller}">
-                                <label class="form-check-label" for="isBestSeller">Sản phẩm bán chạy</label>
-                            </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="featured" th:field="*{product.featured}">
+                            <label class="form-check-label" for="featured">Sản phẩm nổi bật (Hiển thị ở trang chủ của shop)</label>
                         </div>
                     </div>
                 </div>
+                <!-- MODIFICATION END -->
 
                 <div class="d-grid">
                     <button type="submit" class="btn btn-dark">Thêm sản phẩm</button>
