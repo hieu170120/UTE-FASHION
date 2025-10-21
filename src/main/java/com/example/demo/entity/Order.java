@@ -30,6 +30,10 @@ public class Order {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shop_id")
+    private Shop shop;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "carrier_id")
     private Carrier carrier;
 

@@ -87,6 +87,16 @@ public class OrderServiceImpl implements OrderService {
             order.setShippingFee(BigDecimal.valueOf(30000)); // Default 30k
         }
 
+        // Auto-assign shop from cart items (assuming all items belong to same shop)
+        Shop shop = null;
+        for (CartItem cartItem : cart.getCartItems()) {
+            if (shop == null && cartItem.getProduct() != null && cartItem.getProduct().getShop() != null) {
+                shop = cartItem.getProduct().getShop();
+                order.setShop(shop);
+                break;
+            }
+        }
+
         BigDecimal subtotal = BigDecimal.ZERO;
         for (CartItem cartItem : cart.getCartItems()) {
             OrderItem orderItem = new OrderItem();
