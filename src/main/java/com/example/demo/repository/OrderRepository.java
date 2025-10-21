@@ -8,7 +8,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Integer> {
@@ -73,7 +76,31 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "(:fromDate IS NULL OR o.orderDate >= :fromDate) AND " +
            "(:toDate IS NULL OR o.orderDate <= :toDate)")
     Page<Order> findByFilters(@Param("status") String status,
-                              @Param("fromDate") java.time.LocalDateTime fromDate,
-                              @Param("toDate") java.time.LocalDateTime toDate,
+                              @Param("fromDate") LocalDateTime fromDate,
+                              @Param("toDate") LocalDateTime toDate,
                               Pageable pageable);
+    
+    // Methods for AdminService
+    /**
+     * Đếm số đơn hàng của user
+     */
+    long countByUserUserId(Integer userId);
+    
+    /**
+     * Tính tổng tiền đã chi của user
+     */
+    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.user.userId = :userId")
+    BigDecimal getTotalSpentByUserId(@Param("userId") Integer userId);
+    
+    /**
+     * Lấy ngày đặt hàng gần nhất của user
+     */
+    @Query("SELECT MAX(o.orderDate) FROM Order o WHERE o.user.userId = :userId")
+    LocalDateTime getLastOrderDateByUserId(@Param("userId") Integer userId);
+    
+    /**
+     * Đếm đơn hàng theo trạng thái của user
+     */
+    @Query("SELECT o.orderStatus, COUNT(o) FROM Order o WHERE o.user.userId = :userId AND o.orderStatus IS NOT NULL GROUP BY o.orderStatus")
+    List<Object[]> countOrdersByStatusAndUserId(@Param("userId") Integer userId);
 }

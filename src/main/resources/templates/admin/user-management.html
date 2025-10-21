@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title>Quản Lý Người Dùng - UTE Fashion Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        body { 
+            background: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .navbar-custom { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card { border: none; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 13px; }
+        .status-active { background: #28a745; color: #fff; }
+        .status-inactive { background: #dc3545; color: #fff; }
+        .status-verified { background: #17a2b8; color: #fff; }
+        .status-unverified { background: #ffc107; color: #000; }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid white;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        .username-link {
+            color: #007bff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .username-link:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+        .container {
+            flex: 1;
+        }
+        footer {
+            margin-top: auto;
+        }
+        .stat-card {
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+            color: white;
+        }
+        .stat-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .order-status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .order-processing { background: #ffc107; color: #000; }
+        .order-confirmed { background: #17a2b8; color: #fff; }
+        .order-shipping { background: #007bff; color: #fff; }
+        .order-delivered { background: #28a745; color: #fff; }
+        .order-cancelled { background: #dc3545; color: #fff; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-custom navbar-dark mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" th:href="@{/admin/dashboard}">
+                <i class="fas fa-shopping-bag"></i> UTE Fashion Admin
+            </a>
+            <div>
+                <a th:href="@{/admin/dashboard}" class="btn btn-light btn-sm me-2">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a th:href="@{/}" class="btn btn-light btn-sm">
+                    <i class="fas fa-store"></i> Xem Cửa Hàng
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-users text-primary"></i> Quản Lý Người Dùng</h2>
+                <p class="text-muted">Quản lý tài khoản người dùng và xem lịch sử đặt hàng</p>
+            </div>
+            <div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4" th:if="${statistics}">
+            <div class="col-md-3">
+                <div class="card stat-card bg-primary">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-number" th:text="${statistics.totalUsers}">0</div>
+                    <div>Tổng Người Dùng</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card bg-success">
+                    <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+                    <div class="stat-number" th:text="${statistics.activeUsers}">0</div>
+                    <div>Đang Hoạt Động</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card bg-danger">
+                    <div class="stat-icon"><i class="fas fa-user-lock"></i></div>
+                    <div class="stat-number" th:text="${statistics.inactiveUsers}">0</div>
+                    <div>Bị Khóa</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card bg-info">
+                    <div class="stat-icon"><i class="fas fa-user-plus"></i></div>
+                    <div class="stat-number" th:text="${statistics.newUsersToday}">0</div>
+                    <div>Mới Hôm Nay</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filter -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" th:action="@{/admin/users}">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Tìm kiếm</label>
+                                <input type="text" class="form-control" name="search" 
+                                       th:value="${searchQuery}" placeholder="Username, Email, Họ tên...">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">Trạng thái</label>
+                                <select class="form-select" name="isActive">
+                                    <option value="">Tất cả</option>
+                                    <option value="true" th:selected="${isActiveFilter == true}">Đang hoạt động</option>
+                                    <option value="false" th:selected="${isActiveFilter == false}">Bị khóa</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">&nbsp;</label>
+                                <div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search"></i> Tìm kiếm
+                                    </button>
+                                    <a th:href="@{/admin/users}" class="btn btn-secondary">
+                                        <i class="fas fa-refresh"></i> Làm mới
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Avatar</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Họ tên</th>
+                                <th>SĐT</th>
+                                <th>Trạng thái</th>
+                                <th>Email Verified</th>
+                                <th>Đăng nhập cuối</th>
+                                <th>Ngày tạo</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="user : ${userPage.content}">
+                                <td>
+                                    <img th:src="${user.avatarUrl ?: '/static/image/default-avatar.jpg'}" 
+                                         class="user-avatar" 
+                                         th:alt="${user.username}">
+                                </td>
+                                <td>
+                                    <span class="username-link" th:onclick="'showUserOrderHistory(' + ${user.userId} + ')'"
+                                          th:text="${user.username}">username</span>
+                                </td>
+                                <td th:text="${user.email}">email</td>
+                                <td th:text="${user.fullName}">fullName</td>
+                                <td th:text="${user.phoneNumber}">phone</td>
+                                <td>
+                                    <span class="status-badge" 
+                                          th:classappend="${user.isActive} ? 'status-active' : 'status-inactive'"
+                                          th:text="${user.isActive} ? 'Hoạt động' : 'Bị khóa'">Trạng thái</span>
+                                </td>
+                                <td>
+                                    <span class="status-badge" 
+                                          th:classappend="${user.isEmailVerified} ? 'status-verified' : 'status-unverified'"
+                                          th:text="${user.isEmailVerified} ? 'Đã xác thực' : 'Chưa xác thực'">Email</span>
+                                </td>
+                                <td th:text="${user.lastLogin != null ? #temporals.format(user.lastLogin, 'dd/MM/yyyy HH:mm') : 'Chưa đăng nhập'}">lastLogin</td>
+                                <td th:text="${user.createdAt != null ? #temporals.format(user.createdAt, 'dd/MM/yyyy') : 'Không xác định'}">createdAt</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button th:if="${user.isActive}" 
+                                                class="btn btn-danger btn-sm" 
+                                                th:onclick="'lockUser(' + ${user.userId} + ')'"
+                                                title="Khóa tài khoản">
+                                            <i class="fas fa-lock"></i>
+                                        </button>
+                                        <button th:if="${!user.isActive}" 
+                                                class="btn btn-success btn-sm" 
+                                                th:onclick="'unlockUser(' + ${user.userId} + ')'"
+                                                title="Mở khóa tài khoản">
+                                            <i class="fas fa-unlock"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <nav th:if="${userPage.totalPages > 1}">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item" th:classappend="${userPage.number == 0} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/users(page=${userPage.number - 1}, search=${searchQuery}, isActive=${isActiveFilter})}">Trước</a>
+                        </li>
+                        <li class="page-item" th:each="i : ${#numbers.sequence(0, userPage.totalPages - 1)}" 
+                            th:classappend="${i == userPage.number} ? 'active'">
+                            <a class="page-link" th:href="@{/admin/users(page=${i}, search=${searchQuery}, isActive=${isActiveFilter})}" 
+                               th:text="${i + 1}">1</a>
+                        </li>
+                        <li class="page-item" th:classappend="${userPage.number == userPage.totalPages - 1} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/users(page=${userPage.number + 1}, search=${searchQuery}, isActive=${isActiveFilter})}">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Order History Modal -->
+    <div class="modal fade" id="userOrderModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-shopping-cart"></i> Lịch sử đặt hàng
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- User Info -->
+                    <div id="userInfo" class="row mb-4">
+                        <!-- User info will be loaded here -->
+                    </div>
+                    
+                    <!-- Statistics -->
+                    <div id="orderStatistics" class="row mb-4">
+                        <!-- Statistics will be loaded here -->
+                    </div>
+                    
+                    <!-- Orders Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Mã ĐH</th>
+                                    <th>Ngày đặt</th>
+                                    <th>Trạng thái</th>
+                                    <th>Tổng tiền</th>
+                                    <th>Số sản phẩm</th>
+                                    <th>Địa chỉ giao</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody">
+                                <!-- Orders will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Orders Pagination -->
+                    <nav id="ordersPagination">
+                        <!-- Pagination will be loaded here -->
+                    </nav>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white text-center py-3 mt-5">
+        <div class="container">
+            <p>&copy; 2024 UTE Fashion. Tất cả quyền được bảo lưu.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+
+        // Show user order history modal
+        function showUserOrderHistory(userId) {
+            console.log('=== DEBUG: showUserOrderHistory ===');
+            console.log('UserId:', userId);
+            
+            const modalElement = document.getElementById('userOrderModal');
+            if (!modalElement) {
+                console.error('Modal element #userOrderModal not found!');
+                alert('Không tìm thấy modal đơn hàng');
+                return;
+            }
+            
+            console.log('Modal element found:', modalElement);
+            
+            // Clear previous content
+            const userInfoDiv = document.getElementById('userInfo');
+            const orderStatsDiv = document.getElementById('orderStatistics');
+            const ordersTableBody = document.getElementById('ordersTableBody');
+            const ordersPagination = document.getElementById('ordersPagination');
+            
+            if (userInfoDiv) userInfoDiv.innerHTML = '';
+            if (orderStatsDiv) orderStatsDiv.innerHTML = '';
+            if (ordersTableBody) ordersTableBody.innerHTML = '';
+            if (ordersPagination) ordersPagination.innerHTML = '';
+            
+            console.log('Cleared previous content');
+            
+            const modal = new bootstrap.Modal(modalElement);
+            
+            modal.show();
+            loadUserOrderHistory(userId, 0);
+        }
+
+        // Load user order history
+        function loadUserOrderHistory(userId, page) {
+            console.log('Loading orders for user:', userId, 'page:', page);
+            
+            // Get context path from current location
+            const currentPath = window.location.pathname;
+            const contextPath = currentPath.substring(0, currentPath.indexOf('/admin'));
+            const url = window.location.origin + contextPath + '/admin/users/' + userId + '/orders?page=' + page + '&size=5';
+            
+            console.log('Request URL:', url);
+            
+            fetch(url)
+                .then(response => {
+                    console.log('Response received:');
+                    console.log('- Status:', response.status);
+                    console.log('- Status Text:', response.statusText);
+                    console.log('- Headers:', response.headers);
+                    console.log('- URL:', response.url);
+                    
+                    if (!response.ok) {
+                        const errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+                        console.error('HTTP Error:', errorMsg);
+                        throw new Error(errorMsg);
+                    }
+                    
+                    // Check if response is JSON
+                    const contentType = response.headers.get('content-type');
+                    console.log('Content-Type:', contentType);
+                    
+                    if (!contentType || !contentType.includes('application/json')) {
+                        console.error('Response is not JSON, content-type:', contentType);
+                        return response.text().then(text => {
+                            console.log('Response text:', text);
+                            throw new Error('Response is not JSON: ' + text.substring(0, 200));
+                        });
+                    }
+                    
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('=== DEBUG: Response Data ===');
+                    console.log('Full response:', data);
+                    console.log('Success:', data.success);
+                    console.log('Orders count:', data.orders ? data.orders.length : 'undefined');
+                    console.log('Statistics:', data.statistics);
+                    
+                    if (data.success) {
+                        console.log('Processing successful response...');
+                        displayUserInfo(data.statistics);
+                        displayOrderStatistics(data.statistics);
+                        displayOrders(data.orders);
+                        displayOrdersPagination(data, userId);
+                        console.log('=== DEBUG: Display completed successfully ===');
+                    } else {
+                        console.error('API returned success=false:', data.message);
+                        alert('Lỗi từ server: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('=== DEBUG: Error Details ===');
+                    console.error('Error name:', error.name);
+                    console.error('Error message:', error.message);
+                    console.error('Error stack:', error.stack);
+                    console.error('Full error object:', error);
+                    
+                    let errorMessage = 'Có lỗi xảy ra khi tải dữ liệu: ';
+                    
+                    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                        errorMessage += 'Không thể kết nối đến server. Kiểm tra ứng dụng có đang chạy không.';
+                    } else if (error.message.includes('HTTP')) {
+                        errorMessage += error.message;
+                    } else {
+                        errorMessage += error.message;
+                    }
+                    
+                    console.error('Final error message:', errorMessage);
+                    alert(errorMessage);
+                    
+                    // Show error in modal
+                    const modalBody = document.querySelector('#userOrderModal .modal-body');
+                    if (modalBody) {
+                        modalBody.innerHTML = `
+                            <div class="alert alert-danger">
+                                <h6><i class="fas fa-exclamation-triangle"></i> Lỗi tải dữ liệu</h6>
+                                <p>${errorMessage}</p>
+                                <small>Kiểm tra Console (F12) để xem chi tiết lỗi.</small>
+                            </div>
+                        `;
+                    }
+                });
+        }
+
+        // Display user info
+        function displayUserInfo(statistics) {
+            console.log('=== DEBUG: displayUserInfo ===');
+            console.log('Statistics received:', statistics);
+            
+            const userInfoDiv = document.getElementById('userInfo');
+            if (!userInfoDiv) {
+                console.error('Element #userInfo not found!');
+                return;
+            }
+            
+            try {
+                userInfoDiv.innerHTML = `
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6><i class="fas fa-user"></i> Thông tin người dùng</h6>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <strong>Tổng đơn hàng:</strong> ${statistics.totalOrders || 0} đơn
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>Tổng chi tiêu:</strong> ${formatCurrency(statistics.totalSpent || 0)} VNĐ
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>Đơn hàng gần nhất:</strong> ${formatDate(statistics.lastOrderDate)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                console.log('User info displayed successfully');
+            } catch (error) {
+                console.error('Error in displayUserInfo:', error);
+                userInfoDiv.innerHTML = '<div class="alert alert-danger">Lỗi hiển thị thông tin user</div>';
+            }
+        }
+
+        // Display order statistics
+        function displayOrderStatistics(statistics) {
+            console.log('=== DEBUG: displayOrderStatistics ===');
+            console.log('Statistics received:', statistics);
+            
+            const statsDiv = document.getElementById('orderStatistics');
+            if (!statsDiv) {
+                console.error('Element #orderStatistics not found!');
+                return;
+            }
+            
+            const ordersByStatus = statistics.ordersByStatus || {};
+            console.log('Orders by status:', ordersByStatus);
+            
+            try {
+                statsDiv.innerHTML = `
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6><i class="fas fa-chart-bar"></i> Thống kê đơn hàng</h6>
+                            <div class="row">
+                                <div class="col-md-2">
+                                    <span class="badge bg-primary">Đang xử lý: ${ordersByStatus['Processing'] || 0}</span>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="badge bg-info">Đã xác nhận: ${ordersByStatus['Confirmed'] || 0}</span>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="badge bg-warning">Đang giao: ${ordersByStatus['Shipping'] || 0}</span>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="badge bg-success">Đã giao: ${ordersByStatus['Delivered'] || 0}</span>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="badge bg-danger">Đã hủy: ${ordersByStatus['Cancelled'] || 0}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+                console.log('Order statistics displayed successfully');
+            } catch (error) {
+                console.error('Error in displayOrderStatistics:', error);
+                statsDiv.innerHTML = '<div class="alert alert-danger">Lỗi hiển thị thống kê đơn hàng</div>';
+            }
+        }
+
+        // Display orders
+        function displayOrders(orders) {
+            console.log('=== DEBUG: displayOrders ===');
+            console.log('Orders received:', orders);
+            console.log('Orders type:', typeof orders);
+            console.log('Orders length:', orders ? orders.length : 'undefined');
+            
+            const tbody = document.getElementById('ordersTableBody');
+            if (!tbody) {
+                console.error('Element #ordersTableBody not found!');
+                return;
+            }
+            
+            if (!orders || !Array.isArray(orders)) {
+                console.error('Orders is not an array:', orders);
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Không có dữ liệu đơn hàng</td></tr>';
+                return;
+            }
+            
+            if (orders.length === 0) {
+                console.log('No orders found, displaying empty message');
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Người dùng chưa có đơn hàng nào</td></tr>';
+                return;
+            }
+            
+            try {
+                tbody.innerHTML = orders.map((order, index) => {
+                    console.log(`Processing order ${index}:`, order);
+                    return `
+                        <tr>
+                            <td><strong>#${order.orderNumber || 'N/A'}</strong></td>
+                            <td>${formatDate(order.orderDate)}</td>
+                            <td><span class="order-status-badge ${getOrderStatusClass(order.orderStatus)}">${getOrderStatusText(order.orderStatus)}</span></td>
+                            <td><strong>${formatCurrency(order.totalAmount)} VNĐ</strong></td>
+                            <td>${order.itemCount || 0} sản phẩm</td>
+                            <td>${order.shippingAddress || 'N/A'}</td>
+                            <td>
+                                <a href="/admin/orders/${order.orderId || order.id}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-eye"></i> Xem chi tiết
+                                </a>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                console.log('Orders displayed successfully');
+            } catch (error) {
+                console.error('Error in displayOrders:', error);
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Lỗi hiển thị danh sách đơn hàng</td></tr>';
+            }
+        }
+
+        // Display orders pagination
+        function displayOrdersPagination(data, userId) {
+            console.log('=== DEBUG: displayOrdersPagination ===');
+            console.log('Data received:', data);
+            console.log('UserId:', userId);
+            
+            const paginationDiv = document.getElementById('ordersPagination');
+            if (!paginationDiv) {
+                console.error('Element #ordersPagination not found!');
+                return;
+            }
+            
+            if (data.totalPages <= 1) {
+                console.log('Only 1 page or less, hiding pagination');
+                paginationDiv.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '<ul class="pagination justify-content-center">';
+            
+            // Previous button
+            if (data.currentPage > 0) {
+                paginationHTML += `<li class="page-item">
+                    <a class="page-link" href="#" onclick="loadUserOrderHistory(${userId}, ${data.currentPage - 1})">Trước</a>
+                </li>`;
+            }
+
+            // Page numbers
+            for (let i = 0; i < data.totalPages; i++) {
+                const activeClass = i === data.currentPage ? 'active' : '';
+                paginationHTML += `<li class="page-item ${activeClass}">
+                    <a class="page-link" href="#" onclick="loadUserOrderHistory(${userId}, ${i})">${i + 1}</a>
+                </li>`;
+            }
+
+            // Next button
+            if (data.currentPage < data.totalPages - 1) {
+                paginationHTML += `<li class="page-item">
+                    <a class="page-link" href="#" onclick="loadUserOrderHistory(${userId}, ${data.currentPage + 1})">Sau</a>
+                </li>`;
+            }
+
+            paginationHTML += '</ul>';
+            
+            try {
+                paginationDiv.innerHTML = paginationHTML;
+                console.log('Pagination displayed successfully');
+            } catch (error) {
+                console.error('Error in displayOrdersPagination:', error);
+                paginationDiv.innerHTML = '<div class="alert alert-danger">Lỗi hiển thị phân trang</div>';
+            }
+        }
+
+        // Lock user
+        function lockUser(userId) {
+            if (confirm('Bạn có chắc chắn muốn khóa tài khoản này?')) {
+                // Get context path
+                const currentPath = window.location.pathname;
+                const contextPath = currentPath.substring(0, currentPath.indexOf('/admin'));
+                const url = window.location.origin + contextPath + '/admin/users/' + userId + '/lock';
+                
+                console.log('Lock user URL:', url);
+                
+                fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        [document.querySelector('meta[name="_csrf_header"]').getAttribute('content')]: document.querySelector('meta[name="_csrf"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Đã khóa tài khoản thành công');
+                        location.reload();
+                    } else {
+                        alert('Lỗi: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra');
+                });
+            }
+        }
+
+        // Unlock user
+        function unlockUser(userId) {
+            if (confirm('Bạn có chắc chắn muốn mở khóa tài khoản này?')) {
+                // Get context path
+                const currentPath = window.location.pathname;
+                const contextPath = currentPath.substring(0, currentPath.indexOf('/admin'));
+                const url = window.location.origin + contextPath + '/admin/users/' + userId + '/unlock';
+                
+                console.log('Unlock user URL:', url);
+                
+                fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        [document.querySelector('meta[name="_csrf_header"]').getAttribute('content')]: document.querySelector('meta[name="_csrf"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Đã mở khóa tài khoản thành công');
+                        location.reload();
+                    } else {
+                        alert('Lỗi: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra');
+                });
+            }
+        }
+
+        // Utility functions
+        function formatCurrency(amount) {
+            console.log('formatCurrency called with:', amount, 'type:', typeof amount);
+            if (amount === null || amount === undefined || isNaN(amount)) {
+                console.warn('Invalid amount for formatCurrency:', amount);
+                return '0';
+            }
+            const result = new Intl.NumberFormat('vi-VN').format(amount);
+            console.log('formatCurrency result:', result);
+            return result;
+        }
+
+        function formatDate(dateString) {
+            console.log('formatDate called with:', dateString, 'type:', typeof dateString);
+            if (!dateString) {
+                console.log('formatDate: no date provided, returning default');
+                return 'Chưa có';
+            }
+            try {
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) {
+                    console.error('formatDate: invalid date:', dateString);
+                    return 'Ngày không hợp lệ';
+                }
+                const result = date.toLocaleDateString('vi-VN') + ' ' + date.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'});
+                console.log('formatDate result:', result);
+                return result;
+            } catch (error) {
+                console.error('formatDate error:', error);
+                return 'Lỗi định dạng ngày';
+            }
+        }
+
+        function getOrderStatusClass(status) {
+            console.log('getOrderStatusClass called with:', status);
+            const statusMap = {
+                'Processing': 'order-processing',
+                'Confirmed': 'order-confirmed',
+                'Shipping': 'order-shipping',
+                'Delivered': 'order-delivered',
+                'Cancelled': 'order-cancelled'
+            };
+            const result = statusMap[status] || 'order-processing';
+            console.log('getOrderStatusClass result:', result);
+            return result;
+        }
+
+        function getOrderStatusText(status) {
+            console.log('getOrderStatusText called with:', status);
+            const statusMap = {
+                'Processing': 'Đang xử lý',
+                'Confirmed': 'Đã xác nhận',
+                'Shipping': 'Đang giao',
+                'Delivered': 'Đã giao',
+                'Cancelled': 'Đã hủy'
+            };
+            const result = statusMap[status] || status;
+            console.log('getOrderStatusText result:', result);
+            return result;
+        }
+    </script>
+</body>
+</html>

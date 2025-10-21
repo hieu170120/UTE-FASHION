@@ -61,7 +61,12 @@ public class ProductServiceImpl implements ProductService {
 
 		// OPTIMIZED: Call the custom repository method that uses DTO projection.
 		// This is much more efficient than findAll() and mapping afterwards.
-		return productRepository.findSummaries(spec, adjustedPageable);
+		// TODO: Fix CustomProductRepository issue
+		// return productRepository.findSummaries(spec, adjustedPageable);
+		
+		// Temporary fallback - using findAll and mapping
+		Page<Product> products = productRepository.findAll(spec, adjustedPageable);
+		return products.map(product -> modelMapper.map(product, ProductSummaryDTO.class));
 	}
 
 	private Sort getSortOrder(String sort) {
