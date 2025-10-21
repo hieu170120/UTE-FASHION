@@ -54,24 +54,21 @@
                         <hr>
                         <p><span class="info-label">Ngày đặt:</span> <span th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></span></p>
                         <p><span class="info-label">Trạng thái:</span> 
-                            <!-- Hiển thị "Shipper hủy" nếu có trong lịch sử hủy -->
-                            <span th:if="${shipperCancel != null}" class="status-badge bg-danger text-white">
-                                Shipper hủy
-                            </span>
-                            <!-- Hiển thị trạng thái bình thường -->
-                            <span th:if="${shipperCancel == null}" class="status-badge" 
+                            <span class="status-badge" 
                                   th:classappend="${order.orderStatus == 'Processing' ? 'bg-warning text-dark' : 
                                                  (order.orderStatus == 'Confirmed' ? 'bg-info text-white' : 
                                                  (order.orderStatus == 'Shipping' ? 'bg-primary text-white' : 
                                                  (order.orderStatus == 'Delivered' ? 'bg-success text-white' : 
+                                                 (order.orderStatus == 'Shipper_Cancelled' ? 'bg-danger text-white' : 
                                                  (order.orderStatus == 'Return_Requested' ? 'bg-warning text-white' : 
-                                                 (order.orderStatus == 'Returned' ? 'bg-secondary text-white' : 'bg-danger text-white')))))}"
+                                                 (order.orderStatus == 'Returned' ? 'bg-secondary text-white' : 'bg-danger text-white'))))))}"
                                   th:text="${order.orderStatus == 'Processing' ? 'Đang Xử Lý' : 
                                           (order.orderStatus == 'Confirmed' ? 'Chờ Xác Nhận Giao' : 
                                           (order.orderStatus == 'Shipping' ? 'Đang Giao' : 
                                           (order.orderStatus == 'Delivered' ? 'Đã Giao' : 
+                                          (order.orderStatus == 'Shipper_Cancelled' ? 'Shipper Hủy' : 
                                           (order.orderStatus == 'Return_Requested' ? 'Yêu Cầu Trả Hàng' : 
-                                          (order.orderStatus == 'Returned' ? 'Đã Trả Hàng' : 'Đã Hủy')))))}"></span>
+                                          (order.orderStatus == 'Returned' ? 'Đã Trả Hàng' : 'Đã Hủy'))))))}"></span>
                         </p>
                         <p><span class="info-label">Tổng tiền:</span> 
                             <span class="text-danger fw-bold fs-5" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
@@ -121,36 +118,48 @@
             </div>
         </div>
 
-        <!-- Hiển thị thông tin trả hàng nếu có -->
-        <div th:if="${order.orderStatus == 'Return_Requested' || order.orderStatus == 'Returned'}" class="card border-warning">
+        <!-- Hiển thị thông tin yêu cầu trả hàng -->
+        <div th:if="${order.orderStatus == 'Return_Requested'}" class="card border-warning">
             <div class="card-body">
-                <h5 class="text-warning"><i class="fas fa-undo"></i> Thông Tin Trả Hàng</h5>
+                <h5 class="text-warning"><i class="fas fa-undo"></i> Yêu Cầu Trả Hàng</h5>
                 <hr>
-                <div class="alert alert-light">
-                    <p class="mb-1"><strong>Lý do trả hàng của khách:</strong></p>
-                    <p class="mb-0" th:text="${order.returnReason != null ? order.returnReason : 'Không có lý do'}"></p>
-                </div>
-                <div th:if="${order.orderStatus == 'Return_Requested'}" class="alert alert-warning mb-0">
+                <div class="alert alert-warning">
                     <i class="fas fa-info-circle"></i> Đơn hàng này đang chờ admin xử lý yêu cầu trả hàng.
                 </div>
-                <div th:if="${order.orderStatus == 'Returned'}" class="alert alert-info mb-0">
+                <p><span class="info-label">Lý do trả hàng của khách:</span></p>
+                <div class="alert alert-light">
+                    <p class="mb-0" th:text="${order.returnReason != null ? order.returnReason : 'Không có lý do'}"></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Hiển thị thông tin đơn đã trả hàng -->
+        <div th:if="${order.orderStatus == 'Returned'}" class="card border-success">
+            <div class="card-body">
+                <h5 class="text-success"><i class="fas fa-check-circle"></i> Đơn Hàng Đã Trả Lại</h5>
+                <hr>
+                <div class="alert alert-success">
                     <i class="fas fa-check-circle"></i> Đơn hàng này đã được admin chấp nhận trả hàng.
+                </div>
+                <p><span class="info-label">Lý do trả hàng của khách:</span></p>
+                <div class="alert alert-light">
+                    <p class="mb-0" th:text="${order.returnReason != null ? order.returnReason : 'Không có lý do'}"></p>
                 </div>
             </div>
         </div>
         
         <!-- Hiển thị lý do shipper hủy đơn -->
-        <div th:if="${shipperCancel != null}" class="card border-danger">
+        <div th:if="${order.orderStatus == 'Shipper_Cancelled'}" class="card border-danger">
             <div class="card-body">
                 <h5 class="text-danger"><i class="fas fa-times-circle"></i> Thông Tin Hủy Đơn</h5>
                 <hr>
                 <p><span class="info-label">Bạn đã hủy đơn này</span></p>
                 <p><span class="info-label">Lý do hủy:</span></p>
                 <div class="alert alert-danger">
-                    <p class="mb-0" th:text="${shipperCancel.reason}"></p>
+                    <p class="mb-0" th:text="${order.cancelReason != null ? order.cancelReason : 'Không có lý do'}"></p>
                 </div>
-                <p class="text-muted small mb-0">
-                    <i class="far fa-clock"></i> Thời gian hủy: <span th:text="${#temporals.format(shipperCancel.cancelledAt, 'dd/MM/yyyy HH:mm')}"></span>
+                <p th:if="${order.cancelledAt}" class="text-muted small mb-0">
+                    <i class="far fa-clock"></i> Thời gian hủy: <span th:text="${#temporals.format(order.cancelledAt, 'dd/MM/yyyy HH:mm')}"></span>
                 </p>
                 <div class="alert alert-warning mb-0 mt-3">
                     <i class="fas fa-info-circle"></i> Đơn này đang chờ admin chọn shipper khác để giao.
@@ -159,7 +168,7 @@
         </div>
         
         <!-- Hiển thị lý do hủy đơn (nếu trạng thái là Cancelled) -->
-        <div th:if="${order.orderStatus == 'Cancelled' && order.cancelReason != null && shipperCancel == null}" class="card border-danger">
+        <div th:if="${order.orderStatus == 'Cancelled' && order.cancelReason != null}" class="card border-danger">
             <div class="card-body">
                 <h5 class="text-danger"><i class="fas fa-times-circle"></i> Thông Tin Hủy Đơn</h5>
                 <hr>

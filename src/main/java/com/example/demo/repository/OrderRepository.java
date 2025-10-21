@@ -67,4 +67,13 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "LEFT JOIN FETCH o.carrier " +
            "WHERE o.id = :orderId")
     java.util.Optional<Order> findByIdWithDetails(@Param("orderId") Integer orderId);
+    
+    @Query("SELECT o FROM Order o WHERE " +
+           "(:status IS NULL OR :status = '' OR o.orderStatus = :status) AND " +
+           "(:fromDate IS NULL OR o.orderDate >= :fromDate) AND " +
+           "(:toDate IS NULL OR o.orderDate <= :toDate)")
+    Page<Order> findByFilters(@Param("status") String status,
+                              @Param("fromDate") java.time.LocalDateTime fromDate,
+                              @Param("toDate") java.time.LocalDateTime toDate,
+                              Pageable pageable);
 }

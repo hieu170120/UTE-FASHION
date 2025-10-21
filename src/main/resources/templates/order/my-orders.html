@@ -63,6 +63,8 @@
             
             <!-- Filter Form -->
             <form method="get" action="/UTE_Fashion/orders/my-orders" class="row g-3 mt-3">
+                <!-- Hidden field để reset về trang 0 khi lọc -->
+                <input type="hidden" name="page" value="0">
                 <div class="col-md-4">
                     <label class="form-label">Trạng thái</label>
                     <select name="status" class="form-select">
@@ -105,8 +107,8 @@
     </div>
 
     <!-- Empty State -->
-    <div th:if="${orderPage.totalElements == 0}" class="text-center py-5">
-        <div class="card">
+    <div th:if="${orderPage.totalElements == 0}" class="text-center py-5" style="min-height: 600px; display: flex; align-items: center; justify-content: center;">
+        <div class="card" style="width: 100%;">
             <div class="card-body">
                 <i class="fas fa-shopping-bag fa-5x text-muted mb-3"></i>
                 <h4 class="text-muted">Bạn chưa có đơn hàng nào</h4>
@@ -121,7 +123,7 @@
     <!-- Order Table -->
     <div th:if="${orderPage.totalElements > 0}" class="card">
         <div class="card-body">
-            <div class="table-responsive">
+            <div class="table-responsive" style="min-height: 600px;">
                 <table class="table table-hover">
                     <thead>
                         <tr>
@@ -134,24 +136,22 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="order : ${filteredOrders != null ? filteredOrders : orderPage.content}">
+                        <tr th:each="order : ${orderPage.content}">
                             <td><strong th:text="${order.orderNumber}"></strong></td>
                             <td th:text="${order.recipientName}"></td>
                             <td><span class="text-danger fw-bold" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span></td>
                             <td>
                                 <span class="status-badge"
-                                      th:classappend="${order.orderStatus == 'Processing' ? 'status-processing' :
-                                                       (order.orderStatus == 'Confirmed' ? 'status-confirmed' :
+                                      th:classappend="${order.orderStatus == 'Processing' || order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'status-processing' :
                                                        (order.orderStatus == 'Shipping' ? 'status-shipping' :
                                                        (order.orderStatus == 'Delivered' ? 'status-delivered' :
                                                        (order.orderStatus == 'Return_Requested' ? 'status-return_requested' :
-                                                       (order.orderStatus == 'Returned' ? 'status-returned' : 'status-cancelled')))))}"
-                                      th:text="${order.orderStatus == 'Processing' ? 'Đang Xử Lý' :
-                                                (order.orderStatus == 'Confirmed' ? 'Đã Xác Nhận' :
+                                                       (order.orderStatus == 'Returned' ? 'status-returned' : 'status-cancelled'))))}"
+                                      th:text="${order.orderStatus == 'Processing' || order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'Đang Xử Lý' :
                                                 (order.orderStatus == 'Shipping' ? 'Đang Giao' :
                                                 (order.orderStatus == 'Delivered' ? 'Đã Giao' :
                                                 (order.orderStatus == 'Return_Requested' ? 'Yêu Cầu Trả Hàng' :
-                                                (order.orderStatus == 'Returned' ? 'Đã Trả Hàng' : 'Đã Hủy')))))}"></span>
+                                                (order.orderStatus == 'Returned' ? 'Đã Trả Hàng' : 'Đã Hủy'))))}"></span>
                             </td>
                             <td th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
                             <td>
@@ -168,8 +168,8 @@
         </div>
     </div>
     
-    <!-- Pagination (always show) -->
-    <nav class="mt-4">
+    <!-- Pagination (chỉ hiển khi có đơn hàng) -->
+    <nav class="mt-4" th:if="${orderPage.totalElements > 0}">
         <ul class="pagination justify-content-center">
             <!-- Previous -->
             <li class="page-item" th:classappend="${orderPage.first} ? 'disabled'">

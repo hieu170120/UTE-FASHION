@@ -92,14 +92,16 @@
                                                  (order.orderStatus == 'Confirmed' ? 'bg-info text-white' : 
                                                  (order.orderStatus == 'Shipping' ? 'bg-primary text-white' : 
                                                  (order.orderStatus == 'Delivered' ? 'bg-success text-white' : 
+                                                 (order.orderStatus == 'Shipper_Cancelled' ? 'bg-danger text-white' : 
                                                  (order.orderStatus == 'Return_Requested' ? 'bg-warning text-white' : 
-                                                 (order.orderStatus == 'Returned' ? 'bg-secondary text-white' : 'bg-danger text-white')))))}"
+                                                 (order.orderStatus == 'Returned' ? 'bg-secondary text-white' : 'bg-danger text-white'))))))}"
                                   th:text="${order.orderStatus == 'Processing' ? 'Đang Xử Lý' : 
                                           (order.orderStatus == 'Confirmed' ? 'Đã Xác Nhận' : 
                                           (order.orderStatus == 'Shipping' ? 'Đang Giao' : 
                                           (order.orderStatus == 'Delivered' ? 'Đã Giao' : 
+                                          (order.orderStatus == 'Shipper_Cancelled' ? 'Shipper Hủy' : 
                                           (order.orderStatus == 'Return_Requested' ? 'Yêu Cầu Trả Hàng' : 
-                                          (order.orderStatus == 'Returned' ? 'Đã Trả Hàng' : 'Đã Hủy')))))}"></span>
+                                          (order.orderStatus == 'Returned' ? 'Đã Trả Hàng' : 'Đã Hủy'))))))}"></span>
                         </p>
                         <p><span class="info-label">Tổng tiền:</span> 
                             <span class="text-danger fw-bold fs-5" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
@@ -126,8 +128,8 @@
             </div>
         </div>
 
-        <!-- Lịch sử hủy đơn (nếu có) -->
-        <div th:if="${order.orderStatus == 'Processing' && cancelHistory != null && !cancelHistory.isEmpty()}" class="card border-warning">
+        <!-- Lịch sử hủy đơn (nếu có) - Hiển thị cho tất cả trạng thái -->
+        <div th:if="${cancelHistory != null && !cancelHistory.isEmpty()}" class="card border-warning">
             <div class="card-body">
                 <h5 class="text-warning"><i class="fas fa-exclamation-triangle"></i> Lịch Sử Hủy Đơn</h5>
                 <hr>
@@ -146,8 +148,23 @@
             </div>
         </div>
         
-        <!-- Chọn Shipper (chỉ hiện khi đơn đang Processing) -->
-        <div th:if="${order.orderStatus == 'Processing' && shippers != null}" class="card shipper-select-card">
+        <!-- Hiển thị thông tin đơn Shipper hủy -->
+        <div th:if="${order.orderStatus == 'Shipper_Cancelled'}" class="card border-danger">
+            <div class="card-body">
+                <h5 class="text-danger"><i class="fas fa-times-circle"></i> Đơn Bị Shipper Hủy</h5>
+                <hr>
+                <div class="alert alert-danger">
+                    <p class="mb-2"><strong>Lý do hủy:</strong></p>
+                    <p class="mb-0" th:text="${order.cancelReason != null ? order.cancelReason : 'Không có lý do'}"></p>
+                </div>
+                <p th:if="${order.cancelledAt}" class="text-muted small mb-0">
+                    <i class="far fa-clock"></i> Thời gian hủy: <span th:text="${#temporals.format(order.cancelledAt, 'dd/MM/yyyy HH:mm')}"></span>
+                </p>
+            </div>
+        </div>
+        
+        <!-- Chọn Shipper (hiện khi đơn đang Processing hoặc Shipper_Cancelled) -->
+        <div th:if="${(order.orderStatus == 'Processing' || order.orderStatus == 'Shipper_Cancelled') && shippers != null}" class="card shipper-select-card">
             <div class="card-body">
                 <h5><i class="fas fa-user-check text-warning"></i> Chọn Shipper Giao Hàng</h5>
                 <p class="text-muted">Chọn shipper từ nhà vận chuyển mà khách hàng đã chọn</p>
@@ -201,6 +218,21 @@
                     <a th:href="@{/admin/orders/{id}/returns/reject(id=${order.id})}" class="btn btn-danger btn-lg" style="flex: 1;">
                         <i class="fas fa-times-circle"></i> Từ Chối Trả Hàng
                     </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Hiển thị thông tin đơn đã trả hàng -->
+        <div th:if="${order.orderStatus == 'Returned'}" class="card border-success">
+            <div class="card-body">
+                <h5 class="text-success"><i class="fas fa-check-circle"></i> Đơn Hàng Đã Trả Lại</h5>
+                <hr>
+                <div class="alert alert-success">
+                    <i class="fas fa-info-circle"></i> Đơn hàng này đã được chấp nhận trả hàng thành công.
+                </div>
+                <p><span class="info-label">Lý do trả hàng của khách hàng:</span></p>
+                <div class="alert alert-light">
+                    <p class="mb-0" th:text="${order.returnReason != null ? order.returnReason : 'Không có lý do'}"></p>
                 </div>
             </div>
         </div>

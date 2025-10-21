@@ -6,7 +6,8 @@ public enum OrderStatus {
     CONFIRMED("Confirmed"),                  // Đã xử lý - Admin đã chọn Shipper
     SHIPPING("Shipping"),                    // Đang giao - Shipper đã xác nhận giao
     DELIVERED("Delivered"),                  // Đã giao
-    CANCELLED("Cancelled"),                  // Đã hủy
+    CANCELLED("Cancelled"),                  // Đã hủy (bởi khách hàng)
+    SHIPPER_CANCELLED("Shipper_Cancelled"),  // Shipper hủy (chỉ hiện với admin và shipper)
     RETURN_REQUESTED("Return_Requested"),    // Yêu cầu trả hàng
     RETURNED("Returned");                    // Đã trả hàng
 

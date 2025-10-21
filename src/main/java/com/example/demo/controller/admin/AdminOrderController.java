@@ -49,36 +49,13 @@ public class AdminOrderController {
                            @RequestParam(name = "status", required = false) String status,
                            @RequestParam(name = "fromDate", required = false) String fromDate,
                            @RequestParam(name = "toDate", required = false) String toDate) {
-        // Sort by orderDate DESC (newest first)
-        Page<OrderDTO> orderPage = orderService.getAllOrders(
+        // Sort by orderDate DESC (newest first) and filter in database
+        Page<OrderDTO> orderPage = orderService.findOrdersByFilters(
+            status, fromDate, toDate,
             PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "orderDate"))
         );
         
-        // Apply filters if provided
-        List<OrderDTO> filteredOrders = orderPage.getContent();
-        
-        if (status != null && !status.isEmpty()) {
-            filteredOrders = filteredOrders.stream()
-                .filter(order -> order.getOrderStatus().equals(status))
-                .collect(java.util.stream.Collectors.toList());
-        }
-        
-        if (fromDate != null && !fromDate.isEmpty()) {
-            java.time.LocalDate from = java.time.LocalDate.parse(fromDate);
-            filteredOrders = filteredOrders.stream()
-                .filter(order -> !order.getOrderDate().toLocalDate().isBefore(from))
-                .collect(java.util.stream.Collectors.toList());
-        }
-        
-        if (toDate != null && !toDate.isEmpty()) {
-            java.time.LocalDate to = java.time.LocalDate.parse(toDate);
-            filteredOrders = filteredOrders.stream()
-                .filter(order -> !order.getOrderDate().toLocalDate().isAfter(to))
-                .collect(java.util.stream.Collectors.toList());
-        }
-        
         model.addAttribute("orderPage", orderPage);
-        model.addAttribute("filteredOrders", filteredOrders);
         model.addAttribute("selectedStatus", status);
         model.addAttribute("fromDate", fromDate);
         model.addAttribute("toDate", toDate);
@@ -99,14 +76,15 @@ public class AdminOrderController {
             OrderDTO order = orderService.getOrderById(id);
             model.addAttribute("order", order);
             
-            // Nếu đơn đang chờ xử lý, load danh sách shipper theo carrier
-            if ("Processing".equals(order.getOrderStatus()) && order.getCarrierId() != null) {
-                List<ShipperDTO> shippers = shipperService.getShippersByCarrier(order.getCarrierId());
+            // Luôn load lịch sử hủy để admin xem (dù đơn đã được giao lại)
+            List<ShipperCancelHistoryDTO> cancelHistory = orderManagementService.getOrderCancelHistory(id);
+            model.addAttribute("cancelHistory", cancelHistory);
+            
+            // Nếu đơn đang chờ xử lý hoặc shipper hủy, load danh sách shipper đang hoạt động theo carrier
+            if (("Processing".equals(order.getOrderStatus()) || "Shipper_Cancelled".equals(order.getOrderStatus())) 
+                && order.getCarrierId() != null) {
+                List<ShipperDTO> shippers = shipperService.getActiveShippersByCarrier(order.getCarrierId());
                 model.addAttribute("shippers", shippers);
-                
-                // Lấy lịch sử hủy của đơn này (để admin biết shipper trước đã hủy vì sao)
-                List<ShipperCancelHistoryDTO> cancelHistory = orderManagementService.getOrderCancelHistory(id);
-                model.addAttribute("cancelHistory", cancelHistory);
             }
             
             return "admin/order/detail";

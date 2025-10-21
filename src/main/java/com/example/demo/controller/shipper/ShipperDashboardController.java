@@ -107,7 +107,11 @@ public class ShipperDashboardController {
      * AJAX endpoint - History content
      */
     @GetMapping("/history/content")
-    public String historyContent(Model model, HttpSession session) {
+    public String historyContent(@RequestParam(defaultValue = "0") int page,
+                                 @RequestParam(required = false) String status,
+                                 @RequestParam(required = false) String fromDate,
+                                 @RequestParam(required = false) String toDate,
+                                 Model model, HttpSession session) {
         User currentUser = (User) session.getAttribute("currentUser");
         if (!isShipper(currentUser)) {
             return "error/403";
@@ -117,34 +121,12 @@ public class ShipperDashboardController {
         
         // Get all orders for this shipper
         List<OrderDTO> allOrders = orderManagementService.getShipperAllOrders(shipperId);
-        
-        // Lấy lịch sử hủy của SHIPPER HIỆN TẠI này
         List<ShipperCancelHistoryDTO> cancelHistory = orderManagementService.getShipperCancelHistory(shipperId);
         
-        // KHÔNG LỌC BỞ - CÙNG 1 ĐƠN CÓ THỂ XUẤT HIỆN NHIỀU LẦN VỚI CÁC TRẠNG THÁI KHÁC NHAU
-        // Ví dụ: Đơn #123 có thể có:
-        //  - 1 bản ghi "Shipper hủy" (lần 1)
-        //  - 1 bản ghi "Confirmed" (lần 2 - admin giao lại)
-        //  - 1 bản ghi "Shipper hủy" (lần 3 - hủy lại)
-        //  - ...
-        List<OrderDTO> filteredOrders = new java.util.ArrayList<>(allOrders);
-        
-        long totalDelivered = filteredOrders.stream().filter(o -> "Delivered".equals(o.getOrderStatus())).count();
-        // Số đơn shipper hủy (vẫn giữ nguyên tất cả lịch sử hủy)
-        long totalCancelled = cancelHistory.size();
-        long totalReturned = filteredOrders.stream().filter(o -> "Returned".equals(o.getOrderStatus())).count();
-        // Doanh thu = Tổng phí vận chuyển của các đơn đã giao thành công
-        double totalRevenue = filteredOrders.stream()
-            .filter(o -> "Delivered".equals(o.getOrderStatus()))
-            .filter(o -> o.getShippingFee() != null)
-            .mapToDouble(o -> o.getShippingFee().doubleValue())
-            .sum();
-        
-        // Merge orders và cancelHistory thành một list chung để hiển thị theo thời gian
+        // Merge orders và cancelHistory
         List<ShipperOrderHistoryItemDTO> combinedHistory = new java.util.ArrayList<>();
         
-        // Thêm TẤT CẢ các đơn thường
-        for (OrderDTO order : filteredOrders) {
+        for (OrderDTO order : allOrders) {
             ShipperOrderHistoryItemDTO item = new ShipperOrderHistoryItemDTO();
             item.setOrderId(order.getId());
             item.setOrderNumber(order.getOrderNumber());
@@ -154,8 +136,7 @@ public class ShipperDashboardController {
             item.setTotalAmount(order.getTotalAmount());
             item.setOrderStatus(order.getOrderStatus());
             
-            // Lấy thời gian mới nhất tùy theo trạng thái
-            LocalDateTime displayDate = order.getOrderDate(); // Mặc định
+            LocalDateTime displayDate = order.getOrderDate();
             if (order.getDeliveredAt() != null) {
                 displayDate = order.getDeliveredAt();
             } else if (order.getShippedAt() != null) {
@@ -168,7 +149,6 @@ public class ShipperDashboardController {
             combinedHistory.add(item);
         }
         
-        // Thêm các đơn shipper hủy (vẫn giữ tất cả trong lịch sử)
         for (ShipperCancelHistoryDTO cancel : cancelHistory) {
             ShipperOrderHistoryItemDTO item = new ShipperOrderHistoryItemDTO();
             item.setOrderId(cancel.getOrderId());
@@ -187,11 +167,71 @@ public class ShipperDashboardController {
         // Sort theo thời gian giảm dần
         combinedHistory.sort((o1, o2) -> o2.getDisplayDate().compareTo(o1.getDisplayDate()));
         
-        model.addAttribute("combinedHistory", combinedHistory);
+        // Apply filters
+        List<ShipperOrderHistoryItemDTO> filteredHistory = combinedHistory;
+        
+        if (status != null && !status.isEmpty()) {
+            filteredHistory = filteredHistory.stream()
+                .filter(item -> item.getOrderStatus().equals(status))
+                .collect(java.util.stream.Collectors.toList());
+        }
+        
+        if (fromDate != null && !fromDate.isEmpty()) {
+            java.time.LocalDate from = java.time.LocalDate.parse(fromDate);
+            filteredHistory = filteredHistory.stream()
+                .filter(item -> !item.getDisplayDate().toLocalDate().isBefore(from))
+                .collect(java.util.stream.Collectors.toList());
+        }
+        
+        if (toDate != null && !toDate.isEmpty()) {
+            java.time.LocalDate to = java.time.LocalDate.parse(toDate);
+            filteredHistory = filteredHistory.stream()
+                .filter(item -> !item.getDisplayDate().toLocalDate().isAfter(to))
+                .collect(java.util.stream.Collectors.toList());
+        }
+        
+        // Phân trang
+        int pageSize = 10;
+        int totalElements = filteredHistory.size();
+        int totalPages = (int) Math.ceil((double) totalElements / pageSize);
+        
+        if (page >= totalPages && totalPages > 0) {
+            page = totalPages - 1;
+        }
+        if (page < 0) {
+            page = 0;
+        }
+        
+        int fromIndex = page * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, totalElements);
+        
+        List<ShipperOrderHistoryItemDTO> pageContent = totalElements > 0 ? 
+            filteredHistory.subList(fromIndex, toIndex) : 
+            java.util.Collections.emptyList();
+        
+        org.springframework.data.domain.Pageable pageable = 
+            org.springframework.data.domain.PageRequest.of(page, pageSize);
+        org.springframework.data.domain.Page<ShipperOrderHistoryItemDTO> historyPage = 
+            new org.springframework.data.domain.PageImpl<>(pageContent, pageable, totalElements);
+        
+        // Statistics - dựa trên toàn bộ data, không filter
+        long totalDelivered = allOrders.stream().filter(o -> "Delivered".equals(o.getOrderStatus())).count();
+        long totalCancelled = cancelHistory.size();
+        long totalReturned = allOrders.stream().filter(o -> "Returned".equals(o.getOrderStatus())).count();
+        double totalRevenue = allOrders.stream()
+            .filter(o -> "Delivered".equals(o.getOrderStatus()))
+            .filter(o -> o.getShippingFee() != null)
+            .mapToDouble(o -> o.getShippingFee().doubleValue())
+            .sum();
+        
+        model.addAttribute("historyPage", historyPage);
         model.addAttribute("totalDelivered", totalDelivered);
         model.addAttribute("totalCancelled", totalCancelled);
         model.addAttribute("totalReturned", totalReturned);
         model.addAttribute("totalRevenue", totalRevenue);
+        model.addAttribute("selectedStatus", status != null ? status : "");
+        model.addAttribute("fromDate", fromDate != null ? fromDate : "");
+        model.addAttribute("toDate", toDate != null ? toDate : "");
         
         return "shipper/fragments/history-content";
     }

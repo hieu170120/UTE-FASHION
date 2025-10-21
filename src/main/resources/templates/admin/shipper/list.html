@@ -7,12 +7,39 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #f8f9fa; }
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        body { 
+            background: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
         .navbar-custom { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
         .card { border: none; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .status-active { color: #28a745; }
         .status-inactive { color: #dc3545; }
         .cancel-badge { background: #ffc107; color: #000; padding: 3px 8px; border-radius: 10px; font-size: 12px; }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid white;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        .dropdown-toggle::after { display: none; }
+        
+        .container {
+            flex: 1;
+        }
+        
+        /* Footer styles */
+        footer {
+            margin-top: auto;
+        }
     </style>
 </head>
 <body>
@@ -21,16 +48,38 @@
             <a class="navbar-brand" th:href="@{/admin/dashboard}">
                 <i class="fas fa-shopping-bag"></i> UTE Fashion Admin
             </a>
-            <div>
+            <div class="d-flex align-items-center gap-2">
                 <a th:href="@{/admin/carriers}" class="btn btn-light btn-sm me-2">
                     <i class="fas fa-shipping-fast"></i> Nhà Vận Chuyển
                 </a>
                 <a th:href="@{/admin/orders}" class="btn btn-light btn-sm me-2">
                     <i class="fas fa-box"></i> Đơn Hàng
                 </a>
-                <a th:href="@{/admin/orders/pending}" class="btn btn-warning btn-sm">
+                <a th:href="@{/admin/orders/pending}" class="btn btn-warning btn-sm me-2">
                     <i class="fas fa-clock"></i> Đơn Chờ Xử Lý
                 </a>
+                
+                <!-- User Avatar Dropdown -->
+                <div class="dropdown">
+                    <a class="dropdown-toggle" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="https://ui-avatars.com/api/?name=Admin&background=667eea&color=fff&size=128" 
+                             alt="User Avatar" 
+                             class="user-avatar" />
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        <li>
+                            <a class="dropdown-item" th:href="@{/profile}">
+                                <i class="fas fa-user me-2"></i>Thông tin cá nhân
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" th:href="@{/logout}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
     </nav>
@@ -55,10 +104,46 @@
             <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
+        
+        <!-- Search and Filter Form -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <form method="get" action="/UTE_Fashion/admin/shippers" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label"><i class="fas fa-search"></i> Tìm kiếm</label>
+                        <input type="text" name="search" class="form-control" placeholder="Tên, email, số điện thoại..." th:value="${searchQuery}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="fas fa-toggle-on"></i> Trạng thái</label>
+                        <select name="active" class="form-select">
+                            <option value="">-- Tất cả --</option>
+                            <option value="true" th:selected="${activeFilter != null && activeFilter == true}">Hoạt động</option>
+                            <option value="false" th:selected="${activeFilter != null && activeFilter == false}">Ngưng</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="fas fa-shipping-fast"></i> Nhà vận chuyển</label>
+                        <select name="carrierId" class="form-select">
+                            <option value="">-- Tất cả --</option>
+                            <option th:each="carrier : ${carriers}" 
+                                    th:value="${carrier.id}" 
+                                    th:text="${carrier.carrierName}"
+                                    th:selected="${carrierIdFilter != null && carrierIdFilter == carrier.id}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter"></i> Lọc
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         <div class="card">
             <div class="card-body">
-                <div class="table-responsive">
+                <div class="table-responsive" style="min-height: 600px;">
                     <table class="table table-hover">
                         <thead class="table-light">
                             <tr>
@@ -93,7 +178,9 @@
                                     <span th:text="${shipper.vehicleType}"></span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-info" th:text="${shipper.carrierId}"></span>
+                                    <span th:each="carrier : ${carriers}" 
+                                          th:if="${carrier.id == shipper.carrierId}"
+                                          th:text="${carrier.carrierName}"></span>
                                 </td>
                                 <td>
                                     <span class="cancel-badge" th:if="${shipper.cancelCount > 0}">
@@ -121,23 +208,45 @@
                     </table>
                 </div>
 
-                <nav th:if="${shipperPage.totalPages > 1}">
+                <!-- Pagination luôn hiển thị -->
+                <nav class="mt-4">
                     <ul class="pagination justify-content-center">
                         <li class="page-item" th:classappend="${shipperPage.first} ? 'disabled'">
-                            <a class="page-link" th:href="@{/admin/shippers(page=${shipperPage.number - 1})}">Trước</a>
+                            <a class="page-link" 
+                               th:href="@{/admin/shippers(page=${shipperPage.number - 1}, search=${searchQuery}, active=${activeFilter}, carrierId=${carrierIdFilter})}" 
+                               th:if="${!shipperPage.first}">Trước</a>
+                            <span class="page-link" th:if="${shipperPage.first}">Trước</span>
                         </li>
                         <li class="page-item" th:each="i : ${#numbers.sequence(0, shipperPage.totalPages - 1)}"
                             th:classappend="${i == shipperPage.number} ? 'active'">
-                            <a class="page-link" th:href="@{/admin/shippers(page=${i})}" th:text="${i + 1}"></a>
+                            <a class="page-link" 
+                               th:href="@{/admin/shippers(page=${i}, search=${searchQuery}, active=${activeFilter}, carrierId=${carrierIdFilter})}" 
+                               th:text="${i + 1}"></a>
                         </li>
                         <li class="page-item" th:classappend="${shipperPage.last} ? 'disabled'">
-                            <a class="page-link" th:href="@{/admin/shippers(page=${shipperPage.number + 1})}">Sau</a>
+                            <a class="page-link" 
+                               th:href="@{/admin/shippers(page=${shipperPage.number + 1}, search=${searchQuery}, active=${activeFilter}, carrierId=${carrierIdFilter})}" 
+                               th:if="${!shipperPage.last}">Sau</a>
+                            <span class="page-link" th:if="${shipperPage.last}">Sau</span>
                         </li>
                     </ul>
                 </nav>
             </div>
         </div>
     </div>
+    
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0">
+                <i class="fas fa-heart text-danger"></i> 
+                UTE Fashion &copy; 2025 - Dự án Spring Boot
+            </p>
+            <p class="mb-0 mt-2">
+                <small>Spring Boot + Thymeleaf + Bootstrap + JPA + WebSocket + SQL Server + Thymeleaf Layout Dialect</small>
+            </p>
+        </div>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

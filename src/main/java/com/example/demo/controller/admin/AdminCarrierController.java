@@ -22,9 +22,13 @@ public class AdminCarrierController {
     @GetMapping
     public String listCarriers(Model model,
                                @RequestParam(defaultValue = "0") int page,
-                               @RequestParam(defaultValue = "10") int size) {
+                               @RequestParam(defaultValue = "10") int size,
+                               @RequestParam(required = false) String search,
+                               @RequestParam(required = false) Boolean active) {
         Pageable pageable = PageRequest.of(page, size);
-        model.addAttribute("carrierPage", carrierService.getAllCarriersPaged(pageable));
+        model.addAttribute("carrierPage", carrierService.findCarriersByFilters(search, active, pageable));
+        model.addAttribute("searchQuery", search);
+        model.addAttribute("activeFilter", active);
         return "admin/carrier/list";
     }
 

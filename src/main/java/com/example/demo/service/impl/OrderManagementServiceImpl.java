@@ -62,10 +62,14 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         Shipper shipper = shipperRepository.findById(shipperId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy shipper"));
         
-        // Kiểm tra trạng thái đơn hàng
-        if (!OrderStatus.PROCESSING.getValue().equals(order.getOrderStatus())) {
-            throw new IllegalStateException("Đơn hàng không ở trạng thái chờ xử lý");
+        // Kiểm tra trạng thái đơn hàng (cho phép Processing hoặc Shipper_Cancelled)
+        if (!OrderStatus.PROCESSING.getValue().equals(order.getOrderStatus()) 
+            && !OrderStatus.SHIPPER_CANCELLED.getValue().equals(order.getOrderStatus())) {
+            throw new IllegalStateException("Đơn hàng không ở trạng thái chờ xử lý hoặc shipper hủy");
         }
+        
+        // KHÔNG xóa thông tin hủy cũ - giữ lại để admin xem lịch sử
+        // Shipper mới sẽ không thấy vì chỉ hiển thị khi orderStatus = Shipper_Cancelled
         
         // Gán shipper và cập nhật trạng thái
         order.setShipper(shipper);
@@ -194,12 +198,17 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         history.setReason(reason);
         cancelHistoryRepository.save(history);
         
-        // Quay lại trạng thái chờ admin chọn shipper khác
-        order.setOrderStatus(OrderStatus.PROCESSING.getValue());
+        // Tăng số lần hủy của shipper
+        shipper.setCancelCount(shipper.getCancelCount() + 1);
+        shipperRepository.save(shipper);
+        
+        // Chuyển sang trạng thái SHIPPER_CANCELLED (chỉ hiện với admin và shipper)
+        order.setOrderStatus(OrderStatus.SHIPPER_CANCELLED.getValue());
         order.setShipper(null);
         order.setConfirmedAt(null);
         order.setCancelledBy("SHIPPER");
         order.setCancelReason(reason);
+        order.setCancelledAt(LocalDateTime.now());
         
         orderRepository.save(order);
     }
@@ -277,10 +286,11 @@ public class OrderManagementServiceImpl implements OrderManagementService {
             throw new IllegalStateException("Bạn không có quyền hủy đơn này");
         }
         
-        // Chỉ cho phép hủy khi đơn đang xử lý hoặc đã xử lý (chưa giao)
+        // Chỉ cho phép hủy khi đơn đang xử lý, đã xử lý hoặc shipper hủy (chưa giao)
         String status = order.getOrderStatus();
         if (!OrderStatus.PROCESSING.getValue().equals(status) && 
-            !OrderStatus.CONFIRMED.getValue().equals(status)) {
+            !OrderStatus.CONFIRMED.getValue().equals(status) &&
+            !OrderStatus.SHIPPER_CANCELLED.getValue().equals(status)) {
             throw new IllegalStateException("Không thể hủy đơn ở trạng thái này");
         }
         
