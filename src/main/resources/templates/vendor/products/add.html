@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Thêm sản phẩm mới</title>
-    <th:block layout:fragment="css">
+    <th:block layout:fragment="styles">
         <style>
             body {
                 font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
@@ -67,6 +67,42 @@
                 border-color: #000;
             }
 
+            /* --- Image Upload Styles --- */
+            .upload-area {
+                transition: background-color .2s ease-in-out;
+            }
+            .upload-area:hover {
+                background-color: #e9ecef;
+            }
+            .preview-image-wrapper {
+                position: relative;
+                width: 120px;
+                height: 120px;
+            }
+            .preview-image {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                border-radius: 8px;
+                border: 1px solid #ddd;
+            }
+            .btn-remove-image {
+                position: absolute;
+                top: -5px;
+                right: -5px;
+                width: 24px;
+                height: 24px;
+                background-color: black;
+                color: white;
+                border-radius: 50%;
+                border: 2px solid white;
+                font-weight: bold;
+                line-height: 1;
+                cursor: pointer;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
         </style>
     </th:block>
 
@@ -86,7 +122,7 @@
                 <p th:text="${errorMessage}"></p>
             </div>
 
-            <form th:action="@{/vendor/products/add}" th:object="${form}" method="post">
+            <form th:action="@{/vendor/products/add}" th:object="${form}" method="post" id="productForm">
 
                 <!-- Product Core Info -->
                 <div class="card mb-4">
@@ -152,6 +188,35 @@
                     </div>
                 </div>
 
+                 <!-- Images -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4 class="mb-0">Hình ảnh</h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- Image Upload Section -->
+                        <div class="mb-3">
+                            <label class="form-label">Tải ảnh lên</label>
+                             <p class="text-muted small">Tải lên tối đa 5 ảnh. Ảnh đầu tiên sẽ là ảnh đại diện.</p>
+                            <div class="upload-area border rounded p-4 text-center" id="imageUploadArea" style="cursor: pointer;">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-primary"></i>
+                                <p class="mt-2 mb-0"><strong>Nhấp hoặc kéo thả ảnh vào đây</strong></p>
+                                <small class="text-muted">Hỗ trợ JPG, PNG, GIF</small>
+                                <input type="file" id="imageInput" accept="image/*" multiple class="d-none">
+                            </div>
+                        </div>
+                        <!-- Image Preview Section -->
+                        <div id="imagePreview" class="mt-3 d-flex flex-wrap gap-3">
+                            <!-- Previews will be appended here -->
+                        </div>
+                        <!-- Hidden Inputs for Image URLs -->
+                        <div id="hiddenImageInputsContainer">
+                            <!-- Hidden inputs for submitted URLs will be appended here -->
+                        </div>
+                    </div>
+                </div>
+
+
                 <!-- Inventory & Shipping -->
                 <div class="card mb-4">
                     <div class="card-header">
@@ -212,51 +277,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Images -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h4 class="mb-0">Hình ảnh</h4>
-                    </div>
-                    <div class="card-body">
-                        <div class="row align-items-center mb-3 p-2 border rounded">
-                             <div class="col-md-8">
-                                 <label class="form-label">URL Hình ảnh 1</label>
-                                 <input type="text" class="form-control" name="images[0].imageUrl" placeholder="https://example.com/image1.jpg">
-                             </div>
-                             <div class="col-md-4">
-                                <div class="form-check mt-4">
-                                    <input class="form-check-input" type="radio" name="primaryImageIndex" id="primaryImage1" value="0" checked>
-                                    <label class="form-check-label" for="primaryImage1">Đặt làm ảnh chính</label>
-                                </div>
-                             </div>
-                        </div>
-                        <div class="row align-items-center mb-3 p-2 border rounded">
-                             <div class="col-md-8">
-                                 <label class="form-label">URL Hình ảnh 2</label>
-                                 <input type="text" class="form-control" name="images[1].imageUrl" placeholder="https://example.com/image2.jpg">
-                             </div>
-                             <div class="col-md-4">
-                                <div class="form-check mt-4">
-                                    <input class="form-check-input" type="radio" name="primaryImageIndex" id="primaryImage2" value="1">
-                                    <label class="form-check-label" for="primaryImage2">Đặt làm ảnh chính</label>
-                                </div>
-                             </div>
-                        </div>
-                        <div class="row align-items-center mb-3 p-2 border rounded">
-                             <div class="col-md-8">
-                                 <label class="form-label">URL Hình ảnh 3</label>
-                                 <input type="text" class="form-control" name="images[2].imageUrl" placeholder="https://example.com/image3.jpg">
-                             </div>
-                             <div class="col-md-4">
-                                <div class="form-check mt-4">
-                                    <input class="form-check-input" type="radio" name="primaryImageIndex" id="primaryImage3" value="2">
-                                    <label class="form-check-label" for="primaryImage3">Đặt làm ảnh chính</label>
-                                </div>
-                             </div>
-                        </div>
-                    </div>
-                </div>
                 
                 <div class="card mb-4">
                      <div class="card-header">
@@ -269,7 +289,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- MODIFICATION END -->
 
                 <div class="d-grid">
                     <button type="submit" class="btn btn-dark">Thêm sản phẩm</button>
@@ -278,6 +297,111 @@
         </div>
     </div>
 </div>
+
+<th:block layout:fragment="scripts">
+    <script th:inline="javascript">
+        $(document).ready(function() {
+            // --- CLOUDINARY CONFIG ---
+            const CLOUDINARY_CLOUD_NAME = /*[[${@environment.getProperty('cloudinary.cloud-name')}]]*/ 'dins132fr';
+            const CLOUDINARY_UPLOAD_PRESET = /*[[${@environment.getProperty('cloudinary.upload-preset')}]]*/ 'ml_default';
+            const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+            const MAX_IMAGES = 5;
+
+            // --- DOM ELEMENTS ---
+            const imageUploadArea = $('#imageUploadArea');
+            const imageInput = $('#imageInput');
+            const imagePreviewContainer = $('#imagePreview');
+            const hiddenInputsContainer = $('#hiddenImageInputsContainer');
+
+            imageUploadArea.on('click', () => imageInput.click());
+            imageInput.on('change', handleFileSelect);
+
+            function handleFileSelect(event) {
+                const files = event.target.files;
+                const currentImageCount = hiddenInputsContainer.children('input').length;
+
+                if (currentImageCount + files.length > MAX_IMAGES) {
+                    alert(`Lỗi: Bạn chỉ có thể tải lên tối đa ${MAX_IMAGES} ảnh.`);
+                    return;
+                }
+
+                Array.from(files).forEach(uploadToCloudinary);
+                $(this).val(''); // Reset input
+            }
+
+            function uploadToCloudinary(file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+                const previewId = `preview-${Date.now()}-${Math.random().toString(36).substring(2)}`;
+                const loadingHtml = `
+                    <div id="${previewId}" class="preview-image-wrapper">
+                        <div class="d-flex align-items-center justify-content-center h-100 border rounded">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>`;
+                imagePreviewContainer.append(loadingHtml);
+
+                fetch(CLOUDINARY_API_URL, { method: 'POST', body: formData })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.secure_url) {
+                            addPreviewAndHiddenInput(previewId, data.secure_url);
+                        } else {
+                            $(`#${previewId}`).remove();
+                            console.error('Cloudinary upload error:', data);
+                            alert('Có lỗi xảy ra khi tải ảnh. Vui lòng thử lại.');
+                        }
+                    })
+                    .catch(error => {
+                        $(`#${previewId}`).remove();
+                        console.error('API fetch error:', error);
+                        alert('Lỗi mạng. Không thể tải ảnh lên.');
+                    });
+            }
+
+            function addPreviewAndHiddenInput(previewId, imageUrl) {
+                const previewElement = $(`#${previewId}`);
+                
+                // --- Create hidden input ---
+                // I use a simple name "imageUrls" to send a list of strings to the controller.
+                const hiddenInput = `<input type="hidden" id="hidden-${previewId}" name="imageUrls" value="${imageUrl}">`;
+                hiddenInputsContainer.append(hiddenInput);
+
+                // --- Update preview content ---
+                const previewContent = `
+                    <img src="${imageUrl}" class="preview-image" alt="Product Preview">
+                    <button type="button" class="btn-remove-image" data-preview-id="${previewId}">&times;</button>
+                `;
+                previewElement.html(previewContent);
+                 // Add primary image badge if it's the first image
+                if (hiddenInputsContainer.children('input').length === 1) {
+                    addPrimaryBadge(previewElement);
+                }
+
+                // --- Add event listener for remove button ---
+                previewElement.find('.btn-remove-image').on('click', function() {
+                    const wasPrimary = previewElement.find('.primary-badge').length > 0;
+                    
+                    $(`#hidden-${previewId}`).remove();
+                    previewElement.remove();
+
+                     if (wasPrimary && imagePreviewContainer.children('.preview-image-wrapper').length > 0) {
+                        const newFirstPreview = imagePreviewContainer.children('.preview-image-wrapper').first();
+                        addPrimaryBadge(newFirstPreview);
+                    }
+                });
+            }
+            
+            function addPrimaryBadge(previewElement) {
+                previewElement.append('<span class="primary-badge position-absolute bottom-0 start-0 bg-dark text-white small px-2 py-1 rounded-pill mb-2 ms-2">Ảnh chính</span>');
+            }
+        });
+    </script>
+</th:block>
 
 </body>
 </html>

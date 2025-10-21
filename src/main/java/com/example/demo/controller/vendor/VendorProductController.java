@@ -49,7 +49,7 @@ public class VendorProductController {
     @Autowired
     private SizeService sizeService;
 
-    private static final int MAX_IMAGES = 3;
+    private static final int MAX_IMAGES = 5; // Increased to 5 to match the new uploader
 
     private void authorizeVendorForProduct(Principal principal, Integer productId) {
         Integer shopId = vendorService.getShopIdByUsername(principal.getName());
@@ -83,6 +83,7 @@ public class VendorProductController {
         }
 
         if (!model.containsAttribute("form")) {
+             // We use ProductDTO directly now, not ProductFormDTO for adding
             model.addAttribute("form", new ProductFormDTO());
         }
         model.addAttribute("categories", categoryService.findAllActive());
@@ -91,13 +92,22 @@ public class VendorProductController {
     }
 
     @PostMapping("/add")
-    public String addProduct(@Valid @ModelAttribute("form") ProductFormDTO form, BindingResult result, Principal principal, RedirectAttributes redirectAttributes, Model model) {
+    public String addProduct(@Valid @ModelAttribute("form") ProductFormDTO form, 
+                             BindingResult result, 
+                             @RequestParam(name = "imageUrls", required = false) List<String> imageUrls, // Capture image URLs
+                             Principal principal, 
+                             RedirectAttributes redirectAttributes, 
+                             Model model) {
         Integer shopId;
         try {
             shopId = vendorService.getShopIdByUsername(principal.getName());
         } catch (UnauthorizedException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: Không tìm thấy cửa hàng của bạn.");
             return "redirect:/vendor/products";
+        }
+
+        if (imageUrls == null || imageUrls.isEmpty()) {
+            result.rejectValue("product.productName", "product.productName", "Vui lòng tải lên ít nhất một hình ảnh.");
         }
 
         if (result.hasErrors()) {
@@ -108,17 +118,18 @@ public class VendorProductController {
 
         try {
             ProductDTO productDTO = form.getProduct();
-            List<ProductImageDTO> images = form.getImages().stream()
-                    .filter(img -> img.getImageUrl() != null && !img.getImageUrl().trim().isEmpty())
-                    .collect(Collectors.toList());
 
-            Integer primaryIndex = form.getPrimaryImageIndex();
-            if (primaryIndex != null && primaryIndex >= 0 && primaryIndex < images.size()) {
-                for (int i = 0; i < images.size(); i++) {
-                    images.get(i).setPrimary(i == primaryIndex);
+            // Convert URLs to ProductImageDTO list
+            List<ProductImageDTO> images = new ArrayList<>();
+            if (imageUrls != null && !imageUrls.isEmpty()) {
+                for (int i = 0; i < imageUrls.size(); i++) {
+                    ProductImageDTO imageDTO = new ProductImageDTO();
+                    imageDTO.setImageUrl(imageUrls.get(i));
+                    imageDTO.setPrimary(i == 0); // First image is always primary
+                    images.add(imageDTO);
                 }
             }
-
+            
             ProductDTO newProduct = productService.createProduct(productDTO, images, shopId);
 
             redirectAttributes.addFlashAttribute("successMessage", "Thêm sản phẩm thành công! Giờ bạn có thể thêm các biến thể.");
@@ -138,21 +149,10 @@ public class VendorProductController {
             ProductDTO productDTO = productService.getProductById(id);
             List<ProductImageDTO> images = productService.getImagesByProductId(id);
 
-            List<ProductImageDTO> formImages = new ArrayList<>(images);
-            while (formImages.size() < MAX_IMAGES) {
-                formImages.add(new ProductImageDTO());
-            }
-
+            // No need to pad the list anymore for the new uploader
             ProductFormDTO form = new ProductFormDTO();
             form.setProduct(productDTO);
-            form.setImages(formImages);
-
-            for (int i = 0; i < formImages.size(); i++) {
-                if (formImages.get(i).isPrimary()) {
-                    form.setPrimaryImageIndex(i);
-                    break;
-                }
-            }
+            form.setImages(images); // Use the actual list of images
 
             model.addAttribute("form", form);
             model.addAttribute("categories", categoryService.findAllActive());
@@ -171,12 +171,21 @@ public class VendorProductController {
     }
 
     @PostMapping("/edit/{id}")
-    public String updateProduct(@PathVariable("id") Integer id, @Valid @ModelAttribute("form") ProductFormDTO form, BindingResult result, Principal principal, RedirectAttributes redirectAttributes, Model model) {
+    public String updateProduct(@PathVariable("id") Integer id, @Valid @ModelAttribute("form") ProductFormDTO form, 
+                                BindingResult result, 
+                                @RequestParam(name = "imageUrls", required = false) List<String> imageUrls,
+                                Principal principal, 
+                                RedirectAttributes redirectAttributes, 
+                                Model model) {
         try {
             authorizeVendorForProduct(principal, id);
         } catch (UnauthorizedException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/vendor/products";
+        }
+        
+        if (imageUrls == null || imageUrls.isEmpty()) {
+            result.rejectValue("product.productName", "product.productName", "Vui lòng tải lên ít nhất một hình ảnh.");
         }
 
         if (result.hasErrors()) {
@@ -194,13 +203,15 @@ public class VendorProductController {
             Integer shopId = vendorService.getShopIdByUsername(principal.getName());
             ProductDTO productDTO = form.getProduct();
 
-            List<ProductImageDTO> images = form.getImages().stream()
-                    .filter(img -> (img.getImageUrl() != null && !img.getImageUrl().trim().isEmpty()) || img.getId() != null)
-                    .collect(Collectors.toList());
-
-            Integer primaryIndex = form.getPrimaryImageIndex();
-            for (int i = 0; i < images.size(); i++) {
-                images.get(i).setPrimary(primaryIndex != null && i == primaryIndex);
+            // Process images from URLs
+            List<ProductImageDTO> images = new ArrayList<>();
+             if (imageUrls != null && !imageUrls.isEmpty()) {
+                for (int i = 0; i < imageUrls.size(); i++) {
+                    ProductImageDTO imageDTO = new ProductImageDTO();
+                    imageDTO.setImageUrl(imageUrls.get(i));
+                    imageDTO.setPrimary(i == 0); // First image is always primary
+                    images.add(imageDTO);
+                }
             }
 
             productService.updateProduct(id, productDTO, images, shopId);

@@ -66,6 +66,7 @@ public class ProductServiceImpl implements ProductService {
         ProductDTO dto = modelMapper.map(product, ProductDTO.class);
         if (product.getShop() != null) {
             dto.setShopId(product.getShop().getId());
+            dto.setShopName(product.getShop().getName());
         }
         if (product.getCategory() != null) {
             dto.setCategoryId(product.getCategory().getId());
