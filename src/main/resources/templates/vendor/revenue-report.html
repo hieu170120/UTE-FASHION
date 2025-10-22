@@ -85,6 +85,12 @@
         .funnel-percent { font-size: 11px; color: #999; min-width: 40px; }
         .back-btn { display: inline-block; padding: 10px 20px; background: #666; color: white; text-decoration: none; border-radius: 8px; margin-bottom: 20px; transition: all 0.2s; }
         .back-btn:hover { background: #444; transform: translateY(-2px); }
+        .chart-tooltip { position: absolute; background: rgba(0,0,0,0.9); color: white; padding: 12px 16px; border-radius: 8px; font-size: 13px; pointer-events: none; opacity: 0; transition: opacity 0.2s; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .chart-tooltip.visible { opacity: 1; }
+        .chart-tooltip-title { font-weight: 600; margin-bottom: 6px; color: #ff8c42; }
+        .chart-tooltip-item { margin: 4px 0; display: flex; justify-content: space-between; gap: 16px; }
+        .chart-tooltip-label { color: #ccc; }
+        .chart-tooltip-value { font-weight: 600; }
     </style>
 </head>
 <body>
@@ -164,8 +170,8 @@
                         <span>Đơn Hàng</span>
                     </div>
                 </div>
-                <div style="height: 280px; position: relative; padding: 10px 0;">
-                    <svg viewBox="0 0 800 240" style="width: 100%; height: 100%;">
+                <div id="chartContainer" style="height: 280px; position: relative; padding: 10px 0;">
+                    <svg id="revenueChart" viewBox="0 0 800 240" style="width: 100%; height: 100%;">
                         <!-- Grid lines -->
                         <line x1="60" y1="40" x2="760" y2="40" stroke="#f0f0f0" stroke-width="1"/>
                         <line x1="60" y1="80" x2="760" y2="80" stroke="#f0f0f0" stroke-width="1"/>
@@ -192,13 +198,79 @@
                         <path fill="none" stroke="#ffb366" stroke-width="2" stroke-dasharray="6,4" stroke-linecap="round" stroke-linejoin="round"
                               th:attr="d=${report.orderLinePath}"></path>
                         
+                        <!-- Interactive data points -->
+                        <g th:each="day, iterStat : ${report.dailyRevenue}">
+                            <circle class="data-point" 
+                                    th:attr="cx=${60 + iterStat.index * 100}, cy=${200 - (day.revenue / report.maxDailyRevenue * 160)},
+                                            data-date=${day.dateLabel}, data-revenue=${day.revenue}, data-orders=${day.orderCount}"
+                                    r="6" fill="#ff8c42" stroke="white" stroke-width="2" opacity="0" style="cursor: pointer; transition: opacity 0.2s;"/>
+                        </g>
+                        
                         <!-- X-axis labels -->
                         <g th:each="day, iterStat : ${report.dailyRevenue}">
                             <text th:attr="x=${60 + iterStat.index * 100}" y="225" font-size="11" fill="#999" text-anchor="middle" 
                                   th:text="${day.dateLabel}">Day</text>
                         </g>
                     </svg>
+                    <div id="chartTooltip" class="chart-tooltip"></div>
                 </div>
+                <script th:inline="javascript">
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const dataPoints = document.querySelectorAll('.data-point');
+                        const tooltip = document.getElementById('chartTooltip');
+                        const chartContainer = document.getElementById('chartContainer');
+                        const svg = document.getElementById('revenueChart');
+                        
+                        dataPoints.forEach(point => {
+                            point.addEventListener('mouseenter', function(e) {
+                                point.style.opacity = '1';
+                                const date = this.getAttribute('data-date');
+                                const revenue = parseFloat(this.getAttribute('data-revenue'));
+                                const orders = parseInt(this.getAttribute('data-orders'));
+                                
+                                tooltip.innerHTML = `
+                                    <div class="chart-tooltip-title">${date}</div>
+                                    <div class="chart-tooltip-item">
+                                        <span class="chart-tooltip-label">Doanh thu:</span>
+                                        <span class="chart-tooltip-value">${revenue.toLocaleString('vi-VN')}đ</span>
+                                    </div>
+                                    <div class="chart-tooltip-item">
+                                        <span class="chart-tooltip-label">Đơn hàng:</span>
+                                        <span class="chart-tooltip-value">${orders}</span>
+                                    </div>
+                                `;
+                                tooltip.classList.add('visible');
+                            });
+                            
+                            point.addEventListener('mousemove', function(e) {
+                                const rect = chartContainer.getBoundingClientRect();
+                                const x = e.clientX - rect.left;
+                                const y = e.clientY - rect.top;
+                                tooltip.style.left = (x + 15) + 'px';
+                                tooltip.style.top = (y - 10) + 'px';
+                            });
+                            
+                            point.addEventListener('mouseleave', function() {
+                                point.style.opacity = '0';
+                                tooltip.classList.remove('visible');
+                            });
+                        });
+                        
+                        // Show all points on hover over chart area
+                        svg.addEventListener('mouseenter', function() {
+                            dataPoints.forEach(p => p.style.opacity = '0.3');
+                        });
+                        
+                        svg.addEventListener('mouseleave', function() {
+                            dataPoints.forEach(p => {
+                                if (!p.matches(':hover')) {
+                                    p.style.opacity = '0';
+                                }
+                            });
+                            tooltip.classList.remove('visible');
+                        });
+                    });
+                </script>
             </div>
 
             <!-- Monthly Target -->
@@ -237,11 +309,16 @@
                     <h3 class="card-title">Danh Mục Bán Chạy</h3>
                 </div>
                 <div class="donut-chart" th:if="${!report.topCategories.isEmpty()}">
-                    <svg viewBox="0 0 180 180" th:with="total=${report.totalCategoryRevenue}">
-                        <th:block th:each="cat, iterStat : ${report.topCategories}">
+                    <svg viewBox="0 0 180 180" th:with="total=${#aggregates.sum(report.topCategories.![revenue])}, circumference=${2 * 3.14159 * 70}">
+                        <th:block th:each="cat, iterStat : ${report.topCategories}" th:with="
+                            prevList=${report.topCategories.subList(0, iterStat.index)},
+                            prevTotal=${prevList.isEmpty() ? 0 : #aggregates.sum(prevList.![revenue])},
+                            dashLength=${(cat.revenue / total) * circumference},
+                            dashOffset=${-1 * ((prevTotal / total) * circumference)}">
                             <circle cx="90" cy="90" r="70" fill="none" stroke-width="30" transform="rotate(-90 90 90)"
                                     th:styleappend="'stroke:' + ${cat.color}"
-                                    th:attr="stroke-dasharray=${(cat.revenue / total) * 440} + ' 440'"></circle>
+                                    th:attr="stroke-dasharray=${dashLength} + ' ' + ${circumference},
+                                            stroke-dashoffset=${dashOffset}"></circle>
                         </th:block>
                     </svg>
                     <div class="donut-center">
@@ -295,23 +372,23 @@
                         <div class="funnel-bar" style="width: 100%; background: #ff8c42;" th:text="'Xem SP: ' + ${#numbers.formatInteger(report.conversionFunnel.viewCount, 0, 'COMMA')}">Xem SP: 0</div>
                         <span class="funnel-percent">100%</span>
                     </div>
-                    <div class="funnel-step">
-                        <div class="funnel-bar" style="background: #ffb366; margin-left: 7.5%;" 
-                             th:style="'width: ' + ${(report.conversionFunnel.addToCartCount * 100.0 / report.conversionFunnel.viewCount)} + '%; background: #ffb366; margin-left: ' + ${(100 - (report.conversionFunnel.addToCartCount * 100.0 / report.conversionFunnel.viewCount)) / 2} + '%'"
+                    <div class="funnel-step" th:with="cartPercent=${report.conversionFunnel.viewCount > 0 ? T(java.lang.Math).min(100.0, (report.conversionFunnel.addToCartCount * 100.0 / report.conversionFunnel.viewCount)) : 0.0}">
+                        <div class="funnel-bar" style="background: #ffb366;" 
+                             th:style="'width: ' + ${cartPercent} + '%; background: #ffb366; margin-left: ' + ${(100 - cartPercent) / 2} + '%; max-width: 100%;'"
                              th:text="'Giỏ Hàng: ' + ${#numbers.formatInteger(report.conversionFunnel.addToCartCount, 0, 'COMMA')}">Giỏ: 0</div>
-                        <span class="funnel-percent" th:text="${#numbers.formatDecimal((report.conversionFunnel.addToCartCount * 100.0 / report.conversionFunnel.viewCount), 0, 'COMMA', 0, 'POINT')} + '%'">0%</span>
+                        <span class="funnel-percent" th:text="${#numbers.formatDecimal(cartPercent, 0, 'COMMA', 0, 'POINT')} + '%'">0%</span>
                     </div>
-                    <div class="funnel-step">
-                        <div class="funnel-bar" style="background: #ffd4a8; margin-left: 17.5%;" 
-                             th:style="'width: ' + ${(report.conversionFunnel.checkoutCount * 100.0 / report.conversionFunnel.viewCount)} + '%; background: #ffd4a8; margin-left: ' + ${(100 - (report.conversionFunnel.checkoutCount * 100.0 / report.conversionFunnel.viewCount)) / 2} + '%'"
+                    <div class="funnel-step" th:with="checkoutPercent=${report.conversionFunnel.viewCount > 0 ? T(java.lang.Math).min(100.0, (report.conversionFunnel.checkoutCount * 100.0 / report.conversionFunnel.viewCount)) : 0.0}">
+                        <div class="funnel-bar" style="background: #ffd4a8;" 
+                             th:style="'width: ' + ${checkoutPercent} + '%; background: #ffd4a8; margin-left: ' + ${(100 - checkoutPercent) / 2} + '%; max-width: 100%;'"
                              th:text="'Thanh Toán: ' + ${#numbers.formatInteger(report.conversionFunnel.checkoutCount, 0, 'COMMA')}">TT: 0</div>
-                        <span class="funnel-percent" th:text="${#numbers.formatDecimal((report.conversionFunnel.checkoutCount * 100.0 / report.conversionFunnel.viewCount), 0, 'COMMA', 0, 'POINT')} + '%'">0%</span>
+                        <span class="funnel-percent" th:text="${#numbers.formatDecimal(checkoutPercent, 0, 'COMMA', 0, 'POINT')} + '%'">0%</span>
                     </div>
-                    <div class="funnel-step">
-                        <div class="funnel-bar" style="background: #ffe8d6; margin-left: 27.5%;" 
-                             th:style="'width: ' + ${(report.conversionFunnel.completedCount * 100.0 / report.conversionFunnel.viewCount)} + '%; background: #ffe8d6; margin-left: ' + ${(100 - (report.conversionFunnel.completedCount * 100.0 / report.conversionFunnel.viewCount)) / 2} + '%'"
+                    <div class="funnel-step" th:with="completedPercent=${report.conversionFunnel.viewCount > 0 ? T(java.lang.Math).min(100.0, (report.conversionFunnel.completedCount * 100.0 / report.conversionFunnel.viewCount)) : 0.0}">
+                        <div class="funnel-bar" style="background: #ffe8d6;" 
+                             th:style="'width: ' + ${completedPercent} + '%; background: #ffe8d6; margin-left: ' + ${(100 - completedPercent) / 2} + '%; max-width: 100%;'"
                              th:text="'Hoàn Thành: ' + ${#numbers.formatInteger(report.conversionFunnel.completedCount, 0, 'COMMA')}">HT: 0</div>
-                        <span class="funnel-percent" th:text="${#numbers.formatDecimal((report.conversionFunnel.completedCount * 100.0 / report.conversionFunnel.viewCount), 0, 'COMMA', 0, 'POINT')} + '%'">0%</span>
+                        <span class="funnel-percent" th:text="${#numbers.formatDecimal(completedPercent, 0, 'COMMA', 0, 'POINT')} + '%'">0%</span>
                     </div>
                 </div>
             </div>

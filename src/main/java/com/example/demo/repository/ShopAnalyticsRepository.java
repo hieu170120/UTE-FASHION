@@ -25,4 +25,12 @@ public interface ShopAnalyticsRepository extends JpaRepository<ShopAnalytics, In
     List<ShopAnalytics> findRecentAnalytics(@Param("shopId") Integer shopId,
                                            @Param("periodType") String periodType,
                                            @Param("startDate") LocalDate startDate);
+    
+    @Query("SELECT sa FROM ShopAnalytics sa WHERE sa.shop.id = :shopId " +
+           "AND sa.periodType = 'DAY' " +
+           "AND sa.periodStart >= :startDate AND sa.periodStart <= :endDate " +
+           "ORDER BY sa.periodStart ASC")
+    List<ShopAnalytics> findDayAnalyticsByDateRange(@Param("shopId") Integer shopId,
+                                                     @Param("startDate") LocalDate startDate,
+                                                     @Param("endDate") LocalDate endDate);
 }

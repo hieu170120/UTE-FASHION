@@ -8,6 +8,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.example.demo.security.JwtAuthenticationFilter;
 
@@ -52,8 +53,14 @@ public class SecurityConfig {
 						// COMMENTED FOR TESTING
 						.requestMatchers("/profile", "/profile/**", "/orders", "/orders/**", "/vendor/**", "/admin/**", "/shipper/**")
 						.authenticated().anyRequest().authenticated())
-				.formLogin(form -> form.disable()).logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/")
-						.invalidateHttpSession(true).deleteCookies("UTE_FASHION_SESSION").permitAll());
+				.formLogin(form -> form.disable())
+				.logout(logout -> logout
+						.logoutUrl("/logout")
+						.logoutSuccessUrl("/login?logout=true")
+						.invalidateHttpSession(true)
+						.deleteCookies("UTE_FASHION_SESSION")
+						.permitAll())
+				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
 	}
