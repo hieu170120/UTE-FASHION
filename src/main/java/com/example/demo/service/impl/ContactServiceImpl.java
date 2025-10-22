@@ -14,6 +14,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -36,6 +37,7 @@ public class ContactServiceImpl implements ContactService {
     private ModelMapper modelMapper;
 
     @Override
+    @Transactional
     public ContactDTO createContact(ContactCreationDTO dto, String username) {
         Shop shop = shopRepository.findById(dto.getShopId())
                 .orElseThrow(() -> new ResourceNotFoundException("Shop not found with id: " + dto.getShopId()));
@@ -45,61 +47,63 @@ public class ContactServiceImpl implements ContactService {
         contact.setSubject(dto.getSubject());
         contact.setMessage(dto.getMessage());
 
-        // Nếu người dùng đã đăng nhập (username != null)
+        // Nếu người dùng đã đăng nhập, ưu tiên lấy thông tin từ user
         if (username != null) {
             Optional<User> userOpt = userRepository.findByUsername(username);
             if (userOpt.isPresent()) {
                 User user = userOpt.get();
                 contact.setUser(user);
-                contact.setFullName(user.getFullName()); // Tự điền thông tin
+                contact.setFullName(user.getFullName());
                 contact.setEmail(user.getEmail());
                 contact.setPhoneNumber(user.getPhoneNumber());
             } else {
-                 // Fallback cho guest nếu user không tìm thấy (trường hợp hiếm)
-                contact.setFullName(dto.getFullName());
-                contact.setEmail(dto.getEmail());
-                contact.setPhoneNumber(dto.getPhoneNumber());
+                // Fallback nếu không tìm thấy user (hiếm) hoặc cho guest
+                setGuestContactDetails(contact, dto);
             }
         } else { // Nếu là guest
-            contact.setFullName(dto.getFullName());
-            contact.setEmail(dto.getEmail());
-            contact.setPhoneNumber(dto.getPhoneNumber());
+            setGuestContactDetails(contact, dto);
         }
 
         Contact savedContact = contactRepository.save(contact);
-
-        // Chuyển đổi sang DTO để gửi thông báo
         ContactDTO notificationDTO = convertToDto(savedContact);
 
-        // Gửi thông báo WebSocket đến một kênh riêng của vendor
-        // Ví dụ kênh: /topic/vendor/123/tickets (Sửa thành ID của vendor)
-        String destination = "/topic/vendor/" + shop.getVendor().getUserId() + "/tickets";
-        messagingTemplate.convertAndSend(destination, notificationDTO);
+        // ### START FIX ###
+        // Kiểm tra vendor có tồn tại không trước khi gửi WebSocket
+        User vendor = shop.getVendor();
+        if (vendor != null && vendor.getUserId() != null) {
+            String destination = "/topic/vendor/" + vendor.getUserId() + "/tickets";
+            System.out.println("Sending WebSocket notification to: " + destination);
+            messagingTemplate.convertAndSend(destination, notificationDTO);
+        } else {
+            // Ghi log cảnh báo thay vì gây lỗi
+            System.out.println("WARN: Shop with ID " + shop.getId() + " does not have an associated vendor. Skipping WebSocket notification.");
+        }
+        // ### END FIX ###
 
         return notificationDTO;
     }
 
-    private ContactDTO convertToDto(Contact contact) {
-        ContactDTO dto = new ContactDTO();
-        dto.setContactId(contact.getContactId());
-        dto.setShopId(contact.getShop().getId()); // Sửa thành getId()
-        dto.setSubject(contact.getSubject());
-        dto.setMessage(contact.getMessage());
-        dto.setStatus(contact.getStatus());
-        dto.setCreatedAt(contact.getCreatedAt());
-        dto.setFullName(contact.getFullName());
-        dto.setEmail(contact.getEmail());
-        dto.setPhoneNumber(contact.getPhoneNumber());
+    private void setGuestContactDetails(Contact contact, ContactCreationDTO dto) {
+        contact.setFullName(dto.getFullName());
+        contact.setEmail(dto.getEmail());
+        contact.setPhoneNumber(dto.getPhoneNumber());
+    }
 
+    private ContactDTO convertToDto(Contact contact) {
+        // Sử dụng ModelMapper để chuyển đổi an toàn và ngắn gọn
+        ContactDTO dto = modelMapper.map(contact, ContactDTO.class);
+
+        // Xử lý các trường mapping phức tạp hơn nếu cần
+        if (contact.getShop() != null) {
+            dto.setShopId(contact.getShop().getId());
+        }
         if (contact.getUser() != null) {
             dto.setUserId(contact.getUser().getUserId());
             dto.setUserFullName(contact.getUser().getFullName());
             dto.setUserAvatar(contact.getUser().getAvatarUrl());
         } else {
-            // Nếu là guest, có thể set một avatar mặc định
             dto.setUserAvatar("/images/default-avatar.png");
         }
-
         return dto;
     }
 }

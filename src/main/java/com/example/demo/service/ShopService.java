@@ -18,4 +18,6 @@ public interface ShopService {
     ShopDTO updateShop(Integer id, ShopDTO shopDTO);
 
     void deleteShop(Integer id);
+
+    Integer getVendorIdByShopId(Integer shopId);
 }
