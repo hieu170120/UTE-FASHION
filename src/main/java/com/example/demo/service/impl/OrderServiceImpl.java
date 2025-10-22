@@ -6,6 +6,7 @@ import com.example.demo.entity.*;
 import com.example.demo.enums.OrderStatus;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.*;
+import com.example.demo.service.DailyAnalyticsService;
 import com.example.demo.service.OrderService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +49,9 @@ public class OrderServiceImpl implements OrderService {
     
     @Autowired
     private OrderReturnRequestRepository returnRequestRepository;
+    
+    @Autowired
+    private DailyAnalyticsService dailyAnalyticsService;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -194,7 +198,11 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderStatus(newStatus);
         if (newStatus.equals(OrderStatus.CONFIRMED.getValue())) order.setConfirmedAt(LocalDateTime.now());
         else if (newStatus.equals(OrderStatus.SHIPPING.getValue())) order.setShippedAt(LocalDateTime.now());
-        else if (newStatus.equals(OrderStatus.DELIVERED.getValue())) order.setDeliveredAt(LocalDateTime.now());
+        else if (newStatus.equals(OrderStatus.DELIVERED.getValue())) {
+            order.setDeliveredAt(LocalDateTime.now());
+            // Update daily analytics when order is delivered
+            dailyAnalyticsService.updateDailyAnalyticsForOrder(order);
+        }
         else if (newStatus.equals(OrderStatus.CANCELLED.getValue())) order.setCancelledAt(LocalDateTime.now());
         orderRepository.save(order);
 
