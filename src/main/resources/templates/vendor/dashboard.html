@@ -63,6 +63,18 @@
                     <div class="card h-100 border-dark">
                         <div class="card-body text-center">
                             <i class="fas fa-chart-line fa-3x text-dark mb-3"></i>
+                            <h5 class="card-title">Quản lý đơn hàng</h5>
+                            <p class="card-text text-muted">Thông kê đơn hàng của bạn</p>
+                            <a th:href="@{/vendor/orders}" class="btn btn-dark">
+                                <i class="fas fa-chart-bar me-2"></i>Đến trang quản lý
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100 border-dark">
+                        <div class="card-body text-center">
+                            <i class="fas fa-order fa-3x text-dark mb-3"></i>
                             <h5 class="card-title">Thống kê & Báo cáo</h5>
                             <p class="card-text text-muted">Xem báo cáo doanh thu và hiệu suất cửa hàng.</p>
                             <a th:href="@{/vendor/report/revenue}" class="btn btn-dark">
