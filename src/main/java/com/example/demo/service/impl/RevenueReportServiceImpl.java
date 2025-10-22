@@ -106,9 +106,13 @@ public class RevenueReportServiceImpl implements RevenueReportService {
                 BigDecimal.valueOf(currentPeriodOrders), 
                 BigDecimal.valueOf(previousPeriodOrders)));
         
-        // For views, use dummy data for now (would need a ProductView tracking table)
-        report.setTotalViews(currentPeriodOrders * 10); // Estimate: 10 views per order
-        report.setViewsGrowthPercent(BigDecimal.valueOf(15.2));
+        // Get real view counts from ConversionAnalytics
+        Integer currentPeriodViews = getViewCount(shopId, periodStart, today);
+        Integer previousPeriodViews = getViewCount(shopId, previousPeriodStart, previousPeriodEnd);
+        report.setTotalViews(currentPeriodViews);
+        report.setViewsGrowthPercent(calculateGrowthPercent(
+                BigDecimal.valueOf(currentPeriodViews),
+                BigDecimal.valueOf(previousPeriodViews)));
         
         // Calculate monthly target (last month + 12%)
         BigDecimal lastMonthRevenue = calculateRevenue(shopId, lastMonthStart.atStartOfDay(), lastMonthEnd.atTime(23, 59, 59));
@@ -203,6 +207,17 @@ public class RevenueReportServiceImpl implements RevenueReportService {
                 .filter(o -> !o.getOrderDate().isBefore(start) && !o.getOrderDate().isAfter(end))
                 .filter(o -> !"Cancelled".equalsIgnoreCase(o.getOrderStatus()))
                 .count();
+    }
+    
+    private Integer getViewCount(Integer shopId, LocalDate start, LocalDate end) {
+        // Sum view counts from ConversionAnalytics DAY records
+        return conversionAnalyticsRepository.findAll().stream()
+            .filter(a -> a.getShop() != null && a.getShop().getId().equals(shopId))
+            .filter(a -> "DAY".equals(a.getPeriodType()))
+            .filter(a -> a.getPeriodStart() != null)
+            .filter(a -> !a.getPeriodStart().isBefore(start) && !a.getPeriodStart().isAfter(end))
+            .mapToInt(a -> a.getViewCount() != null ? a.getViewCount() : 0)
+            .sum();
     }
     
     private BigDecimal calculateGrowthPercent(BigDecimal current, BigDecimal previous) {
