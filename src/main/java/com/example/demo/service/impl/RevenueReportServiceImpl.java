@@ -187,26 +187,32 @@ public class RevenueReportServiceImpl implements RevenueReportService {
     }
     
     private BigDecimal calculateRevenue(Integer shopId, LocalDateTime start, LocalDateTime end) {
-        List<Order> orders = orderRepository.findAll().stream()
-                .filter(o -> o.getShop() != null && o.getShop().getId().equals(shopId))
-                .filter(o -> o.getOrderDate() != null)
-                .filter(o -> !o.getOrderDate().isBefore(start) && !o.getOrderDate().isAfter(end))
-                .filter(o -> !"Cancelled".equalsIgnoreCase(o.getOrderStatus()))
-                .collect(Collectors.toList());
+        // Read from ShopAnalytics DAY records for better performance
+        LocalDate startDate = start.toLocalDate();
+        LocalDate endDate = end.toLocalDate();
         
-        return orders.stream()
-                .map(Order::getTotalAmount)
+        return shopAnalyticsRepository.findAll().stream()
+                .filter(a -> a.getShop() != null && a.getShop().getId().equals(shopId))
+                .filter(a -> "DAY".equals(a.getPeriodType()))
+                .filter(a -> a.getPeriodStart() != null)
+                .filter(a -> !a.getPeriodStart().isBefore(startDate) && !a.getPeriodStart().isAfter(endDate))
+                .map(ShopAnalytics::getTotalRevenue)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
     
     private Integer countOrders(Integer shopId, LocalDateTime start, LocalDateTime end) {
-        return (int) orderRepository.findAll().stream()
-                .filter(o -> o.getShop() != null && o.getShop().getId().equals(shopId))
-                .filter(o -> o.getOrderDate() != null)
-                .filter(o -> !o.getOrderDate().isBefore(start) && !o.getOrderDate().isAfter(end))
-                .filter(o -> !"Cancelled".equalsIgnoreCase(o.getOrderStatus()))
-                .count();
+        // Read from ShopAnalytics DAY records
+        LocalDate startDate = start.toLocalDate();
+        LocalDate endDate = end.toLocalDate();
+        
+        return shopAnalyticsRepository.findAll().stream()
+                .filter(a -> a.getShop() != null && a.getShop().getId().equals(shopId))
+                .filter(a -> "DAY".equals(a.getPeriodType()))
+                .filter(a -> a.getPeriodStart() != null)
+                .filter(a -> !a.getPeriodStart().isBefore(startDate) && !a.getPeriodStart().isAfter(endDate))
+                .mapToInt(a -> a.getTotalOrders() != null ? a.getTotalOrders() : 0)
+                .sum();
     }
     
     private Integer getViewCount(Integer shopId, LocalDate start, LocalDate end) {
@@ -253,35 +259,26 @@ public class RevenueReportServiceImpl implements RevenueReportService {
     }
     
     private List<CategorySalesDTO> calculateTopCategories(Integer shopId, LocalDate start, LocalDate end) {
-        LocalDateTime startDateTime = start.atStartOfDay();
-        LocalDateTime endDateTime = end.atTime(23, 59, 59);
-        
-        // Get all orders for the shop in the period
-        List<Order> orders = orderRepository.findAll().stream()
-                .filter(o -> o.getShop() != null && o.getShop().getId().equals(shopId))
-                .filter(o -> o.getOrderDate() != null)
-                .filter(o -> !o.getOrderDate().isBefore(startDateTime) && !o.getOrderDate().isAfter(endDateTime))
-                .filter(o -> !"Cancelled".equalsIgnoreCase(o.getOrderStatus()))
-                .collect(Collectors.toList());
-        
-        // Group by category
+        // Read from CategorySales DAY records and aggregate by category
         Map<String, CategorySalesDTO> categoryMap = new HashMap<>();
         
-        for (Order order : orders) {
-            for (OrderItem item : order.getOrderItems()) {
-                if (item.getProduct() != null && item.getProduct().getCategory() != null) {
-                    String categoryName = item.getProduct().getCategory().getCategoryName();
-                    
-                    CategorySalesDTO dto = categoryMap.getOrDefault(categoryName, 
-                            new CategorySalesDTO(categoryName, BigDecimal.ZERO, 0, ""));
-                    
-                    dto.setRevenue(dto.getRevenue().add(item.getTotalPrice()));
-                    dto.setOrderCount(dto.getOrderCount() + 1);
-                    
-                    categoryMap.put(categoryName, dto);
-                }
-            }
-        }
+        categorySalesRepository.findAll().stream()
+                .filter(s -> s.getShop() != null && s.getShop().getId().equals(shopId))
+                .filter(s -> "DAY".equals(s.getPeriodType()))
+                .filter(s -> s.getPeriodStart() != null)
+                .filter(s -> !s.getPeriodStart().isBefore(start) && !s.getPeriodStart().isAfter(end))
+                .forEach(sales -> {
+                    if (sales.getCategory() != null) {
+                        String categoryName = sales.getCategory().getCategoryName();
+                        CategorySalesDTO dto = categoryMap.getOrDefault(categoryName,
+                                new CategorySalesDTO(categoryName, BigDecimal.ZERO, 0, ""));
+                        
+                        dto.setRevenue(dto.getRevenue().add(sales.getTotalRevenue()));
+                        dto.setOrderCount(dto.getOrderCount() + sales.getTotalOrders());
+                        
+                        categoryMap.put(categoryName, dto);
+                    }
+                });
         
         // Sort by revenue and take top 4
         List<CategorySalesDTO> topCategories = categoryMap.values().stream()
