@@ -270,7 +270,10 @@ function addToCart() {
     })
     .then(response => {
         if (response.ok) {
-            
+            // Track add to cart event
+            if (typeof Analytics !== 'undefined') {
+                Analytics.trackAddToCart(productId, quantity);
+            }
         } else {
             alert('Có lỗi xảy ra, vui lòng thử lại!');
         }
