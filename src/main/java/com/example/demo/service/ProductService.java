@@ -48,4 +48,9 @@ public interface ProductService {
 
     // --- Stock Management ---
     void updateProductStock(Integer productId);
+
+    // --- Admin specific ---
+    List<ProductDTO> getAllProducts();
+
+    void toggleProductActiveStatus(Integer id);
 }
