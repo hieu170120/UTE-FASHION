@@ -53,71 +53,40 @@ public class RevenueReportServiceImpl implements RevenueReportService {
 
     @Override
     @Transactional(readOnly = true)
-    public RevenueReportDTO getRevenueReport(Integer shopId, String chartPeriod, String chartDate,
-                                             String statsPeriod, String categoryPeriod, String conversionPeriod) {
+    public RevenueReportDTO getRevenueReport(Integer shopId, LocalDate startDate, LocalDate endDate) {
         RevenueReportDTO report = new RevenueReportDTO();
         
-        LocalDate today = LocalDate.now();
-        LocalDate periodStart;
-        LocalDate previousPeriodStart;
-        LocalDate previousPeriodEnd;
+        // Calculate previous period for growth comparison
+        long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
+        LocalDate previousStart = startDate.minusDays(daysBetween + 1);
+        LocalDate previousEnd = startDate.minusDays(1);
         
-        // Calculate period range for TOP STATS based on statsPeriod filter
-        switch (statsPeriod.toLowerCase()) {
-            case "day":
-                // Stats always use today, not custom date
-                periodStart = today;
-                previousPeriodStart = today.minusDays(1);
-                previousPeriodEnd = today.minusDays(1);
-                break;
-            case "month":
-                periodStart = today.withDayOfMonth(1);
-                previousPeriodStart = periodStart.minusMonths(1);
-                previousPeriodEnd = periodStart.minusDays(1);
-                break;
-            case "year":
-                periodStart = today.withDayOfYear(1);
-                previousPeriodStart = periodStart.minusYears(1);
-                previousPeriodEnd = periodStart.minusDays(1);
-                break;
-            case "week":
-            default:
-                periodStart = today.minusDays(6); // Last 7 days including today
-                previousPeriodStart = today.minusDays(13);
-                previousPeriodEnd = today.minusDays(7);
-                break;
-        }
+        // Top stats - current vs previous period
+        BigDecimal currentRevenue = calculateRevenue(shopId, startDate.atStartOfDay(), endDate.atTime(23, 59, 59));
+        BigDecimal previousRevenue = calculateRevenue(shopId, previousStart.atStartOfDay(), previousEnd.atTime(23, 59, 59));
         
-        LocalDate monthStart = today.withDayOfMonth(1);
+        Integer currentOrders = countOrders(shopId, startDate.atStartOfDay(), endDate.atTime(23, 59, 59));
+        Integer previousOrders = countOrders(shopId, previousStart.atStartOfDay(), previousEnd.atTime(23, 59, 59));
+        
+        Integer currentViews = getViewCount(shopId, startDate, endDate);
+        Integer previousViews = getViewCount(shopId, previousStart, previousEnd);
+        
+        report.setTotalRevenue(currentRevenue);
+        report.setRevenueGrowthPercent(calculateGrowthPercent(currentRevenue, previousRevenue));
+        report.setTotalOrders(currentOrders);
+        report.setOrdersGrowthPercent(calculateGrowthPercent(
+                BigDecimal.valueOf(currentOrders), BigDecimal.valueOf(previousOrders)));
+        report.setTotalViews(currentViews);
+        report.setViewsGrowthPercent(calculateGrowthPercent(
+                BigDecimal.valueOf(currentViews), BigDecimal.valueOf(previousViews)));
+        
+        // Monthly target (current month)
+        LocalDate monthStart = LocalDate.now().withDayOfMonth(1);
         LocalDate lastMonthStart = monthStart.minusMonths(1);
         LocalDate lastMonthEnd = monthStart.minusDays(1);
-        
-        // Calculate top stats for selected period
-        BigDecimal currentPeriodRevenue = calculateRevenue(shopId, periodStart.atStartOfDay(), today.atTime(23, 59, 59));
-        BigDecimal previousPeriodRevenue = calculateRevenue(shopId, previousPeriodStart.atStartOfDay(), previousPeriodEnd.atTime(23, 59, 59));
-        
-        Integer currentPeriodOrders = countOrders(shopId, periodStart.atStartOfDay(), today.atTime(23, 59, 59));
-        Integer previousPeriodOrders = countOrders(shopId, previousPeriodStart.atStartOfDay(), previousPeriodEnd.atTime(23, 59, 59));
-        
-        report.setTotalRevenue(currentPeriodRevenue);
-        report.setRevenueGrowthPercent(calculateGrowthPercent(currentPeriodRevenue, previousPeriodRevenue));
-        report.setTotalOrders(currentPeriodOrders);
-        report.setOrdersGrowthPercent(calculateGrowthPercent(
-                BigDecimal.valueOf(currentPeriodOrders), 
-                BigDecimal.valueOf(previousPeriodOrders)));
-        
-        // Get real view counts from ConversionAnalytics
-        Integer currentPeriodViews = getViewCount(shopId, periodStart, today);
-        Integer previousPeriodViews = getViewCount(shopId, previousPeriodStart, previousPeriodEnd);
-        report.setTotalViews(currentPeriodViews);
-        report.setViewsGrowthPercent(calculateGrowthPercent(
-                BigDecimal.valueOf(currentPeriodViews),
-                BigDecimal.valueOf(previousPeriodViews)));
-        
-        // Calculate monthly target (last month + 12%)
         BigDecimal lastMonthRevenue = calculateRevenue(shopId, lastMonthStart.atStartOfDay(), lastMonthEnd.atTime(23, 59, 59));
-        BigDecimal currentMonthRevenue = calculateRevenue(shopId, monthStart.atStartOfDay(), today.atTime(23, 59, 59));
-        BigDecimal monthlyTarget = lastMonthRevenue.multiply(BigDecimal.valueOf(1.12)); // +12%
+        BigDecimal currentMonthRevenue = calculateRevenue(shopId, monthStart.atStartOfDay(), LocalDate.now().atTime(23, 59, 59));
+        BigDecimal monthlyTarget = lastMonthRevenue.multiply(BigDecimal.valueOf(1.12));
         BigDecimal targetProgress = monthlyTarget.compareTo(BigDecimal.ZERO) > 0 
                 ? currentMonthRevenue.divide(monthlyTarget, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
                 : BigDecimal.ZERO;
@@ -127,33 +96,10 @@ public class RevenueReportServiceImpl implements RevenueReportService {
         report.setTargetProgress(targetProgress);
         report.setTargetGrowth(BigDecimal.valueOf(12));
         
-        // Daily revenue chart - use chartPeriod
-        LocalDate chartToday = today;
-        LocalDate chartStart = periodStart; // Will recalculate below based on chartPeriod
-        
-        switch (chartPeriod.toLowerCase()) {
-            case "day":
-                LocalDate selectedDate = (chartDate != null && !chartDate.isEmpty()) 
-                        ? LocalDate.parse(chartDate) : today;
-                chartStart = selectedDate;
-                chartToday = selectedDate;
-                break;
-            case "month":
-                chartStart = today.withDayOfMonth(1);
-                break;
-            case "year":
-                chartStart = today.withDayOfYear(1);
-                break;
-            case "week":
-            default:
-                chartStart = today.minusDays(6);
-                break;
-        }
-        
-        List<DailyRevenueDTO> dailyRevenue = calculateDailyRevenue(shopId, chartStart, chartToday);
+        // Daily revenue chart
+        List<DailyRevenueDTO> dailyRevenue = calculateDailyRevenue(shopId, startDate, endDate);
         report.setDailyRevenue(dailyRevenue);
         
-        // Calculate max values for chart scaling
         BigDecimal maxRevenue = dailyRevenue.stream()
                 .map(DailyRevenueDTO::getRevenue)
                 .max(BigDecimal::compareTo)
@@ -165,22 +111,17 @@ public class RevenueReportServiceImpl implements RevenueReportService {
         report.setMaxDailyRevenue(maxRevenue.compareTo(BigDecimal.ZERO) > 0 ? maxRevenue : BigDecimal.ONE);
         report.setMaxDailyOrders(maxOrders > 0 ? maxOrders : 1);
         
-        // Build SVG paths
         report.setRevenueLinePath(buildSvgPath(dailyRevenue, maxRevenue, 160, true));
         report.setOrderLinePath(buildSvgPath(dailyRevenue, BigDecimal.valueOf(maxOrders), 140, false));
         
-        // Top categories - use categoryPeriod
-        LocalDate categoryStart = calculatePeriodStart(categoryPeriod, LocalDate.now());
-        BigDecimal categoryRevenue = calculateRevenue(shopId, categoryStart.atStartOfDay(), LocalDate.now().atTime(23, 59, 59));
-        report.setTopCategories(calculateTopCategories(shopId, categoryStart, LocalDate.now()));
-        report.setTotalCategoryRevenue(categoryRevenue);
+        // Top categories
+        report.setTopCategories(calculateTopCategories(shopId, startDate, endDate));
+        report.setTotalCategoryRevenue(currentRevenue);
         
-        // Conversion funnel - use conversionPeriod
-        LocalDate conversionStart = calculatePeriodStart(conversionPeriod, LocalDate.now());
-        Integer conversionOrders = countOrders(shopId, conversionStart.atStartOfDay(), LocalDate.now().atTime(23, 59, 59));
-        report.setConversionFunnel(calculateConversionFunnel(shopId, conversionStart, LocalDate.now(), conversionOrders));
+        // Conversion funnel
+        report.setConversionFunnel(calculateConversionFunnel(shopId, startDate, endDate, currentOrders));
         
-        // Recent orders
+        // Recent orders (always show last 4 regardless of date range)
         report.setRecentOrders(getRecentOrders(shopId));
         
         return report;
@@ -425,21 +366,7 @@ public class RevenueReportServiceImpl implements RevenueReportService {
         }
     }
     
-    private LocalDate calculatePeriodStart(String period, LocalDate today) {
-        switch (period.toLowerCase()) {
-            case "day":
-                return today;
-            case "month":
-                return today.withDayOfMonth(1);
-            case "year":
-                return today.withDayOfYear(1);
-            case "week":
-            default:
-                return today.minusDays(6);
-        }
-    }
-    
-    private String buildSvgPath(List<DailyRevenueDTO> dailyData, BigDecimal maxValue, int height, boolean isRevenue) {
+    private String buildSvgPath(List<DailyRevenueDTO> dailyData, BigDecimal maxValue, double height, boolean isRevenue) {
         if (dailyData.isEmpty() || maxValue.compareTo(BigDecimal.ZERO) == 0) {
             return "M 60,200";
         }

@@ -91,25 +91,28 @@
     <div class="container">
         <a th:href="@{/vendor/dashboard}" class="back-btn">← Quay Lại Dashboard</a>
         
+        <!-- Date Range Filter (Single Global Filter) -->
+        <div style="background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Báo Cáo Doanh Thu</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <label style="font-size: 14px; color: #666;">Từ ngày:</label>
+                <input type="date" id="startDate" th:value="${startDate}" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;" />
+                <label style="font-size: 14px; color: #666;">Đến ngày:</label>
+                <input type="date" id="endDate" th:value="${endDate}" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;" />
+                <button onclick="applyDateFilter()" class="btn-filter">Xem Báo Cáo</button>
+            </div>
+        </div>
         <script>
-            // Global function to update a specific period filter while preserving others
-            function updateFilter(paramName, value) {
-                const params = new URLSearchParams(window.location.search);
-                params.set(paramName, value);
-                window.location.href = '[[@{/vendor/report/revenue}]]?' + params.toString();
+            function applyDateFilter() {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                if (!startDate || !endDate) {
+                    alert('Vui lòng chọn cả ngày bắt đầu và ngày kết thúc');
+                    return;
+                }
+                window.location.href = '[[@{/vendor/report/revenue}]]?startDate=' + startDate + '&endDate=' + endDate;
             }
         </script>
-        
-        <!-- Top Row - Stats -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Thống Kê Tổng Quan</h3>
-            <select class="btn-filter" onchange="updateFilter('statsPeriod', this.value)" style="cursor: pointer;">
-                <option value="day" th:selected="${statsPeriod == 'day'}">Hôm Nay</option>
-                <option value="week" th:selected="${statsPeriod == 'week'}">7 Ngày</option>
-                <option value="month" th:selected="${statsPeriod == 'month'}">Tháng Này</option>
-                <option value="year" th:selected="${statsPeriod == 'year'}">Năm Nay</option>
-            </select>
-        </div>
         <div class="top-row">
             <div class="card stat-card">
                 <div class="stat-icon icon-orange">₫</div>
@@ -150,40 +153,7 @@
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Phân Tích Doanh Thu</h3>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <select id="periodSelect" class="btn-filter" onchange="handlePeriodChange()" style="cursor: pointer;">
-                            <option value="day" th:selected="${chartPeriod == 'day'}">Theo Ngày</option>
-                            <option value="week" th:selected="${chartPeriod == 'week'}">7 Ngày Qua</option>
-                            <option value="month" th:selected="${chartPeriod == 'month'}">Tháng Này</option>
-                            <option value="year" th:selected="${chartPeriod == 'year'}">Năm Nay</option>
-                        </select>
-                        <input type="date" id="dateInput" class="btn-filter" 
-                               th:value="${chartDate}"
-                               onchange="handleDateChange()"
-                               th:style="${chartPeriod == 'day' ? 'display: inline-block;' : 'display: none;'}" />
-                    </div>
                 </div>
-                <script>
-                    function handlePeriodChange() {
-                        const period = document.getElementById('periodSelect').value;
-                        const dateInput = document.getElementById('dateInput');
-                        
-                        if (period === 'day') {
-                            dateInput.style.display = 'inline-block';
-                        } else {
-                            dateInput.style.display = 'none';
-                            updateFilter('chartPeriod', period);
-                        }
-                    }
-                    
-                    function handleDateChange() {
-                        const date = document.getElementById('dateInput').value;
-                        const params = new URLSearchParams(window.location.search);
-                        params.set('chartPeriod', 'day');
-                        params.set('chartDate', date);
-                        window.location.href = '[[@{/vendor/report/revenue}]]?' + params.toString();
-                    }
-                </script>
                 <div class="chart-legend">
                     <div class="legend-item">
                         <div class="legend-dot dot-orange"></div>
@@ -265,12 +235,6 @@
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Danh Mục Bán Chạy</h3>
-                    <select class="btn-filter" onchange="updateFilter('categoryPeriod', this.value)" style="cursor: pointer; font-size: 12px; padding: 6px 12px;">
-                        <option value="day" th:selected="${categoryPeriod == 'day'}">Hôm Nay</option>
-                        <option value="week" th:selected="${categoryPeriod == 'week'}">7 Ngày</option>
-                        <option value="month" th:selected="${categoryPeriod == 'month'}">Tháng Này</option>
-                        <option value="year" th:selected="${categoryPeriod == 'year'}">Năm Nay</option>
-                    </select>
                 </div>
                 <div class="donut-chart" th:if="${!report.topCategories.isEmpty()}">
                     <svg viewBox="0 0 180 180" th:with="total=${report.totalCategoryRevenue}">
@@ -303,12 +267,6 @@
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Tỷ Lệ Chuyển Đổi</h3>
-                    <select class="btn-filter" onchange="updateFilter('conversionPeriod', this.value)" style="cursor: pointer;">
-                        <option value="day" th:selected="${conversionPeriod == 'day'}">Hôm Nay</option>
-                        <option value="week" th:selected="${conversionPeriod == 'week'}">7 Ngày</option>
-                        <option value="month" th:selected="${conversionPeriod == 'month'}">Tháng Này</option>
-                        <option value="year" th:selected="${conversionPeriod == 'year'}">Năm Nay</option>
-                    </select>
                 </div>
                 <div class="conversion-metrics">
                     <div class="metric-box">
