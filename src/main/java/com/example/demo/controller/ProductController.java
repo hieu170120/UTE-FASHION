@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import java.util.List;
 
 import com.example.demo.dto.*;
+import com.example.demo.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -12,11 +13,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import com.example.demo.service.BrandService;
-import com.example.demo.service.CategoryService;
-import com.example.demo.service.ProductService;
-import com.example.demo.service.ReviewService;
 
 @Controller
 public class ProductController {
@@ -32,6 +28,8 @@ public class ProductController {
 	private BrandService brandService;
 	@Autowired
 	private ReviewService reviewService;
+    @Autowired
+    private ShopService shopService;
 
 	private void loadProductPage(ProductSearchCriteria criteria, int page, int size, Model model) {
 		// Ensure sort order is valid before querying
@@ -101,6 +99,7 @@ public class ProductController {
 			ProductDTO product = productService.findProductDetailBySlug(slug);
 			model.addAttribute("product", product);
 			model.addAttribute("pageTitle", product.getProductName());
+            model.addAttribute("shop", shopService.getShopById(product.getShopId()));
 
 			Page<ReviewDTO> reviewPage = reviewService.getReviewsByProductId(product.getId(), PageRequest.of(0, 5));
 			model.addAttribute("reviewPage", reviewPage);
@@ -113,4 +112,17 @@ public class ProductController {
 			return "redirect:/products?error=notfound";
 		}
 	}
+    
+    @GetMapping("/products/{slug}/contact")
+    public String getContactForm(@PathVariable String slug, Model model) {
+        try {
+            ProductDTO product = productService.findProductDetailBySlug(slug);
+            ShopDTO shop = shopService.getShopById(product.getShopId());
+            model.addAttribute("shopId", shop.getId());
+            model.addAttribute("shopName", shop.getShopName());
+            return "contact/contact-form";
+        } catch (Exception e) {
+            return "redirect:/products?error=notfound";
+        }
+    }
 }

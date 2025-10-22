@@ -639,6 +639,48 @@ body {
 .wishlist-btn.active i {
 	font-weight: bold;
 }
+
+.shop-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #fafafa;
+    margin-top: 30px;
+}
+.shop-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.shop-logo {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.shop-label {
+    font-size: 0.85rem;
+    color: #666;
+}
+.shop-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #000;
+}
+.btn-contact-shop {
+    border-radius: 20px;
+    font-weight: 500;
+}
+.btn-contact-shop i {
+    margin-right: 5px;
+}
+
+
 </style>
 </th:block>
 </head>
@@ -748,7 +790,29 @@ body {
 				</div>
 
 				<div class="mt-4 product-description"
-					th:utext="${product.description}"></div>
+					th:utext="${product.description}">
+				</div>
+
+				<div class="row my-4">
+					<div class="col-12">
+						<div class="shop-card">
+							<div class="shop-info">
+								<!-- Sử dụng ảnh placeholder nếu shop không có logo -->
+								<img th:src="${shop.logoUrl != null ? shop.logoUrl : 'https://ui-avatars.com/api/?name=' + product.shopName + '&background=random'}"
+									alt="Shop Logo" class="shop-logo">
+								<div>
+									<div class="shop-label">Cung cấp bởi</div>
+									<div class="shop-name" th:text="${product.shopName}">Tên Shop</div>
+								</div>
+							</div>
+							<a th:href="@{/products/{slug}/contact(slug=${product.slug})}" class="btn btn-outline-dark btn-contact-shop">
+								<i class="bi bi-chat-dots-fill"></i> Liên hệ Shop
+							</a>
+						</div>
+					</div>
+				</div>
+
+
 			</div>
 		</div>
 
