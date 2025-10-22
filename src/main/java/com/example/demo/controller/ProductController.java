@@ -112,22 +112,4 @@ public class ProductController {
 			return "redirect:/products?error=notfound";
 		}
 	}
-
-    @GetMapping("/products/{slug}/contact")
-    public String getContactForm(@PathVariable String slug, Model model) {
-        try {
-            ProductDTO product = productService.findProductDetailBySlug(slug);
-            ShopDTO shop = shopService.getShopById(product.getShopId());
-
-            Integer vendorId = shopService.getVendorIdByShopId(shop.getId());
-
-            model.addAttribute("shopId", shop.getId());
-            model.addAttribute("shopName", shop.getShopName());
-            model.addAttribute("vendorId", vendorId);
-
-            return "contact/contact-form";
-        } catch (Exception e) {
-            return "redirect:/products?error=notfound";
-        }
-    }
 }
