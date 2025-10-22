@@ -5,6 +5,7 @@
 	layout:decorate="~{layout/default}">
 
 <head>
+<meta name="product-id" th:content="${product.id}" />
 <title th:text="${product.productName}">Product Detail</title>
 <th:block layout:fragment="styles">
 	<link rel="stylesheet"
@@ -995,6 +996,7 @@ body {
 	</div>
 
 	<th:block layout:fragment="scripts">
+		<script src="/js/tracking.js"></script>
 		<script src="/UTE_Fashion/static/js/product-detail.js"></script>
 		<script th:inline="javascript">
 		/*<![CDATA[*/

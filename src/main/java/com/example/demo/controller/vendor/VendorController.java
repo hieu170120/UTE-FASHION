@@ -1,7 +1,9 @@
 package com.example.demo.controller.vendor;
 
+import com.example.demo.dto.RevenueReportDTO;
 import com.example.demo.dto.ShopRegistrationDTO;
 import com.example.demo.entity.Shop;
+import com.example.demo.service.RevenueReportService;
 import com.example.demo.service.VendorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,8 +14,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 @Controller
@@ -22,6 +26,7 @@ import java.util.Optional;
 public class VendorController {
 
     private final VendorService vendorService;
+    private final RevenueReportService revenueReportService;
 
     @GetMapping("/register")
     public String showRegistrationForm(Model model) {
@@ -95,5 +100,33 @@ public class VendorController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/vendor/shop/edit";
         }
+    }
+
+    @GetMapping("/report/revenue")
+    public String showRevenueReport(@RequestParam(defaultValue = "week") String chartPeriod,
+                                    @RequestParam(required = false) String chartDate,
+                                    @RequestParam(defaultValue = "week") String statsPeriod,
+                                    @RequestParam(defaultValue = "month") String categoryPeriod,
+                                    @RequestParam(defaultValue = "week") String conversionPeriod,
+                                    Model model, RedirectAttributes redirectAttributes) {
+        Optional<Shop> shopOpt = vendorService.getCurrentVendorShop();
+        if (shopOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần có cửa hàng để xem báo cáo.");
+            return "redirect:/vendor/register";
+        }
+
+        Shop shop = shopOpt.get();
+        
+        RevenueReportDTO report = revenueReportService.getRevenueReport(
+                shop.getId(), chartPeriod, chartDate, statsPeriod, categoryPeriod, conversionPeriod);
+        
+        model.addAttribute("shop", shop);
+        model.addAttribute("report", report);
+        model.addAttribute("chartPeriod", chartPeriod);
+        model.addAttribute("chartDate", chartDate != null ? chartDate : LocalDate.now().toString());
+        model.addAttribute("statsPeriod", statsPeriod);
+        model.addAttribute("categoryPeriod", categoryPeriod);
+        model.addAttribute("conversionPeriod", conversionPeriod);
+        return "vendor/revenue-report";
     }
 }

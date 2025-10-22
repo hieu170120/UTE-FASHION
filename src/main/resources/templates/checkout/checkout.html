@@ -149,6 +149,7 @@
 </div>
 
 <th:block layout:fragment="scripts">
+    <script src="/js/tracking.js"></script>
     <script>
         // API Địa chỉ Việt Nam (Public API)
         const BASE_API = 'https://provinces.open-api.vn/api';
@@ -156,6 +157,14 @@
         // Load danh sách tỉnh/thành phố khi trang load
         document.addEventListener('DOMContentLoaded', async function() {
             await loadProvinces();
+            
+            // Track checkout event - backend will derive shop from product
+            if (typeof Analytics !== 'undefined') {
+                const firstProductId = /*[[${cart.cartItems[0]?.productId}]]*/ null;
+                if (firstProductId) {
+                    Analytics.trackCheckoutByProduct(firstProductId);
+                }
+            }
         });
         
         // Load danh sách tỉnh/thành phố
