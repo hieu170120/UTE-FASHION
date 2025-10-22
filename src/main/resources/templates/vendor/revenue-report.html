@@ -106,6 +106,9 @@
                 <label style="font-size: 14px; color: #666;">Đến ngày:</label>
                 <input type="date" id="endDate" th:value="${endDate}" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;" />
                 <button onclick="applyDateFilter()" class="btn-filter">Xem Báo Cáo</button>
+                <button onclick="exportToExcel()" class="btn-export" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#218838'" onmouseout="this.style.background='#28a745'">
+                    <i class="fas fa-file-excel" style="margin-right: 6px;"></i>Xuất Excel
+                </button>
             </div>
         </div>
         <script>
@@ -117,6 +120,16 @@
                     return;
                 }
                 window.location.href = '[[@{/vendor/report/revenue}]]?startDate=' + startDate + '&endDate=' + endDate;
+            }
+            
+            function exportToExcel() {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                if (!startDate || !endDate) {
+                    alert('Vui lòng chọn cả ngày bắt đầu và ngày kết thúc');
+                    return;
+                }
+                window.location.href = '[[@{/vendor/report/revenue/export}]]?startDate=' + startDate + '&endDate=' + endDate;
             }
         </script>
         <div class="top-row">

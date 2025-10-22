@@ -3,10 +3,14 @@ package com.example.demo.controller.vendor;
 import com.example.demo.dto.RevenueReportDTO;
 import com.example.demo.dto.ShopRegistrationDTO;
 import com.example.demo.entity.Shop;
+import com.example.demo.service.ExcelExportService;
 import com.example.demo.service.RevenueReportService;
 import com.example.demo.service.VendorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -27,6 +31,7 @@ public class VendorController {
 
     private final VendorService vendorService;
     private final RevenueReportService revenueReportService;
+    private final ExcelExportService excelExportService;
 
     @GetMapping("/register")
     public String showRegistrationForm(Model model) {
@@ -125,5 +130,33 @@ public class VendorController {
         model.addAttribute("startDate", start.toString());
         model.addAttribute("endDate", end.toString());
         return "vendor/revenue-report";
+    }
+    
+    @GetMapping("/report/revenue/export")
+    public ResponseEntity<byte[]> exportRevenueReport(@RequestParam(required = false) String startDate,
+                                                       @RequestParam(required = false) String endDate,
+                                                       RedirectAttributes redirectAttributes) {
+        Optional<Shop> shopOpt = vendorService.getCurrentVendorShop();
+        if (shopOpt.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        Shop shop = shopOpt.get();
+        LocalDate start = startDate != null ? LocalDate.parse(startDate) : LocalDate.now().minusDays(6);
+        LocalDate end = endDate != null ? LocalDate.parse(endDate) : LocalDate.now();
+        
+        try {
+            RevenueReportDTO report = revenueReportService.getRevenueReport(shop.getId(), start, end);
+            byte[] excelData = excelExportService.exportRevenueReport(report, start.toString(), end.toString());
+            
+            String filename = "BaoCaoDoanhThu_" + shop.getShopName() + "_" + start + "_" + end + ".xlsx";
+            
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(excelData);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }
