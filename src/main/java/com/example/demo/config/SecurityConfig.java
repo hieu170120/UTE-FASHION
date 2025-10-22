@@ -40,12 +40,12 @@ public class SecurityConfig {
 				)
 
 				.authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/contacts").permitAll()
                         .requestMatchers("/", "/login", "/register", "/logout", "/forgot-password", "/reset-password",
 								"/static/**", "/css/**", "/js/**", "/images/**", "/products", "/products/**", "/cart",
 								"/cart/**", "/api/cart/**", "/checkout", "/checkout/**", "/payment", "/payment/**",
 								"/payment-test", "/payment-test/**", "/api/auth/**", "/api/**", // Public product APIs
-								"/verify-email", "/verify-email/**", "/resend-otp", "/error" // Allow error page
+								"/verify-email", "/verify-email/**", "/resend-otp", "/error", // Allow error page
+                                "/ws/**" //WebSocket
 							)
 						.permitAll().requestMatchers("/api/v1/reviews/**").authenticated() // Review APIs need auth
 						// .requestMatchers("/admin/**").hasRole("ADMIN") // Admin only - COMMENTED FOR
