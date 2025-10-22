@@ -19,4 +19,12 @@ public interface CategorySalesRepository extends JpaRepository<CategorySales, In
            "ORDER BY cs.totalRevenue DESC")
     List<CategorySales> findTopCategoriesForCurrentMonth(@Param("shopId") Integer shopId,
                                                          @Param("date") LocalDate date);
+    
+    @Query("SELECT cs FROM CategorySales cs " +
+           "WHERE cs.shop.id = :shopId " +
+           "AND cs.periodType = 'DAY' " +
+           "AND cs.periodStart >= :startDate AND cs.periodStart <= :endDate")
+    List<CategorySales> findDaySalesByDateRange(@Param("shopId") Integer shopId,
+                                                @Param("startDate") LocalDate startDate,
+                                                @Param("endDate") LocalDate endDate);
 }

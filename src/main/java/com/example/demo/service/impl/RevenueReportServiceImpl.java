@@ -128,41 +128,26 @@ public class RevenueReportServiceImpl implements RevenueReportService {
     }
     
     private BigDecimal calculateRevenue(Integer shopId, LocalDateTime start, LocalDateTime end) {
-        // Read from ShopAnalytics DAY records for better performance
         LocalDate startDate = start.toLocalDate();
         LocalDate endDate = end.toLocalDate();
         
-        return shopAnalyticsRepository.findAll().stream()
-                .filter(a -> a.getShop() != null && a.getShop().getId().equals(shopId))
-                .filter(a -> "DAY".equals(a.getPeriodType()))
-                .filter(a -> a.getPeriodStart() != null)
-                .filter(a -> !a.getPeriodStart().isBefore(startDate) && !a.getPeriodStart().isAfter(endDate))
+        return shopAnalyticsRepository.findDayAnalyticsByDateRange(shopId, startDate, endDate).stream()
                 .map(ShopAnalytics::getTotalRevenue)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
     
     private Integer countOrders(Integer shopId, LocalDateTime start, LocalDateTime end) {
-        // Read from ShopAnalytics DAY records
         LocalDate startDate = start.toLocalDate();
         LocalDate endDate = end.toLocalDate();
         
-        return shopAnalyticsRepository.findAll().stream()
-                .filter(a -> a.getShop() != null && a.getShop().getId().equals(shopId))
-                .filter(a -> "DAY".equals(a.getPeriodType()))
-                .filter(a -> a.getPeriodStart() != null)
-                .filter(a -> !a.getPeriodStart().isBefore(startDate) && !a.getPeriodStart().isAfter(endDate))
+        return shopAnalyticsRepository.findDayAnalyticsByDateRange(shopId, startDate, endDate).stream()
                 .mapToInt(a -> a.getTotalOrders() != null ? a.getTotalOrders() : 0)
                 .sum();
     }
     
     private Integer getViewCount(Integer shopId, LocalDate start, LocalDate end) {
-        // Sum view counts from ConversionAnalytics DAY records
-        return conversionAnalyticsRepository.findAll().stream()
-            .filter(a -> a.getShop() != null && a.getShop().getId().equals(shopId))
-            .filter(a -> "DAY".equals(a.getPeriodType()))
-            .filter(a -> a.getPeriodStart() != null)
-            .filter(a -> !a.getPeriodStart().isBefore(start) && !a.getPeriodStart().isAfter(end))
+        return conversionAnalyticsRepository.findDayAnalyticsByDateRange(shopId, start, end).stream()
             .mapToInt(a -> a.getViewCount() != null ? a.getViewCount() : 0)
             .sum();
     }
@@ -178,20 +163,23 @@ public class RevenueReportServiceImpl implements RevenueReportService {
     }
     
     private List<DailyRevenueDTO> calculateDailyRevenue(Integer shopId, LocalDate start, LocalDate end) {
+        // Fetch all analytics once
+        List<ShopAnalytics> analytics = shopAnalyticsRepository.findDayAnalyticsByDateRange(shopId, start, end);
+        Map<LocalDate, ShopAnalytics> analyticsMap = analytics.stream()
+            .collect(Collectors.toMap(ShopAnalytics::getPeriodStart, a -> a));
+        
         List<DailyRevenueDTO> dailyData = new ArrayList<>();
         
         for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
-            LocalDateTime dayStart = date.atStartOfDay();
-            LocalDateTime dayEnd = date.atTime(23, 59, 59);
-            
-            BigDecimal revenue = calculateRevenue(shopId, dayStart, dayEnd);
-            Integer orders = countOrders(shopId, dayStart, dayEnd);
+            ShopAnalytics dayAnalytics = analyticsMap.get(date);
             
             DailyRevenueDTO daily = new DailyRevenueDTO();
             daily.setDate(date);
             daily.setDateLabel(date.format(DATE_FORMATTER));
-            daily.setRevenue(revenue);
-            daily.setOrderCount(orders);
+            daily.setRevenue(dayAnalytics != null && dayAnalytics.getTotalRevenue() != null 
+                ? dayAnalytics.getTotalRevenue() : BigDecimal.ZERO);
+            daily.setOrderCount(dayAnalytics != null && dayAnalytics.getTotalOrders() != null 
+                ? dayAnalytics.getTotalOrders() : 0);
             
             dailyData.add(daily);
         }
@@ -200,34 +188,26 @@ public class RevenueReportServiceImpl implements RevenueReportService {
     }
     
     private List<CategorySalesDTO> calculateTopCategories(Integer shopId, LocalDate start, LocalDate end) {
-        // Read from CategorySales DAY records and aggregate by category
         Map<String, CategorySalesDTO> categoryMap = new HashMap<>();
         
-        categorySalesRepository.findAll().stream()
-                .filter(s -> s.getShop() != null && s.getShop().getId().equals(shopId))
-                .filter(s -> "DAY".equals(s.getPeriodType()))
-                .filter(s -> s.getPeriodStart() != null)
-                .filter(s -> !s.getPeriodStart().isBefore(start) && !s.getPeriodStart().isAfter(end))
+        categorySalesRepository.findDaySalesByDateRange(shopId, start, end).stream()
+                .filter(sales -> sales.getCategory() != null)
                 .forEach(sales -> {
-                    if (sales.getCategory() != null) {
-                        String categoryName = sales.getCategory().getCategoryName();
-                        CategorySalesDTO dto = categoryMap.getOrDefault(categoryName,
-                                new CategorySalesDTO(categoryName, BigDecimal.ZERO, 0, ""));
-                        
-                        dto.setRevenue(dto.getRevenue().add(sales.getTotalRevenue()));
-                        dto.setOrderCount(dto.getOrderCount() + sales.getTotalOrders());
-                        
-                        categoryMap.put(categoryName, dto);
-                    }
+                    String categoryName = sales.getCategory().getCategoryName();
+                    CategorySalesDTO dto = categoryMap.getOrDefault(categoryName,
+                            new CategorySalesDTO(categoryName, BigDecimal.ZERO, 0, ""));
+                    
+                    dto.setRevenue(dto.getRevenue().add(sales.getTotalRevenue()));
+                    dto.setOrderCount(dto.getOrderCount() + sales.getTotalOrders());
+                    
+                    categoryMap.put(categoryName, dto);
                 });
         
-        // Sort by revenue and take top 4
         List<CategorySalesDTO> topCategories = categoryMap.values().stream()
                 .sorted(Comparator.comparing(CategorySalesDTO::getRevenue).reversed())
                 .limit(4)
                 .collect(Collectors.toList());
         
-        // Assign colors
         for (int i = 0; i < topCategories.size(); i++) {
             topCategories.get(i).setColor(COLORS[i % COLORS.length]);
         }
@@ -236,13 +216,7 @@ public class RevenueReportServiceImpl implements RevenueReportService {
     }
     
     private ConversionFunnelDTO calculateConversionFunnel(Integer shopId, LocalDate periodStart, LocalDate periodEnd, Integer completedCount) {
-        // Aggregate ConversionAnalytics DAY records within the date range
-        List<ConversionAnalytics> analyticsList = conversionAnalyticsRepository.findAll().stream()
-            .filter(a -> a.getShop() != null && a.getShop().getId().equals(shopId))
-            .filter(a -> "DAY".equals(a.getPeriodType()))
-            .filter(a -> a.getPeriodStart() != null)
-            .filter(a -> !a.getPeriodStart().isBefore(periodStart) && !a.getPeriodStart().isAfter(periodEnd))
-            .collect(Collectors.toList());
+        List<ConversionAnalytics> analyticsList = conversionAnalyticsRepository.findDayAnalyticsByDateRange(shopId, periodStart, periodEnd);
         
         ConversionFunnelDTO funnel = new ConversionFunnelDTO();
         
@@ -286,11 +260,7 @@ public class RevenueReportServiceImpl implements RevenueReportService {
     }
     
     private List<RecentOrderDTO> getRecentOrders(Integer shopId) {
-        List<Order> recentOrders = orderRepository.findAll().stream()
-                .filter(o -> o.getShop() != null && o.getShop().getId().equals(shopId))
-                .sorted(Comparator.comparing(Order::getOrderDate, Comparator.nullsLast(Comparator.reverseOrder())))
-                .limit(4)
-                .collect(Collectors.toList());
+        List<Order> recentOrders = orderRepository.findRecentOrdersByShopId(shopId, PageRequest.of(0, 4));
         
         List<RecentOrderDTO> dtos = new ArrayList<>();
         

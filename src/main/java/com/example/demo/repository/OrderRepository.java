@@ -103,4 +103,12 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      */
     @Query("SELECT o.orderStatus, COUNT(o) FROM Order o WHERE o.user.userId = :userId AND o.orderStatus IS NOT NULL GROUP BY o.orderStatus")
     List<Object[]> countOrdersByStatusAndUserId(@Param("userId") Integer userId);
+    
+    @Query("SELECT o FROM Order o " +
+           "LEFT JOIN FETCH o.orderItems oi " +
+           "LEFT JOIN FETCH oi.product p " +
+           "LEFT JOIN FETCH p.category " +
+           "WHERE o.shop.id = :shopId " +
+           "ORDER BY o.orderDate DESC")
+    List<Order> findRecentOrdersByShopId(@Param("shopId") Integer shopId, Pageable pageable);
 }

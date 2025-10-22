@@ -73,20 +73,22 @@ public class AuthController {
                        HttpSession session,
                        jakarta.servlet.http.HttpServletRequest request,
                        jakarta.servlet.http.HttpServletResponse response,
-                       RedirectAttributes redirectAttributes,
-                       Model model) {
+                       RedirectAttributes redirectAttributes) {
         
         if (result.hasErrors()) {
-            return "auth/login";
+            return "redirect:/login?error=true";
         }
         
         try {
             User user = authService.loginUser(loginRequest);
             String token = jwtUtil.generateToken(user.getUsername());
+            
+            // Lưu vào session
             session.setAttribute("currentUser", user);
             session.setAttribute("username", user.getUsername());
             session.setAttribute("jwtToken", token);
             
+            // Tạo Spring Security authentication
             org.springframework.security.core.userdetails.UserDetails userDetails = 
                 org.springframework.security.core.userdetails.User.builder()
                     .username(user.getUsername())
@@ -100,6 +102,7 @@ public class AuthController {
                 new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
                     userDetails, null, userDetails.getAuthorities());
             
+            // Lưu authentication vào SecurityContext
             var securityContext = org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
             securityContext.setAuthentication(authentication);
             org.springframework.security.core.context.SecurityContextHolder.setContext(securityContext);
@@ -108,18 +111,26 @@ public class AuthController {
             redirectAttributes.addFlashAttribute("successMessage", "Đăng nhập thành công!");
             
             // Kiểm tra role và redirect phù hợp
+            boolean isAdmin = user.getRoles().stream()
+                .anyMatch(role -> "ADMIN".equals(role.getRoleName()));
+            boolean isVendor = user.getRoles().stream()
+                .anyMatch(role -> "VENDOR".equals(role.getRoleName()));
             boolean isShipper = user.getRoles().stream()
                 .anyMatch(role -> "SHIPPER".equals(role.getRoleName()));
             
-            if (isShipper) {
+            if (isAdmin) {
+                return "redirect:/admin/dashboard";
+            } else if (isVendor) {
+                return "redirect:/vendor/dashboard";
+            } else if (isShipper) {
                 return "redirect:/shipper";
             }
             
-            return "redirect:/"; // Chuyển hướng về trang chủ mới
+            return "redirect:/";
             
         } catch (Exception e) {
-            model.addAttribute("errorMessage", e.getMessage());
-            return "auth/login";
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/login?error=true";
         }
     }
     

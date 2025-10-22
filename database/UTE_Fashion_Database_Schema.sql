@@ -654,6 +654,51 @@ CREATE TABLE Contacts (
     created_at DATETIME DEFAULT GETDATE()
 );
 
+--Bang doanh thu:
+CREATE TABLE ShopAnalytics (
+    analytics_id INT IDENTITY(1,1) PRIMARY KEY,
+    shop_id INT NOT NULL,
+    period_type NVARCHAR(10) NOT NULL,
+    period_start DATE NOT NULL,
+    period_end DATE NOT NULL,
+    total_revenue DECIMAL(18,2) DEFAULT 0,
+    total_orders INT DEFAULT 0,
+    total_views INT DEFAULT 0,
+    growth_percent DECIMAL(5,2),
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (shop_id) REFERENCES Shops(shop_id)
+);
+CREATE TABLE ConversionAnalytics (
+    conversion_id INT IDENTITY(1,1) PRIMARY KEY,
+    shop_id INT NOT NULL,
+    period_type NVARCHAR(10) NOT NULL,
+    period_start DATE NOT NULL,
+    period_end DATE NOT NULL,
+    view_count INT DEFAULT 0,
+    add_to_cart_count INT DEFAULT 0,
+    checkout_count INT DEFAULT 0,
+    completed_count INT DEFAULT 0,
+    view_change DECIMAL(5,2),
+    cart_change DECIMAL(5,2),
+    checkout_change DECIMAL(5,2),
+    completed_change DECIMAL(5,2),
+    created_at DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (shop_id) REFERENCES Shops(shop_id)
+);
+CREATE TABLE CategorySales (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    shop_id INT NOT NULL,
+    category_id INT NOT NULL,
+    period_type NVARCHAR(10) NOT NULL,
+    period_start DATE NOT NULL,
+    period_end DATE NOT NULL,
+    total_revenue DECIMAL(18,2) DEFAULT 0,
+    total_orders INT DEFAULT 0,
+    FOREIGN KEY (shop_id) REFERENCES Shops(shop_id),
+    FOREIGN KEY (category_id) REFERENCES Categories(category_id)
+);
+
 -- =============================================
 -- CREATE INDEXES
 -- =============================================
