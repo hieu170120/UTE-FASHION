@@ -10,8 +10,7 @@
     <th:block layout:fragment="styles">
         <link rel="stylesheet"
               href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
-        <!-- CORRECTED and ADDED CSS -->
-        <link rel="stylesheet" th:href="@{/css/product-detail.css}">
+        <link rel="stylesheet" href="/UTE_Fashion/static/css/product-detail.css">
     </th:block>
 </head>
 
@@ -426,9 +425,11 @@
 
 
 <th:block layout:fragment="scripts">
-    <script src="/js/tracking.js"></script>
-    <!-- CORRECTED JS Path -->
-    <script th:src="@{/js/product-detail.js}"></script>
+	<script src="/UTE_Fashion/static/js/tracking.js"></script>
+ 	<script src="/UTE_Fashion/static/js/product-detail.js"></script>
+	<script src="/UTE_Fashion/static/js/chat-modal.js"></script>
+
+
     <script th:inline="javascript">
 		/*<![CDATA[*/
 		document.addEventListener('DOMContentLoaded', function() {
@@ -444,8 +445,6 @@
 		/*]]>*/
     </script>
 
-    <!-- ADDED: Scripts for Chat Modal -->
-    <script sec:authorize="isAuthenticated()" th:src="@{/js/chat-modal.js}"></script>
 
 </th:block>
 </body>
