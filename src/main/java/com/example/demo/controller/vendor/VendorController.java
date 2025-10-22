@@ -103,11 +103,8 @@ public class VendorController {
     }
 
     @GetMapping("/report/revenue")
-    public String showRevenueReport(@RequestParam(defaultValue = "week") String chartPeriod,
-                                    @RequestParam(required = false) String chartDate,
-                                    @RequestParam(defaultValue = "week") String statsPeriod,
-                                    @RequestParam(defaultValue = "month") String categoryPeriod,
-                                    @RequestParam(defaultValue = "week") String conversionPeriod,
+    public String showRevenueReport(@RequestParam(required = false) String startDate,
+                                    @RequestParam(required = false) String endDate,
                                     Model model, RedirectAttributes redirectAttributes) {
         Optional<Shop> shopOpt = vendorService.getCurrentVendorShop();
         if (shopOpt.isEmpty()) {
@@ -117,16 +114,16 @@ public class VendorController {
 
         Shop shop = shopOpt.get();
         
-        RevenueReportDTO report = revenueReportService.getRevenueReport(
-                shop.getId(), chartPeriod, chartDate, statsPeriod, categoryPeriod, conversionPeriod);
+        // Default to last 7 days if no date range provided
+        LocalDate start = startDate != null ? LocalDate.parse(startDate) : LocalDate.now().minusDays(6);
+        LocalDate end = endDate != null ? LocalDate.parse(endDate) : LocalDate.now();
+        
+        RevenueReportDTO report = revenueReportService.getRevenueReport(shop.getId(), start, end);
         
         model.addAttribute("shop", shop);
         model.addAttribute("report", report);
-        model.addAttribute("chartPeriod", chartPeriod);
-        model.addAttribute("chartDate", chartDate != null ? chartDate : LocalDate.now().toString());
-        model.addAttribute("statsPeriod", statsPeriod);
-        model.addAttribute("categoryPeriod", categoryPeriod);
-        model.addAttribute("conversionPeriod", conversionPeriod);
+        model.addAttribute("startDate", start.toString());
+        model.addAttribute("endDate", end.toString());
         return "vendor/revenue-report";
     }
 }

@@ -1,19 +1,16 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.RevenueReportDTO;
+import java.time.LocalDate;
 
 public interface RevenueReportService {
     
     /**
-     * Get comprehensive revenue report for a shop
+     * Get comprehensive revenue report for a shop within date range
      * @param shopId Shop ID
-     * @param chartPeriod Period for revenue chart
-     * @param chartDate Specific date for chart if period is "day"
-     * @param statsPeriod Period for top stats (revenue, orders, views)
-     * @param categoryPeriod Period for top categories
-     * @param conversionPeriod Period for conversion funnel
+     * @param startDate Start date of the period
+     * @param endDate End date of the period
      * @return Complete revenue report with analytics
      */
-    RevenueReportDTO getRevenueReport(Integer shopId, String chartPeriod, String chartDate, 
-                                     String statsPeriod, String categoryPeriod, String conversionPeriod);
+    RevenueReportDTO getRevenueReport(Integer shopId, LocalDate startDate, LocalDate endDate);
 }
