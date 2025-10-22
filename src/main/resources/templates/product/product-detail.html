@@ -798,7 +798,7 @@ body {
 						<div class="shop-card">
 							<div class="shop-info">
 								<!-- Sử dụng ảnh placeholder nếu shop không có logo -->
-								<img th:src="${product.shopLogoUrl != null ? product.shopLogoUrl : 'https://ui-avatars.com/api/?name=' + product.shopName + '&background=random'}" 
+								<img th:src="${shop.logoUrl != null ? shop.logoUrl : 'https://ui-avatars.com/api/?name=' + product.shopName + '&background=random'}"
 									alt="Shop Logo" class="shop-logo">
 								<div>
 									<div class="shop-label">Cung cấp bởi</div>
