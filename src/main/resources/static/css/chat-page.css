@@ -1,14 +1,13 @@
 /* Main Layout */
 .chat-layout {
     display: flex;
-    height: calc(100vh - 150px); /* Adjust based on header/footer height */
+    height: calc(100vh - 150px);
     border: 1px solid #dee2e6;
     border-radius: 8px;
     overflow: hidden;
     background-color: #fff;
 }
 
-/* Sidebar (Conversation List) */
 .conversation-sidebar {
     width: 350px;
     border-right: 1px solid #dee2e6;
@@ -123,6 +122,7 @@
     background-color: #f8f9fa;
     display: flex;
     flex-direction: column;
+    height: calc(100vh - 300px);
 }
 
 .chat-message {
