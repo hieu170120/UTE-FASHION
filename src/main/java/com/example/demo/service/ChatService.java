@@ -12,4 +12,6 @@ public interface ChatService {
 	List<MessageDTO> getMessages(int conversationId);
 
 	ConversationDTO findOrCreateConversation(int shopId, int userId);
+
+	List<ConversationDTO> getConversationsForUser(int userId);
 }

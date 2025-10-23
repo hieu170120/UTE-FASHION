@@ -1,161 +1,141 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-	xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-	layout:decorate="~{layout/default}">
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/default}">
 
 <head>
-<meta name="product-id" th:content="${product.id}" />
-<title th:text="${product.productName}">Product Detail</title>
-<th:block layout:fragment="styles">
-	<link rel="stylesheet"
-		href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
-	<link rel="stylesheet"
-		href="/UTE_Fashion/static/css/product-detail.css">
-</th:block>
+    <meta name="product-id" th:content="${product.id}"/>
+    <title th:text="${product.productName}">Product Detail</title>
+    <th:block layout:fragment="styles">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+        <!-- CORRECTED PATH -->
+        <link rel="stylesheet" th:href="@{/css/product-detail.css}">
+        <link rel="stylesheet" th:href="@{/css/chat-popup.css}">
+    </th:block>
 </head>
 
 <body>
 
-	<div class="container" layout:fragment="content">
-		<nav aria-label="breadcrumb">
-			<ol class="breadcrumb">
-				<li class="breadcrumb-item"><a th:href="@{/}">TRANG CHỦ</a></li>
-				<li class="breadcrumb-item"><a th:href="@{/products}">TẤT
-						CẢ SẢN PHẨM</a></li>
-				<li class="breadcrumb-item active" aria-current="page"
-					th:text="${product.productName.toUpperCase()}"></li>
-			</ol>
-		</nav>
+<div class="container" layout:fragment="content">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/}">TRANG CHỦ</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/products}">TẤT CẢ SẢN PHẨM</a></li>
+            <li class="breadcrumb-item active" aria-current="page"
+                th:text="${product.productName.toUpperCase()}"></li>
+        </ol>
+    </nav>
 
-		<div class="row">
-			<div class="col-md-7">
-				<div class="row">
-					<div class="col-md-2 order-md-1">
-						<div id="thumbnail-list" class="thumbnail-list loading-state">
-							<div class="spinner-container">
-								<div class="spinner-border spinner-border-sm" role="status">
-									<span class="visually-hidden">Loading images...</span>
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="col-md-10 order-md-2">
-						<div class="main-image">
-							<div id="main-image-placeholder" class="main-image-placeholder">
-								<div class="spinner-border text-primary" role="status">
-									<span class="visually-hidden">Loading main image...</span>
-								</div>
-							</div>
-							<img id="mainProductImage" style="display: none;"
-								alt="Main image">
-						</div>
-					</div>
-				</div>
-			</div>
+    <div class="row">
+        <div class="col-md-7">
+            <div class="row">
+                <div class="col-md-2 order-md-1">
+                    <div id="thumbnail-list" class="thumbnail-list loading-state">
+                        <div class="spinner-container">
+                            <div class="spinner-border spinner-border-sm" role="status">
+                                <span class="visually-hidden">Loading images...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-10 order-md-2">
+                    <div class="main-image">
+                        <div id="main-image-placeholder" class="main-image-placeholder">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading main image...</span>
+                            </div>
+                        </div>
+                        <img id="mainProductImage" style="display: none;" alt="Main image">
+                    </div>
+                </div>
+            </div>
+        </div>
 
-			<div class="col-md-5 product-details">
-				<div class="d-flex justify-content-between align-items-start mb-2">
-					<div>
-						<h2 th:text="${product.productName}"></h2>
-					</div>
-					<button class="wishlist-btn" id="wishlistBtn"
-						onclick="toggleWishlist()" title="Thêm vào yêu thích">
-						<i class="bi bi-heart" id="wishlistIcon"></i>
-					</button>
-				</div>
-				<p class="product-meta">
-					Thương hiệu: <span
-						th:text="${product.brandName != null ? product.brandName : 'N/A'}"></span>
-					| Mã SP: <span th:text="${product.sku}"></span>
-				</p>
+        <div class="col-md-5 product-details">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <h2 th:text="${product.productName}"></h2>
+                </div>
+                <button class="wishlist-btn" id="wishlistBtn" onclick="toggleWishlist()" title="Thêm vào yêu thích">
+                    <i class="bi bi-heart" id="wishlistIcon"></i>
+                </button>
+            </div>
+            <p class="product-meta">
+                Thương hiệu: <span th:text="${product.brandName != null ? product.brandName : 'N/A'}"></span>
+                | Mã SP: <span th:text="${product.sku}"></span>
+            </p>
 
-				<div class="my-3 product-price d-flex align-items-center">
-					<span class="sale-price"
-						th:text="${#numbers.formatDecimal(product.salePrice, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
-					<span class="original-price text-decoration-line-through"
-						th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
-					<span class="discount-badge"
-						th:if="${product.price > 0 and product.salePrice < product.price}"
-						th:text="'-' + ${#numbers.formatInteger(((product.price - product.salePrice) * 100) / product.price, 0)} + '%'"></span>
-				</div>
+            <div class="my-3 product-price d-flex align-items-center">
+                <span class="sale-price"
+                      th:text="${#numbers.formatDecimal(product.salePrice, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                <span class="original-price text-decoration-line-through"
+                      th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                <span class="discount-badge"
+                      th:if="${product.price > 0 and product.salePrice < product.price}"
+                      th:text="'-' + ${#numbers.formatInteger(((product.price - product.salePrice) * 100) / product.price, 0)} + '%'"></span>
+            </div>
 
-				<div class="mb-4">
-					<label class="option-label">Kích thước</label>
-					<div id="size-options-container" class="size-options">
-						<div class="spinner-border spinner-border-sm text-secondary"
-							role="status">
-							<span class="visually-hidden">Loading sizes...</span>
-						</div>
-					</div>
-					<a href="#" class="size-guide-link">HƯỚNG DẪN CHỌN SIZE</a>
-				</div>
-				<div class="mb-4">
-					<label class="option-label">Màu sắc</label>
-					<div id="color-options-container" class="color-options">
-						<div class="spinner-border spinner-border-sm text-secondary"
-							role="status">
-							<span class="visually-hidden">Loading colors...</span>
-						</div>
-					</div>
-				</div>
+            <div class="mb-4">
+                <label class="option-label">Kích thước</label>
+                <div id="size-options-container" class="size-options">
+                    <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                        <span class="visually-hidden">Loading sizes...</span>
+                    </div>
+                </div>
+                <a href="#" class="size-guide-link">HƯỚNG DẪN CHỌN SIZE</a>
+            </div>
+            <div class="mb-4">
+                <label class="option-label">Màu sắc</label>
+                <div id="color-options-container" class="color-options">
+                    <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                        <span class="visually-hidden">Loading colors...</span>
+                    </div>
+                </div>
+            </div>
 
-				<div class="mb-4">
-					<label class="option-label">Số lượng</label>
-					<div class="quantity-selector">
-						<button type="button" onclick="this.nextElementSibling.stepDown()">-</button>
-						<input type="number" id="quantity"
-							class="form-control text-center" value="1" min="1">
-						<button type="button"
-							onclick="this.previousElementSibling.stepUp()">+</button>
-					</div>
-					<p id="stock-info" class="mt-2 text-danger" style="display: none;">Hết
-						hàng</p>
-				</div>
+            <div class="mb-4">
+                <label class="option-label">Số lượng</label>
+                <div class="quantity-selector">
+                    <button type="button" onclick="this.nextElementSibling.stepDown()">-</button>
+                    <input type="number" id="quantity" class="form-control text-center" value="1" min="1">
+                    <button type="button" onclick="this.previousElementSibling.stepUp()">+</button>
+                </div>
+                <p id="stock-info" class="mt-2 text-danger" style="display: none;">Hết hàng</p>
+            </div>
 
-				<div class="d-grid gap-2 mt-4 action-buttons">
-					<button class="btn btn-add-to-cart" type="button"
-						onclick="addToCart()">THÊM VÀO GIỎ</button>
-					<button class="btn btn-buy-now" type="button" onclick="buyNow()">MUA
-						NGAY</button>
-				</div>
+            <div class="d-grid gap-2 mt-4 action-buttons">
+                <button class="btn btn-add-to-cart" type="button" onclick="addToCart()">THÊM VÀO GIỎ</button>
+                <button class="btn btn-buy-now" type="button" onclick="buyNow()">MUA NGAY</button>
+            </div>
 
-				<div class="mt-4 product-description"
-					th:utext="${product.description}"></div>
+            <div class="mt-4 product-description" th:utext="${product.description}"></div>
 
-				<div class="row my-4">
-					<div class="col-12">
-						<div class="shop-card">
-							<div class="shop-info">
-								<img
-									th:src="${shop.logoUrl != null ? shop.logoUrl : 'https://ui-avatars.com/api/?name=' + product.shopName + '&background=random'}"
-									alt="Shop Logo" class="shop-logo">
-								<div>
-									<div class="shop-label">Cung cấp bởi</div>
-									<div class="shop-name" th:text="${product.shopName}">Tên
-										Shop</div>
-								</div>
-							</div>
-							<!-- MODIFIED: Changed to button to trigger modal -->
-							<button type="button"
-								class="btn btn-outline-dark btn-contact-shop"
-								id="contact-shop-btn"
-								th:attr="data-shop-id=${shop.id}, data-shop-name=${shop.shopName}"
-								sec:authorize="isAuthenticated()">
+            <div class="row my-4">
+                <div class="col-12">
+                    <div class="shop-card">
+                        <div class="shop-info">
+                            <img th:src="${shop.logoUrl != null ? shop.logoUrl : 'https://ui-avatars.com/api/?name=' + product.shopName + '&background=random'}"
+                                 alt="Shop Logo" class="shop-logo">
+                            <div>
+                                <div class="shop-label">Cung cấp bởi</div>
+                                <div class="shop-name" th:text="${product.shopName}">Tên Shop</div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-dark btn-contact-shop" id="contact-shop-btn"
+                                th:attr="data-shop-id=${shop.id}, data-shop-name=${shop.shopName}"
+                                sec:authorize="isAuthenticated()">
+                            <i class="bi bi-chat-dots-fill"></i> Liên hệ Shop
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-								<i class="bi bi-chat-dots-fill"></i> Liên hệ Shop
-							</button>
-						</div>
-					</div>
-				</div>
-
-
-			</div>
-		</div>
-
-		<!-- Review Section -->
-		<div class="row review-section">
-			<div class="col-12">
+    <!-- Review Section -->
+    <div class="row review-section">
+		<div class="col-12">
 				<!-- Review Header with Summary -->
 				<div class="review-header-compact">
 					<h4 class="mb-4">Đánh giá sản phẩm</h4>
@@ -406,109 +386,71 @@
 					</nav>
 				</div>
 			</div>
-		</div>
-
-		<!-- Lightbox Modal for Images/Videos -->
-		<div class="modal fade" id="mediaModal" tabindex="-1"
-			aria-hidden="true">
-			<div class="modal-dialog modal-dialog-centered modal-xl">
-				<div class="modal-content bg-dark">
-					<div class="modal-header border-0">
-						<button type="button" class="btn-close btn-close-white"
-							data-bs-dismiss="modal"></button>
-					</div>
-					<div class="modal-body text-center p-0">
-						<img id="modalImage" src="" class="img-fluid"
-							style="max-height: 80vh; display: none;" alt="Review image">
-						<video id="modalVideo" controls class="w-100"
-							style="max-height: 80vh; display: none;">
-							<source src="" type="video/mp4">
-						</video>
-					</div>
-				</div>
-			</div>
-		</div>
-		
-		<div class="modal fade chat-modal" id="chatModal" tabindex="-1"
-		aria-labelledby="chatModalLabel" aria-hidden="true">
-		<div class="modal-dialog">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title" id="chatModalLabel">Chat với Shop</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal"
-						aria-label="Close"></button>
-				</div>
-				<div class="modal-body p-0">
-					<div class="chat-container">
-						<div class="chat-messages" id="chat-messages">
-							<!-- Loading spinner -->
-							<div class="text-center">
-								<div class="spinner-border" role="status">
-									<span class="visually-hidden">Loading...</span>
-								</div>
-							</div>
-						</div>
-						<div class="chat-input">
-							<div class="input-group">
-								<input type="text" class="form-control"
-									placeholder="Nhập tin nhắn..." id="message-input"
-									autocomplete="off">
-								<button class="btn btn-primary" type="button"
-									id="send-message-btn">
-									<i class="bi bi-send-fill"></i>
-								</button>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
 	</div>
 
-	<!-- ADDED: Chat Modal -->
-	<th:block layout:fragment="scripts">
-		<script src="/UTE_Fashion/static/js/tracking.js"></script>
-		<script src="/UTE_Fashion/static/js/product-detail.js"></script>
-       	if (currentUserId) {
-       	    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
-    		<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
-       		<script src="/UTE_Fashion/static/js/chat-modal.js"></script>
-       	}	
+    <!-- Lightbox Modal for Images/Videos -->
+    <div class="modal fade" id="mediaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content bg-dark">
+                <div class="modal-header border-0">
+                    <button type="button" class="btn-close btn-close-white"
+                            data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center p-0">
+                    <img id="modalImage" src="" class="img-fluid"
+                         style="max-height: 80vh; display: none;" alt="Review image">
+                    <video id="modalVideo" controls class="w-100"
+                           style="max-height: 80vh; display: none;">
+                        <source src="" type="video/mp4">
+                    </video>
+                </div>
+            </div>
+        </div>
+    </div>
 
-		<script th:inline="javascript">
-			const currentUserId = /*[[${currentUserId}]]*/ null;
-	        /*<![CDATA[*/
-	        document.addEventListener('DOMContentLoaded', function() {
-	            console.log('[DEBUG] DOM đã tải xong. Bắt đầu khởi tạo các script của trang...');
-	
-	            // Luôn khởi tạo trang chi tiết sản phẩm
-	            initProductDetail({
-	                productId: /*[[${product.id}]]*/ null,
-	                csrfToken: /*[[${_csrf.token}]]*/ '',
-	                csrfHeader: /*[[${_csrf.headerName}]]*/ '',
-	                contextPath: /*[[@{/}]]*/ '/',
-	                imagesApiUrl: /*[[@{/api/products/{productId}/images(productId=${product.id})}]]*/ '',
-	                variantsApiUrl: /*[[@{/api/products/{productId}/variants(productId=${product.id})}]]*/ ''
-	            });
-	
-	            // Chỉ khởi tạo chat NẾU người dùng đăng nhập VÀ hàm initChatModal đã tồn tại
-	            if (currentUserId) {
-	                console.log('[DEBUG] Người dùng đã đăng nhập. Đang khởi tạo chat modal...');
-	                initChatModal({
-	                    contextPath: /*[[@{/}]]*/ '/',
-	                    csrfToken:   /*[[${_csrf.token}]]*/ '',
-	                    csrfHeader:  /*[[${_csrf.headerName}]]*/ '',
-	                    currentUserId: currentUserId
-	                });
-	            } else {
-	                 console.log('[DEBUG] Người dùng chưa đăng nhập hoặc script chat chưa được tải. Bỏ qua khởi tạo chat modal.');
-	            }
-	        });
-	        /*]]>*/
-	    </script>
+</div>
 
+<th:block layout:fragment="scripts">
+    <script th:src="@{/js/tracking.js}"></script>
+    <script th:src="@{/js/product-detail.js}"></script>
 
-	</th:block>
+    <th:block th:if="${currentUserId != null}">
+        <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+        <script th:src="@{/js/chat-popup.js}"></script>
+    </th:block>
+
+    <script th:inline="javascript">
+        const currentUserId = /*[[${currentUserId}]]*/ null;
+        /*<![CDATA[*/
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('[DEBUG] DOM is loaded. Initializing page scripts...');
+
+            initProductDetail({
+                productId: /*[[${product.id}]]*/ null,
+                csrfToken: /*[[${_csrf.token}]]*/ '',
+                csrfHeader: /*[[${_csrf.headerName}]]*/ '',
+                contextPath: /*[[@{/}]]*/ '/',
+                imagesApiUrl: /*[[@{/api/products/{productId}/images(productId=${product.id})}]]*/ '',
+                variantsApiUrl: /*[[@{/api/products/{productId}/variants(productId=${product.id})}]]*/ ''
+            });
+
+            if (currentUserId && typeof initChatPopup === 'function') {
+                console.log('[DEBUG] User is logged in. Initializing chat popup...');
+                initChatPopup({
+                    contextPath: /*[[@{/}]]*/ '/',
+                    csrfToken: /*[[${_csrf.token}]]*/ '',
+                    csrfHeader: /*[[${_csrf.headerName}]]*/ '',
+                    currentUserId: currentUserId,
+                    contactButtonId: 'contact-shop-btn'
+                });
+            } else {
+                console.log('[DEBUG] User is not logged in or chat script not loaded. Skipping chat initialization.');
+            }
+        });
+        /*]]>*/
+    </script>
+</th:block>
+
 </body>
 </html>

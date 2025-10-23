@@ -94,6 +94,41 @@ public class ChatServiceImpl implements ChatService {
 		return convertToDTO(conversation);
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public List<ConversationDTO> getConversationsForUser(int userId) {
+		// First, find all conversations where the user is the customer
+		List<Conversation> userConversations = conversationRepository.findByUserId(userId);
+
+		// Then, since a user can also be a vendor (shop owner), find their shop
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+		if (user.getShop() != null) {
+			List<Conversation> shopConversations = conversationRepository.findByShopId(user.getShop().getId());
+			// Combine the lists, avoiding duplicates if a user talks to their own shop
+			for (Conversation sc : shopConversations) {
+				if (!userConversations.contains(sc)) {
+					userConversations.add(sc);
+				}
+			}
+		}
+
+		return userConversations.stream().map(this::convertToSummaryDTO).collect(Collectors.toList());
+	}
+
+	private ConversationDTO convertToSummaryDTO(Conversation conversation) {
+		if (conversation == null)
+			return null;
+
+		return ConversationDTO.builder().id(conversation.getId())
+				.user(convertToSimpleUserDTO(conversation.getUser()))
+				.shop(convertToSimpleShopDTO(conversation.getShop()))
+				.createdAt(conversation.getCreatedAt())
+				.updatedAt(conversation.getUpdatedAt())
+				// Note: We are NOT including the full message list here for efficiency
+				.build();
+	}
+
 	/**
 	 * Converts a Message entity to a MessageDTO. Ensures field names are consistent
 	 * with the frontend (e.g., "content").
