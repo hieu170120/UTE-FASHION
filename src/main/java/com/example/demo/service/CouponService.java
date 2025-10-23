@@ -46,8 +46,13 @@ public class CouponService {
      */
     public BigDecimal calculateDiscount(Coupon coupon, BigDecimal orderTotal) {
         BigDecimal discount = BigDecimal.ZERO;
+        
+        String discountType = coupon.getDiscountType();
+        if (discountType == null) {
+            return BigDecimal.ZERO;
+        }
 
-        if ("Percentage".equals(coupon.getDiscountType())) {
+        if ("PERCENTAGE".equalsIgnoreCase(discountType)) {
             // Giảm theo %
             discount = orderTotal.multiply(coupon.getDiscountValue())
                     .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
@@ -57,7 +62,7 @@ public class CouponService {
                 discount.compareTo(coupon.getMaxDiscountAmount()) > 0) {
                 discount = coupon.getMaxDiscountAmount();
             }
-        } else if ("Fixed".equals(coupon.getDiscountType())) {
+        } else if ("FIXED".equalsIgnoreCase(discountType)) {
             // Giảm số tiền cố định
             discount = coupon.getDiscountValue();
         }
