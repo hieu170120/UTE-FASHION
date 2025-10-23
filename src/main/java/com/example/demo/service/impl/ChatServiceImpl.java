@@ -1,6 +1,7 @@
 package com.example.demo.service.impl;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -79,17 +80,31 @@ public class ChatServiceImpl implements ChatService {
 		Shop shop = shopRepository.findById(shopId)
 				.orElseThrow(() -> new ResourceNotFoundException("Shop not found with id: " + shopId));
 
-		Conversation conversation = conversationRepository.findByUserIdAndShopId(user.getUserId(), shop.getId())
-				.orElseGet(() -> {
-					Conversation newConversation = new Conversation();
-					newConversation.setUser(user);
-					newConversation.setShop(shop);
-					newConversation.setCreatedAt(Date.from(Instant.now()));
-					newConversation.setUpdatedAt(Date.from(Instant.now()));
-					return conversationRepository.save(newConversation);
-				});
+		Optional<Conversation> existingConversationOpt = conversationRepository.findByUserIdAndShopId(user.getUserId(),
+				shop.getId());
 
-		return convertToDTO(conversation);
+		if (existingConversationOpt.isPresent()) {
+			return convertToDTO(existingConversationOpt.get());
+		} else {
+			Conversation newConversation = new Conversation();
+			newConversation.setUser(user);
+			newConversation.setShop(shop);
+			newConversation.setCreatedAt(Date.from(Instant.now()));
+			newConversation.setUpdatedAt(Date.from(Instant.now()));
+			Conversation savedConversation = conversationRepository.save(newConversation);
+
+			return ConversationDTO.builder().id(savedConversation.getId())
+					.user(convertToSimpleUserDTO(savedConversation.getUser()))
+					.shop(convertToSimpleShopDTO(savedConversation.getShop())).messages(Collections.emptyList()) // Return
+																													// empty
+																													// list,
+																													// client
+																													// will
+																													// fetch
+																													// messages
+																													// separately
+					.createdAt(savedConversation.getCreatedAt()).updatedAt(savedConversation.getUpdatedAt()).build();
+		}
 	}
 
 	@Override
