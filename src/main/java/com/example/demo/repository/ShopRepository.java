@@ -18,4 +18,7 @@ public interface ShopRepository extends JpaRepository<Shop, Integer> {
 
     @Query("SELECT s FROM Shop s JOIN FETCH s.vendor")
     List<Shop> findAllWithVendor();
+
+    @Query("SELECT s FROM Shop s JOIN FETCH s.vendor WHERE s.id = :shopId")
+    Optional<Shop> findByIdWithVendor(int shopId);
 }
