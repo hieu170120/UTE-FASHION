@@ -2,7 +2,8 @@
 const Analytics = {
     // Track product view
     trackProductView: function(productId) {
-        fetch('/api/analytics/track/view', {
+        const url = (window.CONTEXT_PATH || '/UTE_Fashion/') + 'api/analytics/track/view';
+        fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -13,7 +14,8 @@ const Analytics = {
 
     // Track add to cart
     trackAddToCart: function(productId, quantity) {
-        fetch('/api/analytics/track/cart', {
+        const url = (window.CONTEXT_PATH || '/UTE_Fashion/') + 'api/analytics/track/cart';
+        fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -27,7 +29,8 @@ const Analytics = {
 
     // Track checkout start
     trackCheckout: function(shopId) {
-        fetch('/api/analytics/track/checkout', {
+        const url = (window.CONTEXT_PATH || '/UTE_Fashion/') + 'api/analytics/track/checkout';
+        fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -38,7 +41,8 @@ const Analytics = {
 
     // Track checkout by product (backend derives shop)
     trackCheckoutByProduct: function(productId) {
-        fetch('/api/analytics/track/checkout-by-product', {
+        const url = (window.CONTEXT_PATH || '/UTE_Fashion/') + 'api/analytics/track/checkout-by-product';
+        fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

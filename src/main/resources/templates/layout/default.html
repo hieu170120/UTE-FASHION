@@ -22,6 +22,16 @@
     <!-- Page specific styles -->
     <th:block layout:fragment="styles"></th:block>
     
+    <!-- Expose context path to JS -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        window.CONTEXT_PATH = /*[[@{/}]]*/ '';
+        if (window.CONTEXT_PATH && !window.CONTEXT_PATH.endsWith('/')) {
+            window.CONTEXT_PATH = window.CONTEXT_PATH + '/';
+        }
+        /*]]>*/
+    </script>
+    
     <style>
         /* Cart Dropdown Animation */
         .cart-dropdown {

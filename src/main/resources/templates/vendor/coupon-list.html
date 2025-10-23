@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Quản Lý Coupon - UTE Fashion</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        h1 { font-size: 28px; color: #333; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; display: inline-block; transition: all 0.2s; }
+        .btn-primary { background: #ff8c42; color: white; }
+        .btn-primary:hover { background: #e67a32; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .alert { padding: 15px; margin-bottom: 20px; border-radius: 8px; }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; font-weight: 600; color: #495057; }
+        .badge { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .actions { display: flex; gap: 8px; }
+        .back-btn { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a th:href="@{/vendor/dashboard}" class="btn btn-secondary back-btn">← Quay Lại Dashboard</a>
+        
+        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+        
+        <div class="header">
+            <h1>📋 Quản Lý Coupon</h1>
+            <a th:href="@{/vendor/coupons/new}" class="btn btn-primary">+ Tạo Coupon Mới</a>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Mã Coupon</th>
+                    <th>Mô Tả</th>
+                    <th>Loại</th>
+                    <th>Giá Trị</th>
+                    <th>Đã Dùng</th>
+                    <th>Thời Hạn</th>
+                    <th>Trạng Thái</th>
+                    <th>Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:if="${coupons.isEmpty()}">
+                    <td colspan="8" style="text-align: center; padding: 40px; color: #999;">
+                        Chưa có coupon nào. Hãy tạo coupon đầu tiên!
+                    </td>
+                </tr>
+                <tr th:each="coupon : ${coupons}">
+                    <td><strong th:text="${coupon.couponCode}"></strong></td>
+                    <td th:text="${coupon.description} ?: 'Không có mô tả'"></td>
+                    <td>
+                        <span th:if="${coupon.discountType == 'PERCENTAGE'}" class="badge badge-warning">Phần Trăm</span>
+                        <span th:if="${coupon.discountType == 'FIXED'}" class="badge badge-success">Cố Định</span>
+                    </td>
+                    <td>
+                        <span th:if="${coupon.discountType == 'PERCENTAGE'}" 
+                              th:text="${#numbers.formatDecimal(coupon.discountValue, 0, 'COMMA', 0, 'POINT')} + '%'"></span>
+                        <span th:if="${coupon.discountType == 'FIXED'}" 
+                              th:text="${#numbers.formatDecimal(coupon.discountValue, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                    </td>
+                    <td th:text="${coupon.usageCount} + '/' + ${coupon.usageLimit ?: '∞'}"></td>
+                    <td>
+                        <div th:text="${#temporals.format(coupon.validFrom, 'dd/MM/yyyy')}"></div>
+                        <div th:text="'→ ' + ${#temporals.format(coupon.validTo, 'dd/MM/yyyy')}"></div>
+                    </td>
+                    <td>
+                        <span th:if="${coupon.active}" class="badge badge-success">Hoạt Động</span>
+                        <span th:unless="${coupon.active}" class="badge badge-danger">Tắt</span>
+                    </td>
+                    <td>
+                        <div class="actions">
+                            <a th:href="@{/vendor/coupons/{id}/edit(id=${coupon.id})}" class="btn btn-sm btn-primary">Sửa</a>
+                            <form th:action="@{/vendor/coupons/{id}/toggle(id=${coupon.id})}" method="post" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-success" th:text="${coupon.active ? 'Tắt' : 'Bật'}"></button>
+                            </form>
+                            <form th:action="@{/vendor/coupons/{id}/delete(id=${coupon.id})}" method="post" style="display:inline;"
+                                  onsubmit="return confirm('Bạn có chắc muốn xóa coupon này?');">
+                                <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

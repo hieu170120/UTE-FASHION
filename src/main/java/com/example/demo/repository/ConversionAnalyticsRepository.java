@@ -17,4 +17,11 @@ public interface ConversionAnalyticsRepository extends JpaRepository<ConversionA
            "AND ca.periodStart <= :date AND ca.periodEnd >= :date")
     Optional<ConversionAnalytics> findCurrentWeekAnalytics(@Param("shopId") Integer shopId,
                                                            @Param("date") LocalDate date);
+    
+    @Query("SELECT ca FROM ConversionAnalytics ca WHERE ca.shop.id = :shopId " +
+           "AND ca.periodType = 'DAY' " +
+           "AND ca.periodStart >= :startDate AND ca.periodStart <= :endDate")
+    java.util.List<ConversionAnalytics> findDayAnalyticsByDateRange(@Param("shopId") Integer shopId,
+                                                                      @Param("startDate") LocalDate startDate,
+                                                                      @Param("endDate") LocalDate endDate);
 }
