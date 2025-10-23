@@ -53,9 +53,21 @@ function fetchConversations() {
         }
 
         conversations.forEach(conv => {
-            const otherParty = conv.user.id === currentUserId ? conv.shop : conv.user;
-            const avatar = conv.user.id === currentUserId ? (conv.shop.logoUrl || `https://ui-avatars.com/api/?name=${otherParty.name}&background=random`) : (otherParty.avatarUrl || `https://ui-avatars.com/api/?name=${otherParty.name}&background=random`);
-            const name = otherParty.name;
+            const isUserInitiator = conv.user.id === currentUserId;
+            const otherParty = isUserInitiator ? conv.shop : conv.user;
+
+            // CORRECTED: Use 'name' for shop, and 'username' for user.
+            const name = isUserInitiator ? otherParty.name : otherParty.username;
+
+            // CORRECTED: Use 'logoUrl' for shop and 'avatarUrl' for user.
+            const avatar = isUserInitiator
+                ? (otherParty.logoUrl || `https://ui-avatars.com/api/?name=${name}&background=random`)
+                : (otherParty.avatarUrl || `https://ui-avatars.com/api/?name=${name}&background=random`);
+
+            if (!name) {
+                console.error("Could not determine name for other party in conversation:", conv);
+                return; // Skip rendering this broken conversation
+            }
 
             const convElement = document.createElement('a');
             convElement.href = '#';
@@ -105,7 +117,7 @@ function openConversation(conversationId, name, avatar) {
     messagesContainer.innerHTML = '<div class="text-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading messages...</span></div></div>';
 
     // Fetch messages for this conversation
-    fetch(`${config.contextPath}api/chat/messages?conversationId=${conversationId}`, {
+    fetch(`${config.contextPath}api/chat/messages/${conversationId}`, {
          headers: {
             [config.csrfHeader]: config.csrfToken,
             'Accept': 'application/json'
