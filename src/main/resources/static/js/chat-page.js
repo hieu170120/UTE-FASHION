@@ -104,17 +104,17 @@ function openConversation(conversationId, name, avatar) {
     const messagesContainer = document.getElementById('chat-messages-container');
     messagesContainer.innerHTML = '<div class="text-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading messages...</span></div></div>';
 
-    // Fetch messages for this conversation
-    fetch(`${config.contextPath}api/chat/messages?conversationId=${conversationId}`, {
+    // CORRECTED: Fetch messages using a path variable, not a query parameter.
+    fetch(`${config.contextPath}api/chat/messages/${conversationId}`, {
          headers: {
             [config.csrfHeader]: config.csrfToken,
             'Accept': 'application/json'
         }
     })
-    .then(response => response.json())
+    .then(response => response.json()) // This will now receive a proper array
     .then(messages => {
         messagesContainer.innerHTML = '';
-        messages.forEach(addMessageToChatWindow);
+        messages.forEach(addMessageToChatWindow); // This will now work
     })
     .catch(error => {
         console.error('Failed to fetch messages:', error);
