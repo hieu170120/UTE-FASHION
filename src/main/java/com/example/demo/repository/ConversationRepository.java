@@ -10,10 +10,11 @@ import org.springframework.data.repository.query.Param;
 import com.example.demo.entity.Conversation;
 
 public interface ConversationRepository extends JpaRepository<Conversation, Integer> {
-	@Query("SELECT c FROM Conversation c WHERE c.user.id = :userId AND c.shop.id = :shopId")
-	Optional<Conversation> findByUserIdAndShopId(@Param("userId") int userId, @Param("shopId") int shopId);
 
-	List<Conversation> findByUserId(int userId);
+	@Query("SELECT c FROM Conversation c WHERE c.user.userId = :userId AND c.shop.id = :shopId")
+	Optional<Conversation> findByUserIdAndShopId(@Param("userId") Integer userId, @Param("shopId") Integer shopId);
 
-	List<Conversation> findByShopId(int shopId);
+	List<Conversation> findByUser_UserId(Integer userId);
+
+	List<Conversation> findByShopId(Integer shopId);
 }

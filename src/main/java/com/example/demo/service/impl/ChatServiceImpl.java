@@ -3,6 +3,8 @@ package com.example.demo.service.impl;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,9 +54,8 @@ public class ChatServiceImpl implements ChatService {
 		Message message = new Message();
 		message.setConversation(conversation);
 		message.setSender(sender);
-		// Assuming senderType logic is handled by frontend or is fixed
 		message.setSenderType("USER");
-		message.setMessageContent(messageDTO.getContent()); // Use getContent() to match JS
+		message.setMessageContent(messageDTO.getContent());
 		message.setRead(false);
 		message.setCreatedAt(Date.from(Instant.now()));
 
@@ -73,16 +74,13 @@ public class ChatServiceImpl implements ChatService {
 	@Override
 	@Transactional
 	public ConversationDTO findOrCreateConversation(int shopId, int userId) {
-		// Find the entities first
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 		Shop shop = shopRepository.findById(shopId)
 				.orElseThrow(() -> new ResourceNotFoundException("Shop not found with id: " + shopId));
 
-		// Use the repository method to find an existing conversation
 		Conversation conversation = conversationRepository.findByUserIdAndShopId(user.getUserId(), shop.getId())
 				.orElseGet(() -> {
-					// Or create a new one if it doesn't exist
 					Conversation newConversation = new Conversation();
 					newConversation.setUser(user);
 					newConversation.setShop(shop);
@@ -97,17 +95,15 @@ public class ChatServiceImpl implements ChatService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<ConversationDTO> getConversationsForUser(int userId) {
-		// First, find all conversations where the user is the customer
-		List<Conversation> userConversations = conversationRepository.findByUserId(userId);
+		List<Conversation> userConversations = conversationRepository.findByUser_UserId(userId);
 
-		// Then, since a user can also be a vendor (shop owner), find their shop
-		User user = userRepository.findById(userId)
-				.orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-		if (user.getShop() != null) {
-			List<Conversation> shopConversations = conversationRepository.findByShopId(user.getShop().getId());
-			// Combine the lists, avoiding duplicates if a user talks to their own shop
+		Optional<Shop> ownedShopOpt = shopRepository.findByVendorUserId(userId);
+
+		if (ownedShopOpt.isPresent()) {
+			Shop ownedShop = ownedShopOpt.get();
+			List<Conversation> shopConversations = conversationRepository.findByShopId(ownedShop.getId());
 			for (Conversation sc : shopConversations) {
-				if (!userConversations.contains(sc)) {
+				if (userConversations.stream().noneMatch(c -> Objects.equals(c.getId(), sc.getId()))) {
 					userConversations.add(sc);
 				}
 			}
@@ -120,19 +116,11 @@ public class ChatServiceImpl implements ChatService {
 		if (conversation == null)
 			return null;
 
-		return ConversationDTO.builder().id(conversation.getId())
-				.user(convertToSimpleUserDTO(conversation.getUser()))
-				.shop(convertToSimpleShopDTO(conversation.getShop()))
-				.createdAt(conversation.getCreatedAt())
-				.updatedAt(conversation.getUpdatedAt())
-				// Note: We are NOT including the full message list here for efficiency
-				.build();
+		return ConversationDTO.builder().id(conversation.getId()).user(convertToSimpleUserDTO(conversation.getUser()))
+				.shop(convertToSimpleShopDTO(conversation.getShop())).createdAt(conversation.getCreatedAt())
+				.updatedAt(conversation.getUpdatedAt()).build();
 	}
 
-	/**
-	 * Converts a Message entity to a MessageDTO. Ensures field names are consistent
-	 * with the frontend (e.g., "content").
-	 */
 	private MessageDTO convertToDTO(Message message) {
 		if (message == null)
 			return null;
@@ -141,9 +129,6 @@ public class ChatServiceImpl implements ChatService {
 				.isRead(message.isRead()).createdAt(message.getCreatedAt()).build();
 	}
 
-	/**
-	 * Converts a Conversation entity to a ConversationDTO, including its messages.
-	 */
 	private ConversationDTO convertToDTO(Conversation conversation) {
 		if (conversation == null)
 			return null;
@@ -155,17 +140,17 @@ public class ChatServiceImpl implements ChatService {
 				.createdAt(conversation.getCreatedAt()).updatedAt(conversation.getUpdatedAt()).build();
 	}
 
-	// You would typically have these DTOs and mappers in a separate location
-
 	private ConversationDTO.SimpleUserDTO convertToSimpleUserDTO(User user) {
 		if (user == null)
 			return null;
-		return new ConversationDTO.SimpleUserDTO(user.getUserId(), user.getUsername());
+		return ConversationDTO.SimpleUserDTO.builder().id(user.getUserId()).username(user.getUsername())
+				.fullName(user.getFullName()).avatarUrl(user.getAvatarUrl()).build();
 	}
 
 	private ConversationDTO.SimpleShopDTO convertToSimpleShopDTO(Shop shop) {
 		if (shop == null)
 			return null;
-		return new ConversationDTO.SimpleShopDTO(shop.getId(), shop.getShopName());
+		return ConversationDTO.SimpleShopDTO.builder().id(shop.getId()).name(shop.getShopName())
+				.logoUrl(shop.getLogoUrl()).build();
 	}
 }
