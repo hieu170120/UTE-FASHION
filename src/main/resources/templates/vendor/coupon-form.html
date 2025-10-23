@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${isEdit ? 'Sửa Coupon' : 'Tạo Coupon Mới'} + ' - UTE Fashion'"></title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { font-size: 28px; color: #333; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; font-family: inherit; }
+        textarea { min-height: 80px; resize: vertical; }
+        .error { color: #dc3545; font-size: 12px; margin-top: 5px; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; display: inline-block; transition: all 0.2s; margin-right: 10px; }
+        .btn-primary { background: #ff8c42; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .alert { padding: 15px; margin-bottom: 20px; border-radius: 8px; }
+        .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; }
+        .checkbox-group input { width: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 th:text="${isEdit ? '✏️ Sửa Coupon' : '➕ Tạo Coupon Mới'}"></h1>
+        
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+        
+        <form th:action="@{${isEdit ? '/vendor/coupons/' + couponDTO.id + '/edit' : '/vendor/coupons/new'}}" 
+              th:object="${couponDTO}" method="post">
+            
+            <div class="form-group">
+                <label>Mã Coupon *</label>
+                <input type="text" th:field="*{couponCode}" placeholder="VD: SUMMER2024" style="text-transform: uppercase;" required />
+                <div class="error" th:if="${#fields.hasErrors('couponCode')}" th:errors="*{couponCode}"></div>
+            </div>
+            
+            <div class="form-group">
+                <label>Mô Tả</label>
+                <textarea th:field="*{description}" placeholder="Mô tả ngắn gọn về coupon..."></textarea>
+                <div class="error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></div>
+            </div>
+            
+            <div class="row">
+                <div class="form-group">
+                    <label>Loại Giảm Giá *</label>
+                    <select th:field="*{discountType}" required>
+                        <option value="">-- Chọn loại --</option>
+                        <option value="PERCENTAGE">Phần Trăm (%)</option>
+                        <option value="FIXED">Số Tiền Cố Định (₫)</option>
+                    </select>
+                    <div class="error" th:if="${#fields.hasErrors('discountType')}" th:errors="*{discountType}"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Giá Trị Giảm *</label>
+                    <input type="number" th:field="*{discountValue}" step="0.01" min="0.01" placeholder="VD: 10 hoặc 50000" required />
+                    <div class="error" th:if="${#fields.hasErrors('discountValue')}" th:errors="*{discountValue}"></div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="form-group">
+                    <label>Đơn Hàng Tối Thiểu (₫)</label>
+                    <input type="number" th:field="*{minOrderValue}" step="1000" min="0" placeholder="0 = Không giới hạn" />
+                    <div class="error" th:if="${#fields.hasErrors('minOrderValue')}" th:errors="*{minOrderValue}"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Giảm Tối Đa (₫)</label>
+                    <input type="number" th:field="*{maxDiscountAmount}" step="1000" min="0" placeholder="0 = Không giới hạn" />
+                    <div class="error" th:if="${#fields.hasErrors('maxDiscountAmount')}" th:errors="*{maxDiscountAmount}"></div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="form-group">
+                    <label>Giới Hạn Số Lần Dùng</label>
+                    <input type="number" th:field="*{usageLimit}" min="1" placeholder="VD: 100" />
+                    <div class="error" th:if="${#fields.hasErrors('usageLimit')}" th:errors="*{usageLimit}"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Giới Hạn/Người Dùng</label>
+                    <input type="number" th:field="*{usageLimitPerUser}" min="1" value="1" />
+                    <div class="error" th:if="${#fields.hasErrors('usageLimitPerUser')}" th:errors="*{usageLimitPerUser}"></div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="form-group">
+                    <label>Ngày Bắt Đầu *</label>
+                    <input type="datetime-local" th:field="*{validFrom}" required />
+                    <div class="error" th:if="${#fields.hasErrors('validFrom')}" th:errors="*{validFrom}"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Ngày Kết Thúc *</label>
+                    <input type="datetime-local" th:field="*{validTo}" required />
+                    <div class="error" th:if="${#fields.hasErrors('validTo')}" th:errors="*{validTo}"></div>
+                </div>
+            </div>
+            
+            <div class="form-group checkbox-group">
+                <input type="checkbox" th:field="*{active}" id="active" />
+                <label for="active" style="margin: 0;">Kích hoạt ngay</label>
+            </div>
+            
+            <div class="form-group checkbox-group">
+                <input type="checkbox" th:field="*{shippingDiscount}" id="shippingDiscount" />
+                <label for="shippingDiscount" style="margin: 0;">Giảm phí vận chuyển</label>
+            </div>
+            
+            <div style="margin-top: 30px;">
+                <button type="submit" class="btn btn-primary" th:text="${isEdit ? 'Cập Nhật' : 'Tạo Coupon'}"></button>
+                <a th:href="@{/vendor/coupons}" class="btn btn-secondary">Hủy</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
