@@ -640,18 +640,55 @@ CREATE TABLE Settings (
     updated_at DATETIME DEFAULT GETDATE()
 );
 
--- Bảng Contacts: Lưu thông tin liên hệ từ khách hàng
+-- Bảng Contacts: Lưu thông tin liên hệ từ khách hàng (HỦY)
 -- Chức năng: Quản lý phản hồi từ khách hàng (hỗ trợ, khiếu nại).
-CREATE TABLE Contacts (
-    contact_id INT PRIMARY KEY IDENTITY(1,1),
-    full_name NVARCHAR(100) NOT NULL, -- Tên người liên hệ
-    email NVARCHAR(100) NOT NULL, -- Email
-    phone_number NVARCHAR(20), -- Số điện thoại
-    subject NVARCHAR(255) NOT NULL, -- Chủ đề
-    message NVARCHAR(MAX) NOT NULL, -- Nội dung
-    status NVARCHAR(50) DEFAULT 'New', -- Trạng thái
-    replied_at DATETIME, -- Thời gian phản hồi
-    created_at DATETIME DEFAULT GETDATE()
+-- CREATE TABLE Contacts (
+--     contact_id INT PRIMARY KEY IDENTITY(1,1),
+--     full_name NVARCHAR(100) NOT NULL-- Tên người liên hệ, 
+--     email NVARCHAR(100) NOT NULL, -- Email
+--     phone_number NVARCHAR(20), -- Số điện thoại
+--     subject NVARCHAR(255) NOT NULL, -- Chủ đề
+--     message NVARCHAR(MAX) NOT NULL, -- Nội dung
+--     status NVARCHAR(50) DEFAULT 'New', -- Trạng thái
+--     replied_at DATETIME, -- Thời gian phản hồi
+--     created_at DATETIME DEFAULT GETDATE()
+-- );
+-- =============================================
+-- LIVE CHAT SYSTEM
+-- Chức năng: Cho phép người dùng đã đăng nhập trò chuyện trực tiếp với shop.
+-- =============================================
+
+-- Bảng Conversations: Mỗi dòng là một cuộc hội thoại duy nhất giữa một User và một Shop.
+-- Mục đích: Nhóm các tin nhắn lại với nhau, quản lý trạng thái và định tuyến.
+CREATE TABLE Conversations (
+    conversation_id INT PRIMARY KEY IDENTITY(1,1),
+    user_id INT NOT NULL,  -- Người dùng (khách hàng) bắt đầu cuộc hội thoại
+    shop_id INT NOT NULL,  -- Shop (vendor) tham gia cuộc hội thoại
+    status NVARCHAR(50) DEFAULT 'open' NOT NULL, -- Trạng thái cuộc hội thoại: 'open', 'closed'
+    created_at DATETIME DEFAULT GETDATE(), -- Thời điểm bắt đầu
+    updated_at DATETIME DEFAULT GETDATE(), -- Thời điểm có tin nhắn cuối cùng
+
+    -- Khóa ngoại trỏ đến người dùng và shop
+    CONSTRAINT FK_Conversations_Users FOREIGN KEY (user_id) REFERENCES Users(user_id),
+    CONSTRAINT FK_Conversations_Shops FOREIGN KEY (shop_id) REFERENCES Shops(shop_id),
+    -- Đảm bảo mỗi cặp (user, shop) chỉ có một cuộc hội thoại mở tại một thời điểm
+    CONSTRAINT UQ_User_Shop_Conversation UNIQUE (user_id, shop_id)
+);
+
+-- Bảng Messages: Lưu trữ từng tin nhắn cụ thể trong một cuộc hội thoại.
+-- Mục đích: Ghi lại lịch sử trao đổi chi tiết.
+CREATE TABLE Messages (
+    message_id BIGINT PRIMARY KEY IDENTITY(1,1),
+    conversation_id INT NOT NULL, -- Tin nhắn này thuộc về cuộc hội thoại nào
+    sender_id INT NOT NULL,       -- ID của người gửi (tham chiếu đến Users.user_id)
+    sender_type NVARCHAR(50) NOT NULL, -- 'USER' hoặc 'VENDOR' để xác định vai trò người gửi
+    message_content NVARCHAR(MAX) NOT NULL, -- Nội dung tin nhắn
+    is_read BIT DEFAULT 0,        -- Trạng thái 'đã đọc' của tin nhắn
+    created_at DATETIME DEFAULT GETDATE(), -- Thời gian gửi
+
+    -- Khóa ngoại trỏ đến bảng Conversations và bảng Users (cho người gửi)
+    CONSTRAINT FK_Messages_Conversations FOREIGN KEY (conversation_id) REFERENCES Conversations(conversation_id),
+    CONSTRAINT FK_Messages_Sender FOREIGN KEY (sender_id) REFERENCES Users(user_id)
 );
 
 --Bang doanh thu:
