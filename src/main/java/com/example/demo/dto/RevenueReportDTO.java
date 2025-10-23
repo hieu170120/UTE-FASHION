@@ -22,6 +22,12 @@ public class RevenueReportDTO {
     private Integer totalViews;
     private BigDecimal viewsGrowthPercent;
     
+    // Order status stats
+    private Integer returnedOrders;
+    private BigDecimal returnedAmount;
+    private Integer cancelledOrders;
+    private BigDecimal cancelledAmount;
+    
     // Monthly target
     private BigDecimal monthlyTarget;
     private BigDecimal currentMonthRevenue;
@@ -44,6 +50,9 @@ public class RevenueReportDTO {
     
     // Recent orders
     private List<RecentOrderDTO> recentOrders;
+    
+    // High stock products
+    private List<HighStockProductDTO> highStockProducts;
     
     @Data
     @NoArgsConstructor
@@ -77,6 +86,10 @@ public class RevenueReportDTO {
         private BigDecimal checkoutChange;
         private Integer completedCount;
         private BigDecimal completedChange;
+        private Integer returnedCount;
+        private BigDecimal returnedPercent;
+        private Integer cancelledCount;
+        private BigDecimal cancelledPercent;
     }
     
     @Data
@@ -92,5 +105,15 @@ public class RevenueReportDTO {
         private BigDecimal totalAmount;
         private String status;
         private String statusClass; // for CSS styling
+    }
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class HighStockProductDTO {
+        private String productName;
+        private Integer stockQuantity;
+        private Integer soldQuantity;
+        private BigDecimal stockValue; // Stock quantity * price
     }
 }

@@ -48,6 +48,9 @@ public class RevenueReportServiceImpl implements RevenueReportService {
     @Autowired
     private CategorySalesRepository categorySalesRepository;
     
+    @Autowired
+    private ProductRepository productRepository;
+    
     private static final String[] COLORS = {"#ff8c42", "#ffb366", "#ffd4a8", "#ffe8d6"};
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd MMM", Locale.ENGLISH);
 
@@ -79,6 +82,15 @@ public class RevenueReportServiceImpl implements RevenueReportService {
         report.setTotalViews(currentViews);
         report.setViewsGrowthPercent(calculateGrowthPercent(
                 BigDecimal.valueOf(currentViews), BigDecimal.valueOf(previousViews)));
+        
+        // Order status stats (returned & cancelled)
+        Map<String, Object> returnedStats = calculateOrderStatusStats(shopId, startDate, endDate, "RETURNED");
+        report.setReturnedOrders((Integer) returnedStats.get("count"));
+        report.setReturnedAmount((BigDecimal) returnedStats.get("amount"));
+        
+        Map<String, Object> cancelledStats = calculateOrderStatusStats(shopId, startDate, endDate, "CANCELLED");
+        report.setCancelledOrders((Integer) cancelledStats.get("count"));
+        report.setCancelledAmount((BigDecimal) cancelledStats.get("amount"));
         
         // Monthly target (current month)
         LocalDate monthStart = LocalDate.now().withDayOfMonth(1);
@@ -123,6 +135,9 @@ public class RevenueReportServiceImpl implements RevenueReportService {
         
         // Recent orders (always show last 4 regardless of date range)
         report.setRecentOrders(getRecentOrders(shopId));
+        
+        // High stock products (top 5)
+        report.setHighStockProducts(getHighStockProducts(shopId));
         
         return report;
     }
@@ -256,6 +271,19 @@ public class RevenueReportServiceImpl implements RevenueReportService {
             funnel.setCompletedChange(BigDecimal.ZERO);
         }
         
+        // Calculate returned and cancelled orders
+        Map<String, Object> returnedStats = calculateOrderStatusStats(shopId, periodStart, periodEnd, "RETURNED");
+        Integer returnedCount = (Integer) returnedStats.get("count");
+        funnel.setReturnedCount(returnedCount);
+        funnel.setReturnedPercent(completedCount > 0 ? 
+            BigDecimal.valueOf(returnedCount * 100.0 / completedCount).setScale(1, RoundingMode.HALF_UP) : BigDecimal.ZERO);
+        
+        Map<String, Object> cancelledStats = calculateOrderStatusStats(shopId, periodStart, periodEnd, "CANCELLED");
+        Integer cancelledCount = (Integer) cancelledStats.get("count");
+        funnel.setCancelledCount(cancelledCount);
+        funnel.setCancelledPercent(completedCount > 0 ? 
+            BigDecimal.valueOf(cancelledCount * 100.0 / completedCount).setScale(1, RoundingMode.HALF_UP) : BigDecimal.ZERO);
+        
         return funnel;
     }
     
@@ -356,5 +384,42 @@ public class RevenueReportServiceImpl implements RevenueReportService {
         }
         
         return path.toString();
+    }
+    
+    private Map<String, Object> calculateOrderStatusStats(Integer shopId, LocalDate start, LocalDate end, String status) {
+        List<Order> orders = orderRepository.findRecentOrdersByShopId(shopId, PageRequest.of(0, 1000)).stream()
+            .filter(o -> status.equalsIgnoreCase(o.getOrderStatus()))
+            .filter(o -> o.getOrderDate() != null)
+            .filter(o -> !o.getOrderDate().toLocalDate().isBefore(start) && !o.getOrderDate().toLocalDate().isAfter(end))
+            .collect(Collectors.toList());
+        
+        Integer count = orders.size();
+        BigDecimal amount = orders.stream()
+            .map(Order::getTotalAmount)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("count", count);
+        result.put("amount", amount);
+        return result;
+    }
+    
+    private List<HighStockProductDTO> getHighStockProducts(Integer shopId) {
+        return productRepository.findAll().stream()
+            .filter(p -> p.getShop() != null && p.getShop().getId().equals(shopId))
+            .filter(p -> p.getStockQuantity() != null && p.getStockQuantity() > 0)
+            .sorted(Comparator.comparing(Product::getStockQuantity).reversed())
+            .limit(5)
+            .map(product -> {
+                HighStockProductDTO dto = new HighStockProductDTO();
+                dto.setProductName(product.getProductName());
+                dto.setStockQuantity(product.getStockQuantity());
+                dto.setSoldQuantity(product.getSoldCount() != null ? product.getSoldCount() : 0);
+                dto.setStockValue(BigDecimal.valueOf(product.getStockQuantity())
+                    .multiply(product.getPrice() != null ? product.getPrice() : BigDecimal.ZERO));
+                return dto;
+            })
+            .collect(Collectors.toList());
     }
 }
