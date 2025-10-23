@@ -1,21 +1,38 @@
 package com.example.demo.dto;
 
-import lombok.AllArgsConstructor;
+import java.util.Date;
+import java.util.List;
+
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.util.Date;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 @Builder
 public class ConversationDTO {
-    private int id;
-    private int userId;
-    private int shopId;
-    private String status;
-    private Date createdAt;
-    private Date updatedAt;
+	private int id;
+	private SimpleUserDTO user;
+	private SimpleShopDTO shop;
+	private List<MessageDTO> messages;
+	private Date createdAt;
+	private Date updatedAt;
+
+	// --- Inner DTOs for simplified representations ---
+
+	/**
+	 * A simplified representation of a User for chat.
+	 */
+	@Data
+	public static class SimpleUserDTO {
+		private final int id;
+		private final String username;
+	}
+
+	/**
+	 * A simplified representation of a Shop for chat.
+	 */
+	@Data
+	public static class SimpleShopDTO {
+		private final int id;
+		private final String name;
+	}
 }

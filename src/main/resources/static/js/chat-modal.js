@@ -1,143 +1,132 @@
-/*let stompClient = null;
-let currentConversationId = null;
+/**
+ * UTE-Fashion - Chat Modal Script (Initialization Pattern with Debug Logs)
+ * Encapsulates all chat logic within an initializer function.
+ */
 
+function initChatModal(config) {
+    console.log("[DEBUG] initChatModal được gọi với config:", config);
 
-const contextPath = '/UTE_Fashion/';
+    let stompClient = null;
+    let currentConversationId = null;
+    let chatModalInstance = null;
 
-const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
-const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+    const contextPath = config.contextPath;
+    const csrfToken = config.csrfToken;
+    const csrfHeader = config.csrfHeader;
+    const currentUserId = config.currentUserId;
 
-const currentUserId = window.currentUserId || null;
+    async function connectAndLoadMessages(shopId) {
+        console.log("[DEBUG] Bắt đầu kết nối và tải tin nhắn cho shopId:", shopId);
+        const chatMessages = document.getElementById('chat-messages');
+        chatMessages.innerHTML = '<div class="text-center p-3"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
 
+        try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (csrfHeader && csrfToken) headers[csrfHeader] = csrfToken;
 
-async function connectAndLoadMessages(shopId) {
-    const chatMessages = document.getElementById('chat-messages');
-    chatMessages.innerHTML = '<div class="text-center p-3"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
-
-    try {
-        // Find or create a conversation to get its ID.
-        const response = await fetch(`${contextPath}api/chat/conversation/find-or-create?shopId=${shopId}`, {
-            method: 'POST',
-            headers: { [csrfHeader]: csrfToken }
-        });
-
-        if (!response.ok) throw new Error('Failed to get conversation.');
-
-        const conversation = await response.json();
-        currentConversationId = conversation.id;
-        
-        // Clear loading spinner and display past messages.
-        chatMessages.innerHTML = '';
-        conversation.messages.forEach(displayMessage);
-
-        // Connect to the WebSocket.
-        const socket = new SockJS(`${contextPath}ws`);
-        stompClient = Stomp.over(socket);
-
-        stompClient.connect({}, (frame) => {
-            console.log('Connected: ' + frame);
-            // Subscribe to the conversation topic to receive new messages.
-            stompClient.subscribe(`/topic/conversation/${currentConversationId}`, (message) => {
-                displayMessage(JSON.parse(message.body));
+            const response = await fetch(`${contextPath}api/chat/conversation/find-or-create?shopId=${shopId}`, {
+                method: 'POST',
+                headers: headers
             });
-        }, (error) => {
-            console.error('STOMP connection error: ', error);
-            chatMessages.innerHTML = '<div class="alert alert-danger m-3">Không thể kết nối tới server chat.</div>';
-        });
 
-    } catch (error) {
-        console.error('Error connecting and loading messages:', error);
-        chatMessages.innerHTML = '<div class="alert alert-danger m-3">Đã xảy ra lỗi khi tải cuộc trò chuyện.</div>';
+            if (!response.ok) throw new Error('Failed to get conversation.');
+            const conversation = await response.json();
+            currentConversationId = conversation.id;
+            console.log("[DEBUG] Lấy được conversation ID:", currentConversationId);
+
+            chatMessages.innerHTML = '';
+            if (conversation.messages && conversation.messages.length > 0) {
+                conversation.messages.forEach(displayMessage);
+            } else {
+                chatMessages.innerHTML = '<div class="text-center text-muted p-4">Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện!</div>';
+            }
+
+            const socket = new SockJS(`${contextPath}ws`);
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, (frame) => {
+                console.log("[DEBUG] STOMP Connected:", frame);
+                stompClient.subscribe(`/topic/conversation/${currentConversationId}`, (message) => displayMessage(JSON.parse(message.body)));
+            }, (error) => console.error('STOMP connection error: ', error));
+
+        } catch (error) {
+            console.error('Lỗi khi kết nối và tải tin nhắn:', error);
+            chatMessages.innerHTML = '<div class="alert alert-danger m-3">Đã xảy ra lỗi khi tải cuộc trò chuyện.</div>';
+        }
     }
-}
 
-*
- * Disconnects the WebSocket connection.
- 
-function disconnect() {
-    if (stompClient && stompClient.connected) {
-        stompClient.disconnect(() => console.log('Disconnected'));
+    function disconnect() {
+        console.log("[DEBUG] Ngắt kết nối STOMP.");
+        if (stompClient && stompClient.connected) stompClient.disconnect();
     }
-    stompClient = null;
-    currentConversationId = null;
-}
 
-*
- * Sends a chat message.
- 
-function sendMessage() {
-    const messageInput = document.getElementById('message-input');
-    const messageContent = messageInput.value.trim();
-
-    if (messageContent && stompClient && currentConversationId) {
-        const chatMessage = {
-            content: messageContent,
-            conversationId: currentConversationId
-        };
-        stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
-        messageInput.value = '';
+    function sendMessage() {
+        const messageInput = document.getElementById('message-input');
+        const messageContent = messageInput.value.trim();
+        if (messageContent && stompClient && currentConversationId) {
+            console.log("[DEBUG] Gửi tin nhắn:", messageContent);
+            stompClient.send("/app/chat.sendMessage", {}, JSON.stringify({
+                content: messageContent,
+                conversationId: currentConversationId
+            }));
+            messageInput.value = '';
+        }
     }
-}
 
-*
- * Displays a single message in the chat window.
- * @param {object} message - The message object to display.
- 
-function displayMessage(message) {
-    const chatMessages = document.getElementById('chat-messages');
-    if (!chatMessages) return;
+    function displayMessage(message) {
+        const chatMessages = document.getElementById('chat-messages');
+        if (!chatMessages) return;
 
-    const isSentByCurrentUser = message.sender.id === currentUserId;
-    const messageRow = document.createElement('div');
-    messageRow.className = `chat-message-row ${isSentByCurrentUser ? 'current-user' : 'other-user'}`;
-    
-    const bubble = document.createElement('div');
-    bubble.className = 'chat-bubble';
-    bubble.textContent = message.content;
-    
-    messageRow.appendChild(bubble);
-    chatMessages.appendChild(messageRow);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
+        const placeholder = chatMessages.querySelector('.text-center.text-muted');
+        if (placeholder) placeholder.remove();
 
-// --- ENTRY POINT --- //
-// Wait for the DOM to be fully loaded before adding event listeners.
-document.addEventListener('DOMContentLoaded', () => {
+        const isSentByCurrentUser = message.sender && message.sender.id === currentUserId;
+
+        const messageRow = document.createElement('div');
+        messageRow.className = `chat-message-row d-flex ${isSentByCurrentUser ? 'justify-content-end' : 'justify-content-start'}`;
+
+        const bubble = document.createElement('div');
+        bubble.className = `chat-bubble ${isSentByCurrentUser ? 'current-user' : 'other-user'}`;
+        bubble.textContent = message.content;
+
+        messageRow.appendChild(bubble);
+        chatMessages.appendChild(messageRow);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    console.log("[DEBUG] Tìm kiếm các element: #contact-shop-btn và #chatModal");
+    const contactShopBtn = document.getElementById('contact-shop-btn');
     const chatModalEl = document.getElementById('chatModal');
 
-    if (chatModalEl) {
-        // Fired when the modal is about to be shown
-        chatModalEl.addEventListener('show.bs.modal', async (event) => {
-            const button = event.relatedTarget;
-            if (!button) return;
-
-            const shopId = button.getAttribute('data-shop-id');
-            const shopName = button.getAttribute('data-shop-name');
-
-            document.getElementById('chatModalLabel').textContent = `Chat với ${shopName}`;
-            await connectAndLoadMessages(shopId);
-        });
-
-        // Fired when the modal has finished being hidden
-        chatModalEl.addEventListener('hidden.bs.modal', () => {
-            disconnect();
-            document.getElementById('chat-messages').innerHTML = '';
-        });
+    if (!contactShopBtn || !chatModalEl) {
+        console.error("[DEBUG] KHÔNG TÌM THẤY NÚT LIÊN HỆ hoặc MODAL. Script sẽ không hoạt động. Kiểm tra lại ID trong file HTML.", { contactShopBtn, chatModalEl });
+        return;
     }
 
-    const sendMessageBtn = document.getElementById('send-message-btn');
-    if (sendMessageBtn) {
-        sendMessageBtn.addEventListener('click', sendMessage);
-    }
+    console.log("[DEBUG] Đã tìm thấy các element. Gán sự kiện click...");
+    contactShopBtn.addEventListener('click', () => {
+        console.log("[DEBUG] >>> NÚT LIÊN HỆ SHOP ĐÃ ĐƯỢC CLICK!");
 
-    const messageInput = document.getElementById('message-input');
-    if (messageInput) {
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-    }
-});
-*/
+        if (!chatModalInstance) {
+            chatModalInstance = new bootstrap.Modal(chatModalEl);
+        }
+        chatModalInstance.show();
+    });
+
+    chatModalEl.addEventListener('show.bs.modal', () => {
+        const shopId = contactShopBtn.getAttribute('data-shop-id');
+        console.log("[DEBUG] Modal đang được hiển thị. Gọi connectAndLoadMessages.");
+        connectAndLoadMessages(shopId);
+    });
+
+    chatModalEl.addEventListener('hidden.bs.modal', disconnect);
+
+    document.getElementById('send-message-btn')?.addEventListener('click', sendMessage);
+    document.getElementById('message-input')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    console.log("[DEBUG] Script chat-modal.js đã khởi tạo xong.");
+}

@@ -2,17 +2,28 @@ package com.example.demo.controller;
 
 import java.util.List;
 
-import com.example.demo.dto.*;
-import com.example.demo.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import com.example.demo.dto.CategoryDTO;
+import com.example.demo.dto.ProductDTO;
+import com.example.demo.dto.ProductSearchCriteria;
+import com.example.demo.dto.ProductSummaryDTO;
+import com.example.demo.dto.ReviewDTO;
+import com.example.demo.entity.User;
+import com.example.demo.service.BrandService;
+import com.example.demo.service.CategoryService;
+import com.example.demo.service.ProductService;
+import com.example.demo.service.ReviewService;
+import com.example.demo.service.ShopService;
 
 @Controller
 public class ProductController {
@@ -28,11 +39,10 @@ public class ProductController {
 	private BrandService brandService;
 	@Autowired
 	private ReviewService reviewService;
-    @Autowired
-    private ShopService shopService;
+	@Autowired
+	private ShopService shopService;
 
 	private void loadProductPage(ProductSearchCriteria criteria, int page, int size, Model model) {
-		// Ensure sort order is valid before querying
 		if (!StringUtils.hasText(criteria.getSort()) || !ALLOWED_SORT_VALUES.contains(criteria.getSort())) {
 			criteria.setSort("newest");
 		}
@@ -73,7 +83,6 @@ public class ProductController {
 		loadProductPage(criteria, page, size, model);
 		model.addAttribute("pageTitle", pageTitle);
 
-		// Pass initial state values to the template for JS
 		model.addAttribute("currentPage", page);
 		model.addAttribute("currentCategory", criteria.getCategorySlug());
 		model.addAttribute("currentBrand", criteria.getBrandSlug());
@@ -94,17 +103,27 @@ public class ProductController {
 	}
 
 	@GetMapping("/products/{slug}")
-	public String viewProduct(@PathVariable String slug, Model model) {
+	public String viewProduct(@PathVariable String slug, Model model, Authentication authentication) {
 		try {
 			ProductDTO product = productService.findProductDetailBySlug(slug);
 			model.addAttribute("product", product);
 			model.addAttribute("pageTitle", product.getProductName());
-            model.addAttribute("shop", shopService.getShopById(product.getShopId()));
+			model.addAttribute("shop", shopService.getShopById(product.getShopId()));
+
+			// ROBUST METHOD: Get user ID safely from the Authentication principal
+			if (authentication != null && authentication.isAuthenticated()) {
+				Object principal = authentication.getPrincipal();
+				if (principal instanceof User) {
+					User currentUser = (User) principal;
+					model.addAttribute("currentUserId", currentUser.getUserId());
+				}
+				// Add other instanceof checks here if you have other user types, e.g.,
+				// UserDetails
+			}
 
 			Page<ReviewDTO> reviewPage = reviewService.getReviewsByProductId(product.getId(), PageRequest.of(0, 5));
 			model.addAttribute("reviewPage", reviewPage);
-			
-			// Add rating statistics
+
 			model.addAttribute("ratingStats", reviewService.getRatingStatistics(product.getId()));
 
 			return "product/product-detail";

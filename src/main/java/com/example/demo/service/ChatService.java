@@ -1,12 +1,15 @@
 package com.example.demo.service;
 
-import com.example.demo.dto.MessageDTO;
-import com.example.demo.entity.Conversation;
-
 import java.util.List;
 
+import com.example.demo.dto.ConversationDTO;
+import com.example.demo.dto.MessageDTO;
+
 public interface ChatService {
-    MessageDTO sendMessage(MessageDTO messageDTO);
-    List<MessageDTO> getMessages(int conversationId);
-    Conversation findOrCreateConversation(int shopId);
+
+	MessageDTO sendMessage(MessageDTO messageDTO, int senderId);
+
+	List<MessageDTO> getMessages(int conversationId);
+
+	ConversationDTO findOrCreateConversation(int shopId, int userId);
 }
