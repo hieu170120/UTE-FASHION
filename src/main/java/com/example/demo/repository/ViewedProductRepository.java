@@ -15,6 +15,6 @@ public interface ViewedProductRepository extends JpaRepository<ViewedProduct, In
 
     Optional<ViewedProduct> findByUserAndProduct(User user, Product product);
 
-    @Query("SELECT vp FROM ViewedProduct vp WHERE vp.user.id = :userId AND vp.product.id <> :currentProductId ORDER BY vp.viewedAt DESC")
+    @Query("SELECT vp FROM ViewedProduct vp WHERE vp.user.id = :userId AND vp.product.id <> :currentProductId")
     List<ViewedProduct> findRecentlyViewedByUserId(@Param("userId") Integer userId, @Param("currentProductId") Integer currentProductId, Pageable pageable);
 }

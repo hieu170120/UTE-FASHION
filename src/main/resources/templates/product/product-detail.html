@@ -397,7 +397,9 @@
                 <div class="product-carousel" id="recentlyViewedCarousel">
                     <a th:href="@{/products/{slug}(slug=${p.slug})}" class="product-card" th:each="p : ${recentlyViewedProducts}" th:attr="data-product-id=${p.productId}">
                         <div class="product-image-container">
+<!--
                             <img class="product-main-image" th:src="${p.imageUrl}" th:alt="${p.productName}" />
+-->
                             <div class="sale-badge" th:if="${p.salePrice != null and p.salePrice < p.price}" th:text="|-${#numbers.formatInteger(((p.price - p.salePrice) * 100.0) / p.price, 0)}%|"></div>
                         </div>
                         <div class="product-info text-center">
@@ -451,6 +453,7 @@
         <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
         <script th:src="@{/static/js/chat-popup.js}"></script>
+        <script th:src="@{/static/js/recent-view.js}"></script>
     </th:block>
 
     <script th:inline="javascript">
@@ -481,26 +484,6 @@
                 console.log('[DEBUG] User is not logged in or chat script not loaded. Skipping chat initialization.');
             }
 
-				function setupProductCarousel(carouselId, prevBtnId, nextBtnId) {
-                const carousel = document.getElementById(carouselId);
-                const nextBtn = document.getElementById(nextBtnId);
-                const prevBtn = document.getElementById(prevBtnId);
-                if (!carousel || !nextBtn || !prevBtn) return;
-                
-                function updateCarouselScroll() {
-                    if (!carousel.querySelector('.product-card')) return;
-                    const card = carousel.querySelector('.product-card');
-                    const cardWidth = card.offsetWidth;
-                    const gap = parseInt(window.getComputedStyle(carousel).gap) || 16;
-                    const scrollAmount = cardWidth + gap;
-                    nextBtn.onclick = () => carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-                    prevBtn.onclick = () => carousel.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-                }
-                setTimeout(updateCarouselScroll, 500);
-                window.addEventListener('resize', updateCarouselScroll);
-            }
-
-            setupProductCarousel('recentlyViewedCarousel', 'prevBtnRecently', 'nextBtnRecently');
         });
         /*]]>*/
     </script>
