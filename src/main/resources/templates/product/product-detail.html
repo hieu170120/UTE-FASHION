@@ -10,7 +10,7 @@
     <th:block layout:fragment="styles">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
         <link rel="stylesheet" th:href="@{/static/css/product-detail.css}">
-        <link rel="stylesheet" th:href="@{/static/css/chat-popup.css}">\
+        <link rel="stylesheet" th:href="@{/static/css/chat-popup.css}">
 		<link rel="stylesheet" th:href="@{/static/css/recent-view.css}">
 
     </th:block>
@@ -458,18 +458,15 @@
 
     <script th:inline="javascript">
 		const currentUserId = /*[[${currentUserId}]]*/ null;
-        const csrfToken = /*[[${_csrf.token}]]*/ '';
-        const csrfHeader = /*[[${_csrf.headerName}]]*/ '';
-        const contextPath = /*[[@{/}]]*/ '/';
         /*<![CDATA[*/
         document.addEventListener('DOMContentLoaded', function () {
             console.log('[DEBUG] DOM is loaded. Initializing page scripts...');
 
             initProductDetail({
                 productId: /*[[${product.id}]]*/ null,
-                csrfToken: csrfToken,
-                csrfHeader: csrfHeader,
-                contextPath: contextPath,
+                csrfToken: /*[[${_csrf.token}]]*/ '',
+                csrfHeader: /*[[${_csrf.headerName}]]*/ '',
+                contextPath: /*[[@{/}]]*/ '/',
                 imagesApiUrl: /*[[@{/api/products/{productId}/images(productId=${product.id})}]]*/ '',
                 variantsApiUrl: /*[[@{/api/products/{productId}/variants(productId=${product.id})}]]*/ ''
             });
@@ -477,9 +474,9 @@
             if (currentUserId && typeof initChatPopup === 'function') {
                 console.log('[DEBUG] User is logged in. Initializing chat popup...');
                 initChatPopup({
-                    contextPath: contextPath,
-                    csrfToken: csrfToken,
-                    csrfHeader: csrfHeader,
+                    contextPath: /*[[@{/}]]*/ '/',
+                    csrfToken: /*[[${_csrf.token}]]*/ '',
+                    csrfHeader: /*[[${_csrf.headerName}]]*/ '',
                     currentUserId: currentUserId,
                     contactButtonId: 'contact-shop-btn'
                 });
@@ -489,9 +486,9 @@
 			if (typeof initRecentView === 'function') {
                 console.log('[DEBUG] Initializing recently viewed products carousel...');
                 initRecentView({
-                    contextPath: contextPath,
-                    csrfToken: csrfToken,
-                    csrfHeader: csrfHeader
+                    contextPath: /*[[@{/}]]*/ '/',
+                    csrfToken: /*[[${_csrf.token}]]*/ '',
+                    csrfHeader: /*[[${_csrf.headerName}]]*/
                 });
                 // Thiết lập các nút điều khiển cho carousel
                 setupProductCarousel('recentlyViewedCarousel', 'prevBtnRecently', 'nextBtnRecently');
