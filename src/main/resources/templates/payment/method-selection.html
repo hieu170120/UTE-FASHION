@@ -122,11 +122,11 @@
                 </div>
             </div>
             
-            <!-- Nhập mã giảm giá -->
+            <!-- Nhập mã giảm giá (Coupon) -->
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <h5 class="card-title mb-3">
-                        <i class="fas fa-tag me-2"></i>Mã giảm giá
+                        <i class="fas fa-tag me-2"></i>Mã giảm giá (Coupon)
                     </h5>
                     
                     <!-- Hiển thị coupon đã áp dụng -->
@@ -134,25 +134,105 @@
                         <span>
                             <i class="fas fa-check-circle me-2"></i>
                             Đã áp dụng: <strong th:text="${appliedCouponCode}"></strong>
-                            (Giảm <strong th:text="${#numbers.formatDecimal(discountAmount, 0, 'COMMA', 0, 'POINT')} + '₫'"></strong>)
+                            (Giảm <strong th:text="${#numbers.formatDecimal(couponDiscount, 0, 'COMMA', 0, 'POINT')} + '₫'"></strong>)
                         </span>
                         <form th:action="@{/payment/remove-coupon}" method="post" class="d-inline">
                             <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
                         </form>
                     </div>
                     
-                    <!-- Form nhập coupon -->
-                    <form th:if="${appliedCouponCode == null}" th:action="@{/payment/apply-coupon}" method="post">
-                        <div class="row">
-                            <div class="col-md-9">
-                                <input type="text" name="couponCode" class="form-control" 
-                                       placeholder="Nhập mã giảm giá" required>
-                            </div>
-                            <div class="col-md-3">
-                                <button type="submit" class="btn btn-success w-100">Áp dụng</button>
-                            </div>
+                    <!-- Form chọn coupon -->
+                    <div th:if="${appliedCouponCode == null}">
+                        <!-- Dropdown chọn coupon có sẵn -->
+                        <div class="mb-3" th:if="${availableCoupons != null and !availableCoupons.isEmpty()}">
+                            <label class="form-label">Chọn mã giảm giá:</label>
+                            <form th:action="@{/payment/apply-coupon}" method="post">
+                                <div class="row">
+                                    <div class="col-md-9">
+                                        <select name="couponCode" class="form-select" required>
+                                            <option value="">-- Chọn mã giảm giá --</option>
+                                            <option th:each="coupon : ${availableCoupons}" 
+                                                    th:value="${coupon.couponCode}"
+                                                    th:text="${coupon.couponCode + ' - Giảm ' + 
+                                                              (coupon.discountType == 'PERCENTAGE' ? 
+                                                               coupon.discountValue + '%' : 
+                                                               #numbers.formatDecimal(coupon.discountValue, 0, 'COMMA', 0, 'POINT') + '₫') + 
+                                                              ' (Đơn tối thiểu: ' + 
+                                                              #numbers.formatDecimal(coupon.minOrderValue, 0, 'COMMA', 0, 'POINT') + '₫)'}"></option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button type="submit" class="btn btn-success w-100">Áp dụng</button>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
-                    </form>
+                        
+                        <!-- Hoặc nhập mã thủ công -->
+                        <form th:action="@{/payment/apply-coupon}" method="post">
+                            <label class="form-label">Hoặc nhập mã:</label>
+                            <div class="row">
+                                <div class="col-md-9">
+                                    <input type="text" name="couponCode" class="form-control" 
+                                           placeholder="Nhập mã giảm giá" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="submit" class="btn btn-success w-100">Áp dụng</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mã khuyến mãi (Promotion) -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-gift me-2"></i>Mã khuyến mãi (Promotion)
+                    </h5>
+                    
+                    <!-- Hiển thị promotion đã áp dụng -->
+                    <div th:if="${appliedPromotionId != null}" class="alert alert-success d-flex justify-content-between align-items-center">
+                        <span>
+                            <i class="fas fa-check-circle me-2"></i>
+                            Đã áp dụng khuyến mãi
+                            (Giảm <strong th:text="${#numbers.formatDecimal(promotionDiscount, 0, 'COMMA', 0, 'POINT')} + '₫'"></strong>)
+                        </span>
+                        <form th:action="@{/payment/remove-promotion}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                        </form>
+                    </div>
+                    
+                    <!-- Form chọn promotion -->
+                    <div th:if="${appliedPromotionId == null}">
+                        <div th:if="${availablePromotions != null and !availablePromotions.isEmpty()}">
+                            <label class="form-label">Chọn khuyến mãi:</label>
+                            <form th:action="@{/payment/apply-promotion}" method="post">
+                                <div class="row">
+                                    <div class="col-md-9">
+                                        <select name="promotionId" class="form-select" required>
+                                            <option value="">-- Chọn khuyến mãi --</option>
+                                            <option th:each="promo : ${availablePromotions}" 
+                                                    th:value="${promo.id}"
+                                                    th:text="${promo.promotionName + ' - Giảm ' + 
+                                                              (promo.discountType.name() == 'PERCENTAGE' ? 
+                                                               promo.discountValue + '%' : 
+                                                               #numbers.formatDecimal(promo.discountValue, 0, 'COMMA', 0, 'POINT') + '₫') + 
+                                                              ' (Đơn tối thiểu: ' + 
+                                                              #numbers.formatDecimal(promo.minOrderValue, 0, 'COMMA', 0, 'POINT') + '₫)'}"></option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button type="submit" class="btn btn-primary w-100">Áp dụng</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div th:if="${availablePromotions == null or availablePromotions.isEmpty()}" class="text-muted">
+                            <small>Hiện không có khuyến mãi nào.</small>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -226,12 +306,28 @@
                         <span th:if="${shippingFee == null}" class="text-muted">Chưa chọn</span>
                     </div>
                     
-                    <!-- Discount -->
-                    <div th:if="${discountAmount != null}" class="d-flex justify-content-between mb-2 text-success">
+                    <!-- Coupon Discount -->
+                    <div th:if="${couponDiscount != null}" class="d-flex justify-content-between mb-2 text-success">
                         <span>
-                            <i class="fas fa-tag me-1"></i>Giảm giá:
+                            <i class="fas fa-tag me-1"></i>Giảm (Coupon):
                         </span>
-                        <span th:text="'-' + ${#numbers.formatDecimal(discountAmount, 0, 'COMMA', 0, 'POINT')} + '₫'"></span>
+                        <span th:text="'-' + ${#numbers.formatDecimal(couponDiscount, 0, 'COMMA', 0, 'POINT')} + '₫'"></span>
+                    </div>
+                    
+                    <!-- Promotion Discount -->
+                    <div th:if="${promotionDiscount != null}" class="d-flex justify-content-between mb-2 text-success">
+                        <span>
+                            <i class="fas fa-gift me-1"></i>Giảm (Promotion):
+                        </span>
+                        <span th:text="'-' + ${#numbers.formatDecimal(promotionDiscount, 0, 'COMMA', 0, 'POINT')} + '₫'"></span>
+                    </div>
+                    
+                    <!-- Total Discount -->
+                    <div th:if="${totalDiscount != null and totalDiscount > 0}" class="d-flex justify-content-between mb-2 text-success fw-bold">
+                        <span>
+                            <i class="fas fa-percent me-1"></i>Tổng giảm:
+                        </span>
+                        <span th:text="'-' + ${#numbers.formatDecimal(totalDiscount, 0, 'COMMA', 0, 'POINT')} + '₫'"></span>
                     </div>
                     
                     <hr>

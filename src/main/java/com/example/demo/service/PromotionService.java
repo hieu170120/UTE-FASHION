@@ -344,4 +344,106 @@ public class PromotionService {
         dto.setOperatorDisplayName(rule.getOperator().getDisplayName());
         return dto;
     }
+    
+    /**
+     * Lấy danh sách promotions đang active và còn hiệu lực (cho cart total)
+     */
+    @Transactional(readOnly = true)
+    public List<PromotionDTO> getAvailablePromotions() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Promotion> promotions = promotionRepository.findAll().stream()
+                .filter(p -> p.isActive() && 
+                           !p.getValidFrom().isAfter(now) && 
+                           !p.getValidTo().isBefore(now) &&
+                           p.getPromotionType() == Promotion.PromotionType.CART_TOTAL &&
+                           (p.getUsageLimit() == null || p.getUsageCount() < p.getUsageLimit()))
+                .collect(Collectors.toList());
+        
+        return promotions.stream()
+                .map(this::mapToPromotionDTO)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Validate promotion và kiểm tra điều kiện áp dụng
+     */
+    @Transactional(readOnly = true)
+    public PromotionDTO validatePromotionForUser(Integer promotionId, Integer userId, BigDecimal orderTotal) {
+        LocalDateTime now = LocalDateTime.now();
+        
+        Promotion promotion = promotionRepository.findById(promotionId)
+                .orElseThrow(() -> new RuntimeException("Mã khuyến mãi không tồn tại"));
+        
+        // Kiểm tra trạng thái active
+        if (!promotion.isActive()) {
+            throw new RuntimeException("Mã khuyến mãi đã bị vô hiệu hóa");
+        }
+        
+        // Kiểm tra thời gian
+        if (promotion.getValidFrom().isAfter(now)) {
+            throw new RuntimeException("Mã khuyến mãi chưa đến thời gian áp dụng");
+        }
+        if (promotion.getValidTo().isBefore(now)) {
+            throw new RuntimeException("Mã khuyến mãi đã hết hạn");
+        }
+        
+        // Kiểm tra giá trị đơn hàng tối thiểu
+        if (orderTotal.compareTo(promotion.getMinOrderValue()) < 0) {
+            throw new RuntimeException("Đơn hàng tối thiểu " + 
+                formatMoney(promotion.getMinOrderValue()) + " để áp dụng mã này");
+        }
+        
+        // Kiểm tra usage limit tổng
+        if (promotion.getUsageLimit() != null && 
+            promotion.getUsageCount() >= promotion.getUsageLimit()) {
+            throw new RuntimeException("Mã khuyến mãi đã hết lượt sử dụng");
+        }
+        
+        // Kiểm tra usage limit per user
+        if (userId != null && promotion.getUsageLimitPerUser() != null) {
+            long userUsageCount = promotionUsageRepository.countByPromotionIdAndUserUserId(
+                promotion.getId(), userId);
+            if (userUsageCount >= promotion.getUsageLimitPerUser()) {
+                throw new RuntimeException("Bạn đã sử dụng hết số lượt cho mã này");
+            }
+        }
+        
+        return mapToPromotionDTO(promotion);
+    }
+    
+    /**
+     * Tính số tiền giảm giá từ promotion
+     */
+    public BigDecimal calculateDiscount(PromotionDTO promotion, BigDecimal orderTotal) {
+        BigDecimal discount = BigDecimal.ZERO;
+        
+        if (promotion.getDiscountType() == Promotion.DiscountType.PERCENTAGE) {
+            // Giảm theo %
+            discount = orderTotal.multiply(promotion.getDiscountValue())
+                    .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+            
+            // Áp dụng max discount nếu có
+            if (promotion.getMaxDiscountAmount() != null && 
+                discount.compareTo(promotion.getMaxDiscountAmount()) > 0) {
+                discount = promotion.getMaxDiscountAmount();
+            }
+        } else if (promotion.getDiscountType() == Promotion.DiscountType.FIXED_AMOUNT) {
+            // Giảm số tiền cố định
+            discount = promotion.getDiscountValue();
+        }
+        
+        // Không giảm quá tổng tiền
+        if (discount.compareTo(orderTotal) > 0) {
+            discount = orderTotal;
+        }
+        
+        return discount;
+    }
+    
+    /**
+     * Format tiền
+     */
+    private String formatMoney(BigDecimal amount) {
+        return String.format("%,d₫", amount.longValue());
+    }
 }
