@@ -34,28 +34,24 @@
 </head>
 <body>
     <div class="container-fluid">
-        <!-- Header -->
-        <div class="row">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center py-3">
-                    <div>
-                        <h2><i class="fas fa-percentage me-2"></i>Chi tiết chương trình khuyến mãi</h2>
-                        <nav aria-label="breadcrumb">
-                            <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a th:href="@{/admin/dashboard}">Dashboard</a></li>
-                                <li class="breadcrumb-item"><a th:href="@{/admin/promotions}">Chương trình khuyến mãi</a></li>
-                                <li class="breadcrumb-item active">Chi tiết</li>
-                            </ol>
-                        </nav>
-                    </div>
-                    <div>
-                        <a th:href="@{/admin/promotions}" class="btn btn-outline-secondary me-2">
-                            <i class="fas fa-arrow-left me-1"></i>Quay lại
-                        </a>
-                        <a th:href="@{/admin/promotions/new}" class="btn btn-primary">
-                            <i class="fas fa-edit me-1"></i>Chỉnh sửa
-                        </a>
-                    </div>
+        <!-- Enhanced Navbar Header -->
+        <div class="navbar-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.5rem; border-radius: 0.75rem; color: white; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <!-- Back Button -->
+                <a th:href="@{/admin/promotions}" class="btn btn-light" title="Quay lại danh sách">
+                    <i class="fas fa-arrow-left me-2"></i>Quay lại
+                </a>
+                
+                <!-- Title Center -->
+                <h2 style="margin: 0; font-weight: 700; font-size: 1.8rem; text-align: center; flex: 1;">
+                    <i class="fas fa-percentage me-2"></i>Chi tiết chương trình khuyến mãi
+                </h2>
+                
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 0.5rem;">
+                    <a th:href="@{'/admin/promotions/edit/' + ${promotion.id}}" class="btn btn-success" title="Chỉnh sửa">
+                        <i class="fas fa-edit me-2"></i>Chỉnh sửa
+                    </a>
                 </div>
             </div>
         </div>
@@ -73,7 +69,7 @@
                     <div class="card-header bg-primary text-white">
                         <h4 class="mb-0">
                             <i class="fas fa-percentage me-2"></i>
-                            <span th:text="${promotion.name}">Tên chương trình</span>
+                            <span th:text="${promotion.promotionName}">Tên chương trình</span>
                         </h4>
                     </div>
                     <div class="card-body">
@@ -83,7 +79,7 @@
                                     <span class="info-label">Mã chương trình:</span>
                                 </div>
                                 <div class="col-md-9">
-                                    <span class="info-value" th:text="${promotion.code}">KHUYENMAI1</span>
+                                    <span class="info-value" th:text="'PROMO' + ${promotion.id}">KHUYENMAI1</span>
                                 </div>
                             </div>
                         </div>
@@ -94,7 +90,7 @@
                                     <span class="info-label">Tên chương trình:</span>
                                 </div>
                                 <div class="col-md-9">
-                                    <span class="info-value" th:text="${promotion.name}">Giảm 20% cho tất cả sản phẩm</span>
+                                    <span class="info-value" th:text="${promotion.promotionName}">Giảm 20% cho tất cả sản phẩm</span>
                                 </div>
                             </div>
                         </div>
@@ -105,7 +101,29 @@
                                     <span class="info-label">Mức giảm giá:</span>
                                 </div>
                                 <div class="col-md-9">
-                                    <span class="info-value fw-bold text-danger fs-5" th:text="${promotion.discount}">20%</span>
+                                    <span class="info-value fw-bold text-danger fs-5" th:text="${promotion.discountValue} + (${promotion.discountType == 'PERCENTAGE'} ? '%' : '₫')">20%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-row">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <span class="info-label">Loại giảm giá:</span>
+                                </div>
+                                <div class="col-md-9">
+                                    <span class="info-value" th:text="${promotion.discountType}">Phần trăm</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-row">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <span class="info-label">Loại chương trình:</span>
+                                </div>
+                                <div class="col-md-9">
+                                    <span class="info-value" th:text="${promotion.promotionType}">Sản phẩm</span>
                                 </div>
                             </div>
                         </div>
@@ -116,17 +134,13 @@
                                     <span class="info-label">Trạng thái:</span>
                                 </div>
                                 <div class="col-md-9">
-                                    <span th:if="${promotion.status == 'Đang hoạt động'}" 
+                                    <span th:if="${promotion.isActive}" 
                                           class="badge bg-success status-badge">
                                         <i class="fas fa-check-circle me-1"></i>Đang hoạt động
                                     </span>
-                                    <span th:if="${promotion.status == 'Hết hạn'}" 
+                                    <span th:if="${!promotion.isActive}" 
                                           class="badge bg-secondary status-badge">
-                                        <i class="fas fa-clock me-1"></i>Hết hạn
-                                    </span>
-                                    <span th:if="${promotion.status == 'Sắp diễn ra'}" 
-                                          class="badge bg-warning status-badge">
-                                        <i class="fas fa-calendar me-1"></i>Sắp diễn ra
+                                        <i class="fas fa-times-circle me-1"></i>Không hoạt động
                                     </span>
                                 </div>
                             </div>
@@ -138,7 +152,7 @@
                                     <span class="info-label">Thời gian bắt đầu:</span>
                                 </div>
                                 <div class="col-md-9">
-                                    <span class="info-value" th:text="${promotion.validFrom}">2024-01-01 00:00:00</span>
+                                    <span class="info-value" th:text="${#temporals.format(promotion.validFrom, 'dd/MM/yyyy HH:mm')}">2024-01-01 00:00:00</span>
                                 </div>
                             </div>
                         </div>
@@ -149,7 +163,7 @@
                                     <span class="info-label">Thời gian kết thúc:</span>
                                 </div>
                                 <div class="col-md-9">
-                                    <span class="info-value" th:text="${promotion.validTo}">2024-12-31 23:59:59</span>
+                                    <span class="info-value" th:text="${#temporals.format(promotion.validTo, 'dd/MM/yyyy HH:mm')}">2024-12-31 23:59:59</span>
                                 </div>
                             </div>
                         </div>
@@ -160,18 +174,18 @@
                                     <span class="info-label">Số lượt sử dụng:</span>
                                 </div>
                                 <div class="col-md-9">
-                                    <span class="info-value" th:text="${promotion.usageCount}">156 lượt sử dụng</span>
+                                    <span class="info-value" th:text="${promotion.usageCount} + ' lượt'">156 lượt sử dụng</span>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="info-row">
                             <div class="row">
                                 <div class="col-md-3">
-                                    <span class="info-label">Tổng tiền giảm:</span>
+                                    <span class="info-label">Mô tả:</span>
                                 </div>
                                 <div class="col-md-9">
-                                    <span class="info-value fw-bold text-success fs-5" th:text="${promotion.totalDiscount}">2,500,000₫</span>
+                                    <span class="info-value" th:text="${promotion.description}">Chi tiết mô tả chương trình</span>
                                 </div>
                             </div>
                         </div>
@@ -190,15 +204,21 @@
                             <a th:href="@{'/admin/promotions/edit/' + ${promotion.id}}" class="btn btn-primary">
                                 <i class="fas fa-edit me-2"></i>Chỉnh sửa
                             </a>
-                            <button type="button" class="btn btn-warning">
-                                <i class="fas fa-power-off me-2"></i>Kích hoạt/Vô hiệu hóa
-                            </button>
+                            <form method="post" th:action="@{'/admin/promotions/toggle/' + ${promotion.id}}" style="display: inline;">
+                                <button type="submit" class="btn btn-warning w-100">
+                                    <i class="fas fa-power-off me-2"></i>
+                                    <span th:text="${promotion.isActive} ? 'Vô hiệu hóa' : 'Kích hoạt'">Kích hoạt/Vô hiệu hóa</span>
+                                </button>
+                            </form>
                             <a th:href="@{/admin/promotions/statistics}" class="btn btn-info">
                                 <i class="fas fa-chart-bar me-2"></i>Xem thống kê
                             </a>
-                            <button type="button" class="btn btn-danger">
-                                <i class="fas fa-trash me-2"></i>Xóa chương trình
-                            </button>
+                            <form method="post" th:action="@{'/admin/promotions/delete'}" style="display: inline;">
+                                <input type="hidden" name="id" th:value="${promotion.id}">
+                                <button type="submit" class="btn btn-danger w-100" onclick="return confirm('Bạn có chắc chắn muốn xóa chương trình này?');">
+                                    <i class="fas fa-trash me-2"></i>Xóa chương trình
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -212,13 +232,13 @@
                         <div class="row text-center">
                             <div class="col-6">
                                 <div class="border-end">
-                                    <h4 class="text-primary">156</h4>
+                                    <h4 class="text-primary" th:text="${promotion.usageCount}">156</h4>
                                     <small class="text-muted">Lượt sử dụng</small>
                                 </div>
                             </div>
                             <div class="col-6">
-                                <h4 class="text-success">2.5M₫</h4>
-                                <small class="text-muted">Tiền giảm</small>
+                                <h4 class="text-success" th:text="${promotion.discountValue}">2.5M₫</h4>
+                                <small class="text-muted">Giảm giá</small>
                             </div>
                         </div>
                     </div>
