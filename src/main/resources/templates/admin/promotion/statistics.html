@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thống kê chương trình khuyến mãi - UTE Fashion</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .stat-card.success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        .stat-card.warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .stat-card.info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 1rem 0;
+        }
+        .table-responsive {
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h2><i class="fas fa-chart-bar me-2"></i>Thống kê chương trình khuyến mãi</h2>
+            </div>
+            <div class="col-md-6 text-end">
+                <a th:href="@{/admin/promotions}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-1"></i>Quay lại danh sách
+                </a>
+                <button class="btn btn-success" onclick="exportToExcel()">
+                    <i class="fas fa-file-excel me-1"></i>Xuất Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div th:if="${error}" class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <span th:text="${error}"></span>
+        </div>
+
+        <!-- Message -->
+        <div class="alert alert-info" th:if="${message}">
+            <i class="fas fa-info-circle me-2"></i>
+            <span th:text="${message}"></span>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 th:text="${totalPromotions}">0</h3>
+                            <p class="mb-0">Tổng chương trình</p>
+                        </div>
+                        <i class="fas fa-percentage fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card success">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 th:text="${activePromotions}">0</h3>
+                            <p class="mb-0">Đang hoạt động</p>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card warning">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 th:text="${totalUsage}">0</h3>
+                            <p class="mb-0">Tổng lượt sử dụng</p>
+                        </div>
+                        <i class="fas fa-users fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card info">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 th:text="${totalDiscount}">0</h3>
+                            <p class="mb-0">Tổng tiền giảm (₫)</p>
+                        </div>
+                        <i class="fas fa-money-bill-wave fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row mt-4">
+            <!-- Usage Chart -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Lượt sử dụng theo tháng</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="usageChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Discount Chart -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Tiền giảm theo tháng</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="discountChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Promotions -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Top chương trình được sử dụng nhiều nhất</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Tên chương trình</th>
+                                        <th>Số lượt sử dụng</th>
+                                        <th>Tổng tiền giảm</th>
+                                        <th>Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="promotion, iterStat : ${statistics.topPromotions}">
+                                        <td th:text="${iterStat.index + 1}">1</td>
+                                        <td>
+                                            <a th:href="@{'/admin/promotions/' + ${promotion.id}}" 
+                                               th:text="${promotion.promotionName}">Tên chương trình</a>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary" th:text="${promotion.usageCount}">0</span>
+                                        </td>
+                                        <td th:text="${#numbers.formatDecimal(promotion.totalDiscount, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
+                                        <td>
+                                            <span class="badge bg-success">Hoạt động</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expiring Soon -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2 text-warning"></i>Chương trình sắp hết hạn</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Tên chương trình</th>
+                                        <th>Thời gian hết hạn</th>
+                                        <th>Số ngày còn lại</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="promotion : ${statistics.expiringSoon}">
+                                        <td>
+                                            <a th:href="@{'/admin/promotions/' + ${promotion.id}}" 
+                                               th:text="${promotion.promotionName}">Tên chương trình</a>
+                                        </td>
+                                        <td th:text="${#temporals.format(promotion.validTo, 'dd/MM/yyyy HH:mm')}">01/01/2024 23:59</td>
+                                        <td>
+                                            <span class="badge bg-warning" th:text="${#temporals.format(promotion.validTo, 'dd/MM/yyyy')}">Sắp hết hạn</span>
+                                        </td>
+                                        <td>
+                                            <a th:href="@{'/admin/promotions/edit/' + ${promotion.id}}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit me-1"></i>Chỉnh sửa
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div th:if="${!statistics}" class="text-center py-5">
+            <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">Chưa có dữ liệu thống kê</h4>
+            <p class="text-muted">Hãy tạo chương trình khuyến mãi để xem thống kê!</p>
+            <a th:href="@{/admin/promotions/new}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Tạo chương trình mới
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:if="${statistics}">
+        // Usage Chart
+        const usageData = /*[[${statistics.usageByMonth}]]*/ {};
+        const usageLabels = Object.keys(usageData).sort();
+        const usageValues = usageLabels.map(label => usageData[label] || 0);
+
+        const usageCtx = document.getElementById('usageChart').getContext('2d');
+        new Chart(usageCtx, {
+            type: 'line',
+            data: {
+                labels: usageLabels,
+                datasets: [{
+                    label: 'Lượt sử dụng',
+                    data: usageValues,
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Discount Chart
+        const discountData = /*[[${statistics.discountByMonth}]]*/ {};
+        const discountLabels = Object.keys(discountData).sort();
+        const discountValues = discountLabels.map(label => discountData[label] || 0);
+
+        const discountCtx = document.getElementById('discountChart').getContext('2d');
+        new Chart(discountCtx, {
+            type: 'bar',
+            data: {
+                labels: discountLabels,
+                datasets: [{
+                    label: 'Tiền giảm (₫)',
+                    data: discountValues,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + '₫';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Export to Excel function
+        function exportToExcel() {
+            // This would typically make an API call to generate Excel file
+            alert('Chức năng xuất Excel sẽ được triển khai trong phiên bản tiếp theo!');
+        }
+    </script>
+</body>
+</html>
