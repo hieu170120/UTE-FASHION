@@ -1,6 +1,7 @@
 package com.example.demo.dto;
 
 import lombok.Data;
+import java.math.BigDecimal;
 
 @Data
 public class ShopDTO {
@@ -11,4 +12,5 @@ public class ShopDTO {
     private String description;
     private String logoUrl;
     private boolean isActive;
+    private BigDecimal commissionPercentage;
 }

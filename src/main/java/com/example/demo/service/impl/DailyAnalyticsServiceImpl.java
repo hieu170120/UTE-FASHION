@@ -6,6 +6,8 @@ import com.example.demo.service.DailyAnalyticsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -14,6 +16,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class DailyAnalyticsServiceImpl implements DailyAnalyticsService {
+	
+	private static final Logger logger = LoggerFactory.getLogger(DailyAnalyticsServiceImpl.class);
 
     @Autowired
     private ShopAnalyticsRepository shopAnalyticsRepository;
@@ -76,12 +80,17 @@ public class DailyAnalyticsServiceImpl implements DailyAnalyticsService {
     }
 
     private void updateShopAnalytics(Integer shopId, LocalDate date, Order order) {
+        logger.info("🔵 [DailyAnalytics] updateShopAnalytics - START");
+        logger.info("   shopId: {}, orderDate: {}, orderId: {}", shopId, date, order.getId());
+        logger.info("   totalAmount: {}", order.getTotalAmount());
+        
         ShopAnalytics analytics = shopAnalyticsRepository.findAll().stream()
             .filter(a -> a.getShop() != null && a.getShop().getId().equals(shopId))
             .filter(a -> "DAY".equals(a.getPeriodType()))
             .filter(a -> date.equals(a.getPeriodStart()))
             .findFirst()
             .orElseGet(() -> {
+                logger.info("📍 [DailyAnalytics] Creating new ShopAnalytics record for date: {}", date);
                 ShopAnalytics newAnalytics = new ShopAnalytics();
                 newAnalytics.setShop(order.getShop());
                 newAnalytics.setPeriodType("DAY");
@@ -90,14 +99,60 @@ public class DailyAnalyticsServiceImpl implements DailyAnalyticsService {
                 newAnalytics.setTotalRevenue(BigDecimal.ZERO);
                 newAnalytics.setTotalOrders(0);
                 newAnalytics.setTotalViews(0);
+                newAnalytics.setCommissionPercentage(BigDecimal.ZERO);
+                newAnalytics.setCommissionAmount(BigDecimal.ZERO);
+                newAnalytics.setShopNetRevenue(BigDecimal.ZERO);
                 return newAnalytics;
             });
         
         // Add order revenue and increment order count
+        logger.info("📍 [DailyAnalytics] Adding order revenue and order count");
         analytics.setTotalRevenue(analytics.getTotalRevenue().add(order.getTotalAmount()));
         analytics.setTotalOrders(analytics.getTotalOrders() + 1);
         
+        // 🆕 TÍNH CHIẾT KHẤU
+        Shop shop = order.getShop();
+        if (shop != null && shop.getCommissionPercentage() != null) {
+            BigDecimal commissionPercentage = shop.getCommissionPercentage();
+            logger.info("📍 [DailyAnalytics] Calculating commission");
+            logger.info("   Commission %: {}", commissionPercentage);
+            
+            // Tính tiền chiết khấu cho đơn hàng này
+            BigDecimal commissionAmount = order.getTotalAmount()
+                .multiply(commissionPercentage)
+                .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+            
+            // Tính tiền shop thực nhận từ đơn hàng này
+            BigDecimal shopNetRevenue = order.getTotalAmount()
+                .subtract(commissionAmount);
+            
+            logger.info("✅ [DailyAnalytics] Commission calculated");
+            logger.info("   Total: {} → Commission: {} → Shop net: {}", 
+                       order.getTotalAmount(), commissionAmount, shopNetRevenue);
+            
+            // Cộng dồn vào ShopAnalytics
+            analytics.setCommissionPercentage(commissionPercentage);
+            analytics.setCommissionAmount(
+                (analytics.getCommissionAmount() != null ? 
+                 analytics.getCommissionAmount() : BigDecimal.ZERO)
+                .add(commissionAmount)
+            );
+            analytics.setShopNetRevenue(
+                (analytics.getShopNetRevenue() != null ? 
+                 analytics.getShopNetRevenue() : BigDecimal.ZERO)
+                .add(shopNetRevenue)
+            );
+            
+            logger.info("✅ [DailyAnalytics] ShopAnalytics updated");
+            logger.info("   Cumulative commission: {}", analytics.getCommissionAmount());
+            logger.info("   Cumulative shop net revenue: {}", analytics.getShopNetRevenue());
+        } else {
+            logger.warn("⚠️ [DailyAnalytics] Shop or commission percentage is NULL");
+        }
+        
+        logger.info("📍 [DailyAnalytics] Saving ShopAnalytics");
         shopAnalyticsRepository.save(analytics);
+        logger.info("✅ [DailyAnalytics] updateShopAnalytics - SUCCESS");
     }
 
     private void updateCategorySales(Integer shopId, LocalDate date, Order order) {

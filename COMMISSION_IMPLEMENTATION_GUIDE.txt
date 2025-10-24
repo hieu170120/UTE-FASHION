@@ -1,0 +1,242 @@
+================================================================================
+HƯỚNG DẪN TRIỂN KHAI CHỨC NĂNG QUẢN LÝ CHIẾT KHẤU (COMMISSION MANAGEMENT)
+================================================================================
+
+NGÀY: 24/10/2025
+NGƯỜI PHÁT TRIỂN: Admin / Hiếu
+TRẠNG THÁI: Hoàn tất
+
+================================================================================
+1. TỔNG QUAN CHỨC NĂNG
+================================================================================
+
+Chức năng "Quản lý chiết khấu" cho phép Admin thiết lập % chiết khấu cho từng 
+shop (cửa hàng). Chiết khấu này sẽ được sử dụng trong hệ thống thanh toán và 
+báo cáo doanh thu của shop.
+
+QUỀN TRUY CẬP: Chỉ Admin có thể cập nhật chiết khấu cho shop
+ENDPOINT API: PUT /admin/shops/{id}/commission
+
+================================================================================
+2. CÁC THAY ĐỔI TRONG CƠ SỞ DỮ LIỆU
+================================================================================
+
+2.1 Tạo cột mới trong bảng Shops:
+   - Tên cột: commission_percentage
+   - Kiểu dữ liệu: DECIMAL(5, 2)
+   - Giá trị mặc định: 0.00
+   - Không được NULL
+
+2.2 Migration file:
+   - Đường dẫn: database/migration_add_commission_percentage.sql
+   - Nội dung: Thêm cột commission_percentage vào bảng Shops
+   - Index: idx_shops_commission_percentage (tùy chọn, để tối ưu truy vấn)
+
+2.3 Thực hiện migration:
+   Chạy script sau trên database:
+   
+   ALTER TABLE Shops
+   ADD COLUMN commission_percentage DECIMAL(5, 2) DEFAULT 0.00 NOT NULL;
+
+================================================================================
+3. CÁC THAY ĐỔI TRONG BACKEND
+================================================================================
+
+3.1 ENTITY - src/main/java/com/example/demo/entity/Shop.java
+   - Thêm field: private BigDecimal commissionPercentage
+   - Annotation: @Column(name = "commission_percentage", precision = 5, scale = 2)
+   - Giá trị mặc định: new BigDecimal("0.00")
+
+3.2 DTO - src/main/java/com/example/demo/dto/ShopDTO.java
+   - Thêm field: private BigDecimal commissionPercentage
+   - Dùng @Data từ Lombok để tự động generate getter/setter
+
+3.3 DTO - src/main/java/com/example/demo/dto/CommissionRequest.java (ĐỌC)
+   - Lớp mới để nhận request từ client
+   - Fields: 
+     * commissionPercentage: BigDecimal (chiết khấu %)
+     * reason: String (lý do thay đổi - tùy chọn)
+
+3.4 SERVICE INTERFACE - src/main/java/com/example/demo/service/ShopService.java
+   - Thêm method: ShopDTO updateShopCommission(Integer shopId, BigDecimal commissionPercentage)
+
+3.5 SERVICE IMPL - src/main/java/com/example/demo/service/impl/ShopServiceImpl.java
+   - Implement updateShopCommission():
+     * Tìm shop theo ID
+     * Validate chiết khấu (0-100%)
+     * Cập nhật giá trị
+     * Lưu vào DB
+     * Trả về ShopDTO cập nhật
+   - Exception handling:
+     * ResourceNotFoundException: Nếu shop không tồn tại
+     * IllegalArgumentException: Nếu chiết khấu không hợp lệ
+
+3.6 CONTROLLER - src/main/java/com/example/demo/controller/admin/AdminController.java
+   - Endpoint: @PutMapping("/{id}/commission")
+   - URL: PUT /admin/shops/{id}/commission
+   - Request body: CommissionRequest (JSON)
+   - Response: ApiResponse {status, message, data}
+   - Xử lý lỗi: Trả về 400 (Bad Request) hoặc 500 (Internal Server Error)
+
+================================================================================
+4. CÁC THAY ĐỔI TRONG FRONTEND
+================================================================================
+
+4.1 Trang Danh sách Shop - src/main/resources/templates/admin/shops/list.html
+   - Thêm cột "Chiết khấu (%)" trong bảng
+   - Hiển thị giá trị commission_percentage dạng badge
+   - Thêm button "Chiết khấu" để mở modal
+
+4.2 Modal Cập nhật Chiết khấu
+   - ID: #commissionModal
+   - Fields:
+     * Tên Shop (read-only)
+     * Chiết khấu (%) - số input, range 0-100, step 0.01
+   - Buttons: "Hủy" và "Lưu"
+
+4.3 JavaScript
+   - Function openCommissionModal(): Mở modal và điền dữ liệu từ button
+   - Function saveCommission(): 
+     * Validate dữ liệu
+     * Gọi API PUT /admin/shops/{id}/commission
+     * Reload trang nếu thành công
+     * Hiển thị error message nếu thất bại
+
+================================================================================
+5. HƯỚNG DẪN SỬ DỤNG
+================================================================================
+
+5.1 Từ giao diện Admin:
+   1. Đăng nhập với tài khoản Admin
+   2. Vào menu "Quản lý Cửa hàng" → "Danh sách Shop"
+   3. Nhấn nút "Chiết khấu" trên hàng của shop cần cập nhật
+   4. Nhập % chiết khấu mong muốn (0-100)
+   5. Nhấn "Lưu"
+   6. Chờ thông báo thành công và trang sẽ reload
+
+5.2 Từ API (curl):
+   curl -X PUT http://localhost:8080/admin/shops/1/commission \
+     -H "Content-Type: application/json" \
+     -d '{"commissionPercentage": 15.50, "reason": "Tăng để khuyến khích"}'
+
+5.3 Từ API (Postman):
+   - Method: PUT
+   - URL: http://localhost:8080/admin/shops/{id}/commission
+   - Header: Content-Type: application/json
+   - Body (raw JSON):
+     {
+       "commissionPercentage": 15.50,
+       "reason": "Lý do tùy chọn"
+     }
+
+================================================================================
+6. VALIDATION & ERROR HANDLING
+================================================================================
+
+6.1 Validation Rules:
+   - commissionPercentage phải >= 0%
+   - commissionPercentage phải <= 100%
+   - Shop phải tồn tại
+
+6.2 HTTP Status Code:
+   - 200 OK: Cập nhật thành công
+   - 400 Bad Request: Chiết khấu không hợp lệ
+   - 404 Not Found: Shop không tồn tại (tùy tuỳ)
+   - 500 Internal Server Error: Lỗi server
+
+6.3 Response Format:
+   Success (200):
+   {
+     "status": "success",
+     "message": "Cập nhật chiết khấu thành công",
+     "data": {
+       "id": 1,
+       "shopName": "Shop A",
+       "commissionPercentage": 15.50,
+       ...
+     }
+   }
+
+   Error (400):
+   {
+     "status": "error",
+     "message": "Chiết khấu phải nằm trong khoảng 0-100%",
+     "data": null
+   }
+
+================================================================================
+7. CÁCH SỬ DỤNG CHO DEVELOPERS
+================================================================================
+
+7.1 Inject Service:
+   @Autowired
+   private ShopService shopService;
+
+7.2 Gọi Service:
+   BigDecimal commission = new BigDecimal("15.50");
+   ShopDTO updatedShop = shopService.updateShopCommission(shopId, commission);
+
+7.3 Xử lý Exception:
+   try {
+       ShopDTO updatedShop = shopService.updateShopCommission(shopId, commission);
+   } catch (ResourceNotFoundException ex) {
+       // Shop không tìm thấy
+   } catch (IllegalArgumentException ex) {
+       // Chiết khấu không hợp lệ
+   }
+
+================================================================================
+8. TEST CASES
+================================================================================
+
+8.1 Test Case 1: Cập nhật chiết khấu hợp lệ
+   - Input: shopId=1, commission=15.50
+   - Expected: Cập nhật thành công, trả về 200 OK
+
+8.2 Test Case 2: Chiết khấu âm
+   - Input: shopId=1, commission=-5.00
+   - Expected: Trả về 400 Bad Request
+
+8.3 Test Case 3: Chiết khấu > 100%
+   - Input: shopId=1, commission=150.00
+   - Expected: Trả về 400 Bad Request
+
+8.4 Test Case 4: Shop không tồn tại
+   - Input: shopId=9999, commission=15.50
+   - Expected: Trả về 404 hoặc 500
+
+8.5 Test Case 5: Cập nhật thành 0%
+   - Input: shopId=1, commission=0.00
+   - Expected: Cập nhật thành công
+
+================================================================================
+9. CÓ THỂ MỞ RỘNG TRONG TƯƠNG LAI
+================================================================================
+
+9.1 Thêm loại chiết khấu khác nhau:
+   - Chiết khấu theo danh mục sản phẩm
+   - Chiết khấu theo đơn hàng
+   - Chiết khấu theo khách hàng
+
+9.2 Lịch sử thay đổi chiết khấu:
+   - Bảng CommissionHistory
+   - Log ai, khi nào, thay đổi từ bao nhiêu sang bao nhiêu
+
+9.3 Tính toán tự động:
+   - Tính chiết khấu dựa trên hiệu suất shop
+   - Tự động điều chỉnh theo từng kỳ
+
+9.4 Report & Analytics:
+   - Báo cáo chiết khấu hàng tháng
+   - So sánh hiệu suất các shop với cùng mức chiết khấu
+
+================================================================================
+10. LIÊN HỆ & HỖ TRỢ
+================================================================================
+
+Nếu có bất kỳ câu hỏi hoặc vấn đề, vui lòng liên hệ:
+- Hiếu: [admin.hiều]
+- Email: [admin-email]
+- Slack: #development
+
+================================================================================

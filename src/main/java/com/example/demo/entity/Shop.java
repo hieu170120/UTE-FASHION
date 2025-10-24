@@ -1,5 +1,6 @@
 package com.example.demo.entity;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -49,6 +50,9 @@ public class Shop {
 
 	@Column(name = "is_active")
 	private boolean isActive = false;
+
+	@Column(name = "commission_percentage", precision = 5, scale = 2)
+	private BigDecimal commissionPercentage = new BigDecimal("0.00");
 
 	@OneToMany(mappedBy = "shop", cascade = CascadeType.ALL, orphanRemoval = true)
 	private Set<Product> products;
