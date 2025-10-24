@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title>Quản lý chương trình khuyến mãi - UTE Fashion</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .promotion-card {
+            transition: transform 0.2s;
+        }
+        .promotion-card:hover {
+            transform: translateY(-2px);
+        }
+        .filter-section {
+            background: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .btn-lg {
+            padding: 0.75rem 1.5rem;
+            font-size: 1.1rem;
+            border-radius: 0.5rem;
+        }
+        .table th {
+            background-color: #343a40;
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+        .table td {
+            vertical-align: middle;
+            padding: 1rem 0.75rem;
+        }
+        .btn-group .btn {
+            margin-right: 0.25rem;
+        }
+        .btn-group .btn:last-child {
+            margin-right: 0;
+        }
+        /* Navbar Styles */
+        .navbar-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1.5rem 2rem;
+            border-radius: 0.75rem;
+            color: white;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-header .nav-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+        }
+        .navbar-header .nav-back {
+            flex: 0 0 auto;
+            min-width: 100px;
+        }
+        .navbar-header .nav-title {
+            flex: 1;
+            text-align: center;
+            margin: 0;
+            font-weight: 700;
+            font-size: 1.8rem;
+            white-space: nowrap;
+        }
+        .navbar-header .nav-actions {
+            flex: 0 0 auto;
+            display: flex;
+            gap: 0.75rem;
+        }
+        .navbar-header .btn {
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .navbar-header .btn-light {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: none;
+            color: #667eea;
+        }
+        .navbar-header .btn-light:hover {
+            background-color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .navbar-header .btn-success {
+            background-color: #28a745;
+            border: none;
+            color: white;
+        }
+        .navbar-header .btn-success:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+        .navbar-header .btn-info {
+            background-color: #17a2b8;
+            border: none;
+            color: white;
+        }
+        .navbar-header .btn-info:hover {
+            background-color: #138496;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-4">
+        <!-- Enhanced Navbar Header -->
+        <div class="navbar-header">
+            <div class="nav-controls">
+                <!-- Back Button -->
+                <div class="nav-back">
+                    <a th:href="@{/admin/dashboard}" class="btn btn-light" title="Quay lại Dashboard">
+                        <i class="fas fa-arrow-left me-2"></i>Quay lại
+                    </a>
+                </div>
+                
+                <!-- Title Center -->
+                <h2 class="nav-title">
+                    <i class="fas fa-percentage me-2"></i>Quản lý chương trình khuyến mãi
+                </h2>
+                
+                <!-- Action Buttons -->
+                <div class="nav-actions">
+                    <a th:href="@{/admin/promotions/new}" class="btn btn-success" title="Tạo chương trình khuyến mãi mới">
+                        <i class="fas fa-plus me-2"></i>Tạo mới
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <form method="get" th:action="@{/admin/promotions}">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Tìm kiếm</label>
+                        <input type="text" class="form-control" name="search" th:value="${searchQuery}" 
+                               placeholder="Tên chương trình...">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Trạng thái</label>
+                        <select class="form-select" name="isActive">
+                            <option value="">Tất cả</option>
+                            <option value="true" th:selected="${isActiveFilter == true}">Đang hoạt động</option>
+                            <option value="false" th:selected="${isActiveFilter == false}">Không hoạt động</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Loại</label>
+                        <select class="form-select" name="promotionType">
+                            <option value="">Tất cả</option>
+                            <option th:each="type : ${promotionTypes}" 
+                                    th:value="${type.name()}" 
+                                    th:text="${type.displayName}"
+                                    th:selected="${promotionTypeFilter == type.name()}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-outline-primary d-block w-100">
+                            <i class="fas fa-search me-1"></i>Tìm kiếm
+                        </button>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <a th:href="@{/admin/promotions}" class="btn btn-outline-secondary d-block w-100">
+                            <i class="fas fa-times me-1"></i>Xóa bộ lọc
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Alert Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+
+        <!-- Message -->
+        <div class="alert alert-info" th:if="${message}">
+            <i class="fas fa-info-circle me-2"></i>
+            <span th:text="${message}"></span>
+        </div>
+
+        <!-- Promotions List -->
+        <div class="row" th:if="${promotions != null and !promotions.isEmpty()}">
+            <div class="col-12">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Mã chương trình</th>
+                                <th>Tên chương trình</th>
+                                <th>Giảm giá</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="promotion : ${promotions}" class="promotion-card">
+                                <td>
+                                    <strong th:text="${promotion.id}"></strong>
+                                </td>
+                                <td>
+                                    <strong th:text="'PROMO' + ${promotion.id}"></strong>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong th:utext="${promotion.promotionName}"></strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-danger" th:text="${promotion.discountValue} + (${promotion.discountType == 'PERCENTAGE'} ? '%' : '₫')"></span>
+                                </td>
+                                <td>
+                                    <span th:if="${promotion.isActive}" 
+                                          class="badge bg-success status-badge">
+                                        <i class="fas fa-check-circle me-1"></i>Đang hoạt động
+                                    </span>
+                                    <span th:if="${!promotion.isActive}" 
+                                          class="badge bg-secondary status-badge">
+                                        <i class="fas fa-times-circle me-1"></i>Không hoạt động
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a th:href="@{'/admin/promotions/' + ${promotion.id}}" 
+                                           class="btn btn-sm btn-outline-info" title="Xem chi tiết">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a th:href="@{'/admin/promotions/edit/' + ${promotion.id}}" 
+                                           class="btn btn-sm btn-outline-primary" title="Chỉnh sửa">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-warning toggle-status" 
+                                                th:data-id="${promotion.id}"
+                                                th:data-active="${promotion.isActive}"
+                                                title="Kích hoạt/Vô hiệu hóa">
+                                            <i class="fas fa-power-off"></i>
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-danger delete-promotion" 
+                                                th:data-id="${promotion.id}"
+                                                th:data-name="${promotion.promotionName}"
+                                                title="Xóa">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination info -->
+                <div class="text-center mt-4">
+                    <a th:href="@{/admin/promotions/new}" class="btn btn-success btn-lg mb-3">
+                        <i class="fas fa-plus me-2"></i>Tạo chương trình khuyến mãi mới
+                    </a>
+                    <div>
+                        <small class="text-muted">
+                            Hiển thị <span th:text="${#lists.size(promotions)}">0</span> chương trình khuyến mãi
+                            <span th:if="${searchQuery != null and !searchQuery.isEmpty()}" 
+                                  th:text="' (tìm kiếm: &quot;' + ${searchQuery} + '&quot;)'"></span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div th:if="${promotions == null or promotions.isEmpty()}" class="text-center py-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body py-5">
+                    <i class="fas fa-percentage fa-4x text-primary mb-4"></i>
+                    <h3 class="text-muted mb-3">Chưa có chương trình khuyến mãi nào</h3>
+                    <p class="text-muted mb-4">Hãy tạo chương trình khuyến mãi đầu tiên để bắt đầu thu hút khách hàng!</p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <a th:href="@{/admin/promotions/new}" class="btn btn-success btn-lg">
+                            <i class="fas fa-plus me-2"></i>Tạo chương trình mới
+                        </a>
+                        <a th:href="@{/admin/promotions/statistics}" class="btn btn-outline-info">
+                            <i class="fas fa-chart-bar me-1"></i>Xem thống kê
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Xác nhận xóa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Bạn có chắc chắn muốn xóa chương trình khuyến mãi <strong id="deletePromotionName"></strong>?</p>
+                    <p class="text-danger"><small>Hành động này không thể hoàn tác!</small></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <form th:action="@{/admin/promotions/delete}" method="post" style="display: inline;">
+                        <input type="hidden" id="deletePromotionId" name="id">
+                        <button type="submit" class="btn btn-danger">Xóa</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Delete confirmation
+        document.querySelectorAll('.delete-promotion').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const name = this.getAttribute('data-name');
+                document.getElementById('deletePromotionId').value = id;
+                document.getElementById('deletePromotionName').textContent = name;
+                new bootstrap.Modal(document.getElementById('deleteModal')).show();
+            });
+        });
+
+        // Toggle status
+        document.querySelectorAll('.toggle-status').forEach(button => {
+            button.addEventListener('click', function() {
+                console.log('========== TOGGLE STATUS BUTTON CLICKED ==========');
+                
+                const id = this.getAttribute('data-id');
+                const isActive = this.getAttribute('data-active') === 'true';
+                
+                console.log('Promotion ID:', id);
+                console.log('Current Status:', isActive ? 'ACTIVE' : 'INACTIVE');
+                console.log('New Status will be:', !isActive ? 'ACTIVE' : 'INACTIVE');
+                console.log('');
+                
+                const message = isActive 
+                    ? 'Bạn có chắc chắn muốn vô hiệu hóa chương trình này?' 
+                    : 'Bạn có chắc chắn muốn kích hoạt chương trình này?';
+                
+                console.log('Showing confirmation dialog...');
+                
+                if (confirm(message)) {
+                    console.log('✅ USER CONFIRMED');
+                    console.log('Creating hidden form for POST submission...');
+                    
+                    // Get CSRF token
+                    const csrfToken = document.querySelector('meta[name="_csrf"]');
+                    const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
+                    
+                    console.log('CSRF Token found:', csrfToken ? 'YES' : 'NO');
+                    console.log('CSRF Header found:', csrfHeader ? 'YES' : 'NO');
+                    
+                    // Tạo form ẩn để submit
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/UTE_Fashion/admin/promotions/toggle/' + id;
+                    form.style.display = 'none';
+                    
+                    console.log('Form created:');
+                    console.log('  Method:', form.method);
+                    console.log('  Action:', form.action);
+                    
+                    // Add CSRF token if available
+                    if (csrfToken && csrfHeader) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = csrfHeader.getAttribute('content');
+                        input.value = csrfToken.getAttribute('content');
+                        form.appendChild(input);
+                        console.log('✅ CSRF token added to form:');
+                        console.log('  Header Name:', input.name);
+                        console.log('  Token Value length:', input.value ? input.value.length : 0);
+                    } else {
+                        console.warn('⚠️  CSRF token not found in meta tags - form may fail with 403');
+                    }
+                    
+                    document.body.appendChild(form);
+                    console.log('Form appended to document body');
+                    
+                    console.log('');
+                    console.log('*** SUBMITTING FORM ***');
+                    console.log('Waiting for server response...');
+                    
+                    form.submit();
+                    console.log('Form submitted');
+                } else {
+                    console.log('❌ USER CANCELLED');
+                    console.log('No action taken');
+                }
+                
+                console.log('==========================================');
+                console.log('');
+            });
+        });
+    </script>
+</body>
+</html>

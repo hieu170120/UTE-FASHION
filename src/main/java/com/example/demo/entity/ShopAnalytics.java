@@ -46,6 +46,16 @@ public class ShopAnalytics {
     @Column(name = "growth_percent", precision = 5, scale = 2)
     private BigDecimal growthPercent; // % tăng trưởng so với kỳ trước
 
+    // 🆕 COMMISSION FIELDS
+    @Column(name = "commission_percentage", precision = 5, scale = 2)
+    private BigDecimal commissionPercentage = BigDecimal.ZERO;
+
+    @Column(name = "commission_amount", precision = 18, scale = 2)
+    private BigDecimal commissionAmount = BigDecimal.ZERO;
+
+    @Column(name = "shop_net_revenue", precision = 18, scale = 2)
+    private BigDecimal shopNetRevenue = BigDecimal.ZERO;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

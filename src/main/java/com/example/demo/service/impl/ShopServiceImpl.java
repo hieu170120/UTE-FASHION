@@ -13,12 +13,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class ShopServiceImpl implements ShopService {
+	
+	private static final Logger logger = LoggerFactory.getLogger(ShopServiceImpl.class);
 
     @Autowired
     private ShopRepository shopRepository;
@@ -77,6 +81,55 @@ public class ShopServiceImpl implements ShopService {
         }
         shopRepository.deleteById(id);
     }
+    
+    @Override
+    @Transactional
+    public ShopDTO updateShopCommission(Integer shopId, java.math.BigDecimal commissionPercentage) {
+        logger.info("🔵 [ShopServiceImpl] updateShopCommission - START");
+        logger.info("   shopId: {}, newCommission: {}", shopId, commissionPercentage);
+        
+        try {
+            logger.info("📍 [ShopServiceImpl] Finding shop with id: {}", shopId);
+            Shop existingShop = shopRepository.findById(shopId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Shop not found with id: " + shopId));
+            logger.info("✅ [ShopServiceImpl] Found shop: {}", existingShop.getShopName());
+            
+            // Validate commission percentage
+            logger.info("📍 [ShopServiceImpl] Validating commission percentage: {}", commissionPercentage);
+            if (commissionPercentage.compareTo(java.math.BigDecimal.ZERO) < 0 || 
+                commissionPercentage.compareTo(new java.math.BigDecimal("100")) > 0) {
+                logger.error("❌ [ShopServiceImpl] Invalid commission percentage: {}. Must be 0-100", commissionPercentage);
+                throw new IllegalArgumentException("Chiết khấu phải nằm trong khoảng 0-100%");
+            }
+            logger.info("✅ [ShopServiceImpl] Commission percentage is valid");
+            
+            // Update commission
+            logger.info("📍 [ShopServiceImpl] Setting new commission from {} to {}", 
+                       existingShop.getCommissionPercentage(), commissionPercentage);
+            existingShop.setCommissionPercentage(commissionPercentage);
+            
+            // Save to database
+            logger.info("📍 [ShopServiceImpl] Saving shop to database");
+            Shop updatedShop = shopRepository.save(existingShop);
+            logger.info("✅ [ShopServiceImpl] Shop saved successfully. Commission is now: {}", 
+                       updatedShop.getCommissionPercentage());
+            
+            // Convert to DTO
+            ShopDTO resultDTO = modelMapper.map(updatedShop, ShopDTO.class);
+            logger.info("✅ [ShopServiceImpl] updateShopCommission - SUCCESS");
+            
+            return resultDTO;
+        } catch (ResourceNotFoundException e) {
+            logger.error("❌ [ShopServiceImpl] ResourceNotFoundException: {}", e.getMessage());
+            throw e;
+        } catch (IllegalArgumentException e) {
+            logger.error("❌ [ShopServiceImpl] IllegalArgumentException: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("❌ [ShopServiceImpl] Unexpected Exception: {}", e.getMessage());
+            logger.error("   Full stack trace:", e);
+            throw new RuntimeException("Error updating shop commission: " + e.getMessage(), e);
+        }
 
     @Override
     @Transactional(readOnly = true)

@@ -79,10 +79,13 @@
         .status-pending { background: #fff4e5; color: #ffa726; }
         .status-delivered { background: #e8f5e9; color: #00c853; }
         .funnel-visual { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
-        .funnel-step { display: flex; align-items: center; gap: 12px; }
-        .funnel-bar { height: 32px; border-radius: 6px; display: flex; align-items: center; padding: 0 12px; color: white; font-weight: 600; font-size: 13px; transition: all 0.3s; cursor: pointer; }
+        .funnel-step { display: flex; align-items: center; gap: 12px; position: relative; }
+        .funnel-step-container { flex: 1; position: relative; display: flex; align-items: center; }
+        .funnel-bar { height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: flex-start; color: white; font-weight: 600; font-size: 13px; transition: all 0.3s; cursor: pointer; white-space: nowrap; padding: 0 12px; min-width: 60px; position: relative; }
         .funnel-bar:hover { transform: translateX(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .funnel-percent { font-size: 11px; color: #999; min-width: 40px; }
+        .funnel-bar-label { color: white; z-index: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+        .funnel-bar-label-outside { position: absolute; left: 0; top: 50%; transform: translateY(-50%); color: #666; font-weight: 600; white-space: nowrap; font-size: 13px; padding-left: 12px; }
+        .funnel-percent { font-size: 11px; color: #999; min-width: 50px; flex-shrink: 0; text-align: right; }
         .back-btn { display: inline-block; padding: 10px 20px; background: #666; color: white; text-decoration: none; border-radius: 8px; margin-bottom: 20px; transition: all 0.2s; }
         .back-btn:hover { background: #444; transform: translateY(-2px); }
         .chart-tooltip { position: absolute; background: rgba(0,0,0,0.9); color: white; padding: 12px 16px; border-radius: 8px; font-size: 13px; pointer-events: none; opacity: 0; transition: opacity 0.2s; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
@@ -164,6 +167,7 @@
                     <span class="change-text">so với tuần trước</span>
                 </div>
             </div>
+            
         </div>
 
         <!-- Middle Row -->
@@ -379,34 +383,127 @@
                         <div class="metric-value" th:text="${#numbers.formatInteger(report.conversionFunnel.completedCount, 0, 'COMMA')}">0</div>
                         <span class="metric-change change-green" th:text="'+' + ${#numbers.formatDecimal(report.conversionFunnel.completedChange, 0, 'COMMA', 0, 'POINT')} + '%'">+0%</span>
                     </div>
+                    <div class="metric-box" style="background: #ffebee;">
+                        <div class="metric-label" style="color: #ff5252;">Đơn Trả Hàng</div>
+                        <div class="metric-value" style="color: #ff5252;" th:text="${#numbers.formatInteger(report.conversionFunnel.returnedCount, 0, 'COMMA')}">0</div>
+                        <span class="metric-change change-red" th:text="${#numbers.formatDecimal(report.conversionFunnel.returnedPercent, 0, 'COMMA', 1, 'POINT')} + '%'">0%</span>
+                    </div>
+                    <div class="metric-box" style="background: #ffebee;">
+                        <div class="metric-label" style="color: #ff5252;">Đơn Bị Hủy</div>
+                        <div class="metric-value" style="color: #ff5252;" th:text="${#numbers.formatInteger(report.conversionFunnel.cancelledCount, 0, 'COMMA')}">0</div>
+                        <span class="metric-change change-red" th:text="${#numbers.formatDecimal(report.conversionFunnel.cancelledPercent, 0, 'COMMA', 1, 'POINT')} + '%'">0%</span>
+                    </div>
                 </div>
                 <div class="funnel-visual">
+                    <!-- View (100%) -->
                     <div class="funnel-step">
-                        <div class="funnel-bar" style="width: 100%; background: #ff8c42;" th:text="'Xem SP: ' + ${#numbers.formatInteger(report.conversionFunnel.viewCount, 0, 'COMMA')}">Xem SP: 0</div>
+                        <div class="funnel-step-container">
+                            <div class="funnel-bar" style="width: 100%; background: #ff8c42;">
+                                <span class="funnel-bar-label" th:text="'Xem SP: ' + ${#numbers.formatInteger(report.conversionFunnel.viewCount, 0, 'COMMA')}">Xem SP: 24</span>
+                            </div>
+                        </div>
                         <span class="funnel-percent">100%</span>
                     </div>
+                    
+                    <!-- Add to Cart -->
                     <div class="funnel-step" th:with="cartPercent=${report.conversionFunnel.viewCount > 0 ? T(java.lang.Math).min(100.0, (report.conversionFunnel.addToCartCount * 100.0 / report.conversionFunnel.viewCount)) : 0.0}">
-                        <div class="funnel-bar" style="background: #ffb366;" 
-                             th:style="'width: ' + ${cartPercent} + '%; background: #ffb366; margin-left: ' + ${(100 - cartPercent) / 2} + '%; max-width: 100%;'"
-                             th:text="'Giỏ Hàng: ' + ${#numbers.formatInteger(report.conversionFunnel.addToCartCount, 0, 'COMMA')}">Giỏ: 0</div>
-                        <span class="funnel-percent" th:text="${#numbers.formatDecimal(cartPercent, 0, 'COMMA', 0, 'POINT')} + '%'">0%</span>
+                        <div class="funnel-step-container" style="position: relative;">
+                            <div class="funnel-bar" style="background: #ffb366;" 
+                                 th:style="'width: ' + ${T(java.lang.Math).min(100.0, cartPercent)} + '%; background: #ffb366;'">
+                                <span class="funnel-bar-label" th:if="${cartPercent >= 15}" th:text="'Giỏ Hàng: ' + ${#numbers.formatInteger(report.conversionFunnel.addToCartCount, 0, 'COMMA')}">Giỏ: 2</span>
+                            </div>
+                            <span class="funnel-bar-label-outside" th:if="${cartPercent < 15}" th:text="'Giỏ Hàng: ' + ${#numbers.formatInteger(report.conversionFunnel.addToCartCount, 0, 'COMMA')}">Giỏ: 2</span>
+                        </div>
+                        <span class="funnel-percent" th:text="${#numbers.formatDecimal(T(java.lang.Math).min(100.0, cartPercent), 0, 'COMMA', 0, 'POINT')} + '%'">8%</span>
                     </div>
+                    
+                    <!-- Checkout -->
                     <div class="funnel-step" th:with="checkoutPercent=${report.conversionFunnel.viewCount > 0 ? T(java.lang.Math).min(100.0, (report.conversionFunnel.checkoutCount * 100.0 / report.conversionFunnel.viewCount)) : 0.0}">
-                        <div class="funnel-bar" style="background: #ffd4a8;" 
-                             th:style="'width: ' + ${checkoutPercent} + '%; background: #ffd4a8; margin-left: ' + ${(100 - checkoutPercent) / 2} + '%; max-width: 100%;'"
-                             th:text="'Thanh Toán: ' + ${#numbers.formatInteger(report.conversionFunnel.checkoutCount, 0, 'COMMA')}">TT: 0</div>
-                        <span class="funnel-percent" th:text="${#numbers.formatDecimal(checkoutPercent, 0, 'COMMA', 0, 'POINT')} + '%'">0%</span>
+                        <div class="funnel-step-container" style="position: relative;">
+                            <div class="funnel-bar" style="background: #ffd4a8;" 
+                                 th:style="'width: ' + ${T(java.lang.Math).min(100.0, checkoutPercent)} + '%; background: #ffd4a8; color: #666;'">
+                                <span class="funnel-bar-label" th:if="${checkoutPercent >= 15}" th:style="'color: #666; text-shadow: none;'" th:text="'Thanh Toán: ' + ${#numbers.formatInteger(report.conversionFunnel.checkoutCount, 0, 'COMMA')}">TT: 0</span>
+                            </div>
+                            <span class="funnel-bar-label-outside" th:if="${checkoutPercent < 15}" th:text="'Thanh Toán: ' + ${#numbers.formatInteger(report.conversionFunnel.checkoutCount, 0, 'COMMA')}">TT: 0</span>
+                        </div>
+                        <span class="funnel-percent" th:text="${#numbers.formatDecimal(T(java.lang.Math).min(100.0, checkoutPercent), 0, 'COMMA', 0, 'POINT')} + '%'">0%</span>
                     </div>
+                    
+                    <!-- Completed -->
                     <div class="funnel-step" th:with="completedPercent=${report.conversionFunnel.viewCount > 0 ? T(java.lang.Math).min(100.0, (report.conversionFunnel.completedCount * 100.0 / report.conversionFunnel.viewCount)) : 0.0}">
-                        <div class="funnel-bar" style="background: #ffe8d6;" 
-                             th:style="'width: ' + ${completedPercent} + '%; background: #ffe8d6; margin-left: ' + ${(100 - completedPercent) / 2} + '%; max-width: 100%;'"
-                             th:text="'Hoàn Thành: ' + ${#numbers.formatInteger(report.conversionFunnel.completedCount, 0, 'COMMA')}">HT: 0</div>
-                        <span class="funnel-percent" th:text="${#numbers.formatDecimal(completedPercent, 0, 'COMMA', 0, 'POINT')} + '%'">0%</span>
+                        <div class="funnel-step-container" style="position: relative;">
+                            <div class="funnel-bar" style="background: #ffe8d6;" 
+                                 th:style="'width: ' + ${T(java.lang.Math).min(100.0, completedPercent)} + '%; background: #ffe8d6; color: #666;'">
+                                <span class="funnel-bar-label" th:if="${completedPercent >= 20}" th:style="'color: #666; text-shadow: none;'" th:text="'Hoàn Thành: ' + ${#numbers.formatInteger(report.conversionFunnel.completedCount, 0, 'COMMA')}">HT: 8</span>
+                            </div>
+                            <span class="funnel-bar-label-outside" th:if="${completedPercent < 20}" th:text="'Hoàn Thành: ' + ${#numbers.formatInteger(report.conversionFunnel.completedCount, 0, 'COMMA')}">HT: 8</span>
+                        </div>
+                        <span class="funnel-percent" th:text="${#numbers.formatDecimal(T(java.lang.Math).min(100.0, completedPercent), 0, 'COMMA', 0, 'POINT')} + '%'">33%</span>
+                    </div>
+                    
+                    <!-- Returned -->
+                    <div class="funnel-step" th:with="returnedPercent=${report.conversionFunnel.viewCount > 0 ? T(java.lang.Math).min(100.0, (report.conversionFunnel.returnedCount * 100.0 / report.conversionFunnel.viewCount)) : 0.0}">
+                        <div class="funnel-step-container" style="position: relative;">
+                            <div class="funnel-bar" style="background: #ff5252;" 
+                                 th:style="'width: ' + ${T(java.lang.Math).min(100.0, returnedPercent)} + '%; background: #ff5252;'">
+                                <span class="funnel-bar-label" th:if="${returnedPercent >= 15}" th:text="'Trả Hàng: ' + ${#numbers.formatInteger(report.conversionFunnel.returnedCount, 0, 'COMMA')}">TH: 3</span>
+                            </div>
+                            <span class="funnel-bar-label-outside" th:if="${returnedPercent < 15}" th:text="'Trả Hàng: ' + ${#numbers.formatInteger(report.conversionFunnel.returnedCount, 0, 'COMMA')}">TH: 3</span>
+                        </div>
+                        <span class="funnel-percent" th:text="${#numbers.formatDecimal(T(java.lang.Math).min(100.0, returnedPercent), 0, 'COMMA', 1, 'POINT')} + '%'">12.5%</span>
+                    </div>
+                    
+                    <!-- Cancelled -->
+                    <div class="funnel-step" th:with="cancelledPercent=${report.conversionFunnel.viewCount > 0 ? T(java.lang.Math).min(100.0, (report.conversionFunnel.cancelledCount * 100.0 / report.conversionFunnel.viewCount)) : 0.0}">
+                        <div class="funnel-step-container" style="position: relative;">
+                            <div class="funnel-bar" style="background: #bdbdbd;" 
+                                 th:style="'width: ' + ${T(java.lang.Math).min(100.0, cancelledPercent)} + '%; background: #bdbdbd;'">
+                                <span class="funnel-bar-label" th:if="${cancelledPercent >= 15}" th:text="'Bị Hủy: ' + ${#numbers.formatInteger(report.conversionFunnel.cancelledCount, 0, 'COMMA')}">BH: 5</span>
+                            </div>
+                            <span class="funnel-bar-label-outside" th:if="${cancelledPercent < 15}" th:text="'Bị Hủy: ' + ${#numbers.formatInteger(report.conversionFunnel.cancelledCount, 0, 'COMMA')}">BH: 5</span>
+                        </div>
+                        <span class="funnel-percent" th:text="${#numbers.formatDecimal(T(java.lang.Math).min(100.0, cancelledPercent), 0, 'COMMA', 1, 'POINT')} + '%'">20.8%</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Recent Orders -->
+            <!-- High Stock Products -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">📦 Sản Phẩm Tồn Kho Cao</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sản Phẩm</th>
+                            <th>Tồn Kho</th>
+                            <th>Đã Bán</th>
+                            <th>Giá Trị Tồn</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${report.highStockProducts == null || report.highStockProducts.isEmpty()}">
+                            <td colspan="4" style="text-align: center; padding: 30px; color: #999;">🎉 Không có sản phẩm tồn kho cao</td>
+                        </tr>
+                        <tr th:each="product : ${report.highStockProducts}">
+                            <td><strong th:text="${product.productName}">Product</strong></td>
+                            <td>
+                                <span style="background: #ffebee; color: #ff5252; padding: 4px 10px; border-radius: 4px; font-weight: 600;" 
+                                      th:text="${product.stockQuantity}">0</span>
+                            </td>
+                            <td th:text="${product.soldQuantity}">0</td>
+                            <td>
+                                <span style="color: #ff5252; font-weight: 600;" 
+                                      th:text="${#numbers.formatDecimal(product.stockValue / 1000000, 0, 'COMMA', 1, 'POINT')} + 'M₫'">₫0M</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Recent Orders Row -->
+        <div style="margin-top: 20px;">
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Đơn Hàng Gần Đây</h3>
