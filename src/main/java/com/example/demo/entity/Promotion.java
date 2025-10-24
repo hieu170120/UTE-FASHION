@@ -155,6 +155,12 @@ public class Promotion {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
+    public List<PromotionRule> getRules() { return rules; }
+    public void setRules(List<PromotionRule> rules) { this.rules = rules; }
+
+    public List<PromotionUsage> getUsages() { return usages; }
+    public void setUsages(List<PromotionUsage> usages) { this.usages = usages; }
+
     // Quan hệ với PromotionRule
     @OneToMany(mappedBy = "promotion", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<PromotionRule> rules;
