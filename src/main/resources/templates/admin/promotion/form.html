@@ -912,9 +912,8 @@
                 console.log('Setting default values for new promotion');
                 if (!validFromInput.value) {
                     const now = new Date();
-                    now.setHours(now.getHours() + 1);
                     validFromInput.value = formatDatetimeLocal(now);
-                    console.log('Set validFrom to +1 hour:', validFromInput.value);
+                    console.log('Set validFrom to current time:', validFromInput.value);
                 }
                 if (!validToInput.value) {
                     const later = new Date();

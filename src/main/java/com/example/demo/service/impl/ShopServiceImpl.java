@@ -128,7 +128,7 @@ public class ShopServiceImpl implements ShopService {
         } catch (Exception e) {
             logger.error("❌ [ShopServiceImpl] Unexpected Exception: {}", e.getMessage());
             logger.error("   Full stack trace:", e);
-            throw new RuntimeException("Error updating shop commission: " + e.getMessage(), e);
+            throw new RuntimeException("Error updating shop commission: " + e.getMessage(), e);}
         }
 
     @Override
