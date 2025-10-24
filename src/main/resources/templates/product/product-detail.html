@@ -457,16 +457,19 @@
     </th:block>
 
     <script th:inline="javascript">
-        const currentUserId = /*[[${currentUserId}]]*/ null;
+		const currentUserId = /*[[${currentUserId}]]*/ null;
+        const csrfToken = /*[[${_csrf.token}]]*/ '';
+        const csrfHeader = /*[[${_csrf.headerName}]]*/ '';
+        const contextPath = /*[[@{/}]]*/ '/';
         /*<![CDATA[*/
         document.addEventListener('DOMContentLoaded', function () {
             console.log('[DEBUG] DOM is loaded. Initializing page scripts...');
 
             initProductDetail({
                 productId: /*[[${product.id}]]*/ null,
-                csrfToken: /*[[${_csrf.token}]]*/ '',
-                csrfHeader: /*[[${_csrf.headerName}]]*/ '',
-                contextPath: /*[[@{/}]]*/ '/',
+                csrfToken: csrfToken,
+                csrfHeader: csrfHeader,
+                contextPath: contextPath,
                 imagesApiUrl: /*[[@{/api/products/{productId}/images(productId=${product.id})}]]*/ '',
                 variantsApiUrl: /*[[@{/api/products/{productId}/variants(productId=${product.id})}]]*/ ''
             });
@@ -474,16 +477,27 @@
             if (currentUserId && typeof initChatPopup === 'function') {
                 console.log('[DEBUG] User is logged in. Initializing chat popup...');
                 initChatPopup({
-                    contextPath: /*[[@{/}]]*/ '/',
-                    csrfToken: /*[[${_csrf.token}]]*/ '',
-                    csrfHeader: /*[[${_csrf.headerName}]]*/ '',
+                    contextPath: contextPath,
+                    csrfToken: csrfToken,
+                    csrfHeader: csrfHeader,
                     currentUserId: currentUserId,
                     contactButtonId: 'contact-shop-btn'
                 });
             } else {
                 console.log('[DEBUG] User is not logged in or chat script not loaded. Skipping chat initialization.');
             }
-
+			if (typeof initRecentView === 'function') {
+                console.log('[DEBUG] Initializing recently viewed products carousel...');
+                initRecentView({
+                    contextPath: contextPath,
+                    csrfToken: csrfToken,
+                    csrfHeader: csrfHeader
+                });
+                // Thiết lập các nút điều khiển cho carousel
+                setupProductCarousel('recentlyViewedCarousel', 'prevBtnRecently', 'nextBtnRecently');
+            } else {
+                console.log('[DEBUG] Recently viewed products carousel script not loaded. Skipping carousel initialization.');
+            }
         });
         /*]]>*/
     </script>
