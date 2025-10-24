@@ -1,12 +1,13 @@
 package com.example.demo.controller;
 
 import java.util.List;
+import java.util.Optional;
 
-import com.example.demo.dto.*;
-import com.example.demo.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
@@ -14,25 +15,37 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.example.demo.dto.CategoryDTO;
+import com.example.demo.dto.ProductDTO;
+import com.example.demo.dto.ProductSearchCriteria;
+import com.example.demo.dto.ProductSummaryDTO;
+import com.example.demo.dto.ReviewDTO;
+import com.example.demo.entity.User;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.service.CategoryService;
+import com.example.demo.service.ProductService;
+import com.example.demo.service.ReviewService;
+import com.example.demo.service.ShopService;
+
 @Controller
 public class ProductController {
 
 	private static final List<String> ALLOWED_SORT_VALUES = List.of("newest", "bestseller", "averageRating", "wishList",
 			"price-asc", "price-desc");
-
+	@Autowired
+	private UserRepository userRepository;
 	@Autowired
 	private ProductService productService;
 	@Autowired
 	private CategoryService categoryService;
-	@Autowired
-	private BrandService brandService;
+//	@Autowired
+//	private BrandService brandService;
 	@Autowired
 	private ReviewService reviewService;
-    @Autowired
-    private ShopService shopService;
+	@Autowired
+	private ShopService shopService;
 
 	private void loadProductPage(ProductSearchCriteria criteria, int page, int size, Model model) {
-		// Ensure sort order is valid before querying
 		if (!StringUtils.hasText(criteria.getSort()) || !ALLOWED_SORT_VALUES.contains(criteria.getSort())) {
 			criteria.setSort("newest");
 		}
@@ -73,7 +86,6 @@ public class ProductController {
 		loadProductPage(criteria, page, size, model);
 		model.addAttribute("pageTitle", pageTitle);
 
-		// Pass initial state values to the template for JS
 		model.addAttribute("currentPage", page);
 		model.addAttribute("currentCategory", criteria.getCategorySlug());
 		model.addAttribute("currentBrand", criteria.getBrandSlug());
@@ -94,17 +106,36 @@ public class ProductController {
 	}
 
 	@GetMapping("/products/{slug}")
-	public String viewProduct(@PathVariable String slug, Model model) {
+	public String viewProduct(@PathVariable String slug, Model model, Authentication authentication) {
 		try {
 			ProductDTO product = productService.findProductDetailBySlug(slug);
 			model.addAttribute("product", product);
 			model.addAttribute("pageTitle", product.getProductName());
-            model.addAttribute("shop", shopService.getShopById(product.getShopId()));
+			model.addAttribute("shop", shopService.getShopById(product.getShopId()));
+
+			Integer currentUserId = null;
+			if (authentication != null && authentication.isAuthenticated()) {
+				Object principal = authentication.getPrincipal();
+				if (principal instanceof User) {
+					// Case 1: The principal is our custom User object
+					currentUserId = ((User) principal).getUserId();
+				} else if (principal instanceof UserDetails) {
+					// Case 2: The principal is a standard Spring Security UserDetails object
+					String username = ((UserDetails) principal).getUsername();
+					Optional<User> userOpt = userRepository.findByUsername(username);
+					currentUserId = userOpt.map(User::getUserId).orElse(null);
+				} else if (principal instanceof String && !"anonymousUser".equals(principal)) {
+					// Case 3: The principal is a simple String (the username)
+					String username = (String) principal;
+					Optional<User> userOpt = userRepository.findByUsername(username);
+					currentUserId = userOpt.map(User::getUserId).orElse(null);
+				}
+			}
+			model.addAttribute("currentUserId", currentUserId);
 
 			Page<ReviewDTO> reviewPage = reviewService.getReviewsByProductId(product.getId(), PageRequest.of(0, 5));
 			model.addAttribute("reviewPage", reviewPage);
-			
-			// Add rating statistics
+
 			model.addAttribute("ratingStats", reviewService.getRatingStatistics(product.getId()));
 
 			return "product/product-detail";
@@ -112,17 +143,4 @@ public class ProductController {
 			return "redirect:/products?error=notfound";
 		}
 	}
-    
-    @GetMapping("/products/{slug}/contact")
-    public String getContactForm(@PathVariable String slug, Model model) {
-        try {
-            ProductDTO product = productService.findProductDetailBySlug(slug);
-            ShopDTO shop = shopService.getShopById(product.getShopId());
-            model.addAttribute("shopId", shop.getId());
-            model.addAttribute("shopName", shop.getShopName());
-            return "contact/contact-form";
-        } catch (Exception e) {
-            return "redirect:/products?error=notfound";
-        }
-    }
 }

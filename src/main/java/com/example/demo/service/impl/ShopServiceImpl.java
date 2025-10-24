@@ -2,6 +2,7 @@ package com.example.demo.service.impl;
 
 import com.example.demo.dto.ShopDTO;
 import com.example.demo.entity.Shop;
+import com.example.demo.entity.User;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.ShopRepository;
 import com.example.demo.repository.UserRepository;
@@ -129,5 +130,18 @@ public class ShopServiceImpl implements ShopService {
             logger.error("   Full stack trace:", e);
             throw new RuntimeException("Error updating shop commission: " + e.getMessage(), e);
         }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Integer getVendorIdByShopId(Integer shopId) {
+        Shop shop = shopRepository.findById(shopId)
+                .orElseThrow(() -> new ResourceNotFoundException("Shop not found with id: " + shopId));
+
+        User vendor = shop.getVendor();
+        if (vendor == null) {
+            throw new ResourceNotFoundException("Vendor not found for shop with id: " + shopId);
+        }
+
+        return vendor.getUserId();
     }
 }

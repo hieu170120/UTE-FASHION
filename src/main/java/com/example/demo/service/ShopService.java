@@ -27,4 +27,6 @@ public interface ShopService {
      * @return ShopDTO sau khi cập nhật
      */
     ShopDTO updateShopCommission(Integer shopId, BigDecimal commissionPercentage);
+
+    Integer getVendorIdByShopId(Integer shopId);
 }

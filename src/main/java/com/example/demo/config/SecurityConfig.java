@@ -2,6 +2,7 @@ package com.example.demo.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -55,11 +56,12 @@ public class SecurityConfig {
 				)
 
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/", "/login", "/register", "/logout", "/forgot-password", "/reset-password",
+                        .requestMatchers("/", "/login", "/register", "/logout", "/forgot-password", "/reset-password",
 								"/static/**", "/css/**", "/js/**", "/images/**", "/products", "/products/**", "/cart",
 								"/cart/**", "/api/cart/**", "/checkout", "/checkout/**", "/payment", "/payment/**",
 								"/payment-test", "/payment-test/**", "/api/auth/**", "/api/**", // Public product APIs
-								"/verify-email", "/verify-email/**", "/resend-otp", "/error" // Allow error page
+								"/verify-email", "/verify-email/**", "/resend-otp", "/error", // Allow error page
+                                "/ws/**" //WebSocket
 							)
 						.permitAll().requestMatchers("/api/v1/reviews/**").authenticated() // Review APIs need auth
 						// .requestMatchers("/admin/**").hasRole("ADMIN") // Admin only - COMMENTED FOR
