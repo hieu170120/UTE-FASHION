@@ -154,7 +154,8 @@ public class AdminPromotionController {
             
             Promotion promotion = promotionOpt.get();
             logger.info("Showing details for promotion: {}", promotion.getPromotionName());
-            model.addAttribute("promotionDTO", promotion);
+            model.addAttribute("promotion", promotion);
+            model.addAttribute("message", "Chi tiết chương trình khuyến mãi #" + id);
         } catch (Exception e) {
             logger.error("Error in showPromotionDetail: ", e);
         }

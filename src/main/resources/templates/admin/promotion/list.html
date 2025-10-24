@@ -46,22 +46,97 @@
         .btn-group .btn:last-child {
             margin-right: 0;
         }
+        /* Navbar Styles */
+        .navbar-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1.5rem 2rem;
+            border-radius: 0.75rem;
+            color: white;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-header .nav-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+        }
+        .navbar-header .nav-back {
+            flex: 0 0 auto;
+            min-width: 100px;
+        }
+        .navbar-header .nav-title {
+            flex: 1;
+            text-align: center;
+            margin: 0;
+            font-weight: 700;
+            font-size: 1.8rem;
+            white-space: nowrap;
+        }
+        .navbar-header .nav-actions {
+            flex: 0 0 auto;
+            display: flex;
+            gap: 0.75rem;
+        }
+        .navbar-header .btn {
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .navbar-header .btn-light {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: none;
+            color: #667eea;
+        }
+        .navbar-header .btn-light:hover {
+            background-color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .navbar-header .btn-success {
+            background-color: #28a745;
+            border: none;
+            color: white;
+        }
+        .navbar-header .btn-success:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+        .navbar-header .btn-info {
+            background-color: #17a2b8;
+            border: none;
+            color: white;
+        }
+        .navbar-header .btn-info:hover {
+            background-color: #138496;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
     <div class="container-fluid mt-4">
-        <!-- Header -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <h2><i class="fas fa-percentage me-2"></i>Quản lý chương trình khuyến mãi</h2>
-            </div>
-            <div class="col-md-6 text-end">
-                <a th:href="@{/admin/promotions/new}" class="btn btn-success btn-lg me-2">
-                    <i class="fas fa-plus me-2"></i>Tạo chương trình mới
-                </a>
-                <a th:href="@{/admin/promotions/statistics}" class="btn btn-info">
-                    <i class="fas fa-chart-bar me-1"></i>Thống kê
-                </a>
+        <!-- Enhanced Navbar Header -->
+        <div class="navbar-header">
+            <div class="nav-controls">
+                <!-- Back Button -->
+                <div class="nav-back">
+                    <a th:href="@{/admin/dashboard}" class="btn btn-light" title="Quay lại Dashboard">
+                        <i class="fas fa-arrow-left me-2"></i>Quay lại
+                    </a>
+                </div>
+                
+                <!-- Title Center -->
+                <h2 class="nav-title">
+                    <i class="fas fa-percentage me-2"></i>Quản lý chương trình khuyến mãi
+                </h2>
+                
+                <!-- Action Buttons -->
+                <div class="nav-actions">
+                    <a th:href="@{/admin/promotions/new}" class="btn btn-success" title="Tạo chương trình khuyến mãi mới">
+                        <i class="fas fa-plus me-2"></i>Tạo mới
+                    </a>
+                </div>
             </div>
         </div>
 
