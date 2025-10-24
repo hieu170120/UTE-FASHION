@@ -128,11 +128,11 @@
                         <a class="nav-link" href="#">Giới thiệu</a>
                     </li>
                     <li class="nav-item"  th:if="${session.currentUser != null}">
-                        <a class="nav-link"th:href="@{/vendor/register}">
+                        <a class="nav-link" th:href="@{/vendor/register}">
                             Cửa hàng của tôi</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Liên hệ</a>
+                        <a class="nav-link" th:href="@{/chat}">Tin nhắn</a>
                     </li>
                     <!-- Admin Menu - chỉ hiện với ADMIN -->
                     <li class="nav-item dropdown" th:if="${session.currentUser != null}">
@@ -167,6 +167,10 @@
                                     </a></li>
                                     <li><a class="dropdown-item" th:href="@{/admin/shops}">
                                         <i class="fas fa-shop me-2"></i>Shops
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" th:href="@{/admin/promotions}">
+                                        <i class="fas fa-percentage me-2"></i>Chương trình khuyến mãi
                                     </a></li>
                                 </ul>
                             </th:block>

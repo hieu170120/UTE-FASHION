@@ -1,11 +1,13 @@
 package com.example.demo.controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
@@ -19,7 +21,7 @@ import com.example.demo.dto.ProductSearchCriteria;
 import com.example.demo.dto.ProductSummaryDTO;
 import com.example.demo.dto.ReviewDTO;
 import com.example.demo.entity.User;
-import com.example.demo.service.BrandService;
+import com.example.demo.repository.UserRepository;
 import com.example.demo.service.CategoryService;
 import com.example.demo.service.ProductService;
 import com.example.demo.service.ReviewService;
@@ -30,13 +32,14 @@ public class ProductController {
 
 	private static final List<String> ALLOWED_SORT_VALUES = List.of("newest", "bestseller", "averageRating", "wishList",
 			"price-asc", "price-desc");
-
+	@Autowired
+	private UserRepository userRepository;
 	@Autowired
 	private ProductService productService;
 	@Autowired
 	private CategoryService categoryService;
-	@Autowired
-	private BrandService brandService;
+//	@Autowired
+//	private BrandService brandService;
 	@Autowired
 	private ReviewService reviewService;
 	@Autowired
@@ -110,16 +113,25 @@ public class ProductController {
 			model.addAttribute("pageTitle", product.getProductName());
 			model.addAttribute("shop", shopService.getShopById(product.getShopId()));
 
-			// ROBUST METHOD: Get user ID safely from the Authentication principal
+			Integer currentUserId = null;
 			if (authentication != null && authentication.isAuthenticated()) {
 				Object principal = authentication.getPrincipal();
 				if (principal instanceof User) {
-					User currentUser = (User) principal;
-					model.addAttribute("currentUserId", currentUser.getUserId());
+					// Case 1: The principal is our custom User object
+					currentUserId = ((User) principal).getUserId();
+				} else if (principal instanceof UserDetails) {
+					// Case 2: The principal is a standard Spring Security UserDetails object
+					String username = ((UserDetails) principal).getUsername();
+					Optional<User> userOpt = userRepository.findByUsername(username);
+					currentUserId = userOpt.map(User::getUserId).orElse(null);
+				} else if (principal instanceof String && !"anonymousUser".equals(principal)) {
+					// Case 3: The principal is a simple String (the username)
+					String username = (String) principal;
+					Optional<User> userOpt = userRepository.findByUsername(username);
+					currentUserId = userOpt.map(User::getUserId).orElse(null);
 				}
-				// Add other instanceof checks here if you have other user types, e.g.,
-				// UserDetails
 			}
+			model.addAttribute("currentUserId", currentUserId);
 
 			Page<ReviewDTO> reviewPage = reviewService.getReviewsByProductId(product.getId(), PageRequest.of(0, 5));
 			model.addAttribute("reviewPage", reviewPage);
