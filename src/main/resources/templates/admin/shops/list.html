@@ -41,11 +41,27 @@
                 background-color: #dc3545;
                 color: #fff;
             }
+            .btn-outline-info {
+                color: #0dcaf0;
+                border-color: #0dcaf0;
+            }
+            .btn-outline-info:hover {
+                background-color: #0dcaf0;
+                color: #fff;
+            }
             .badge.bg-success {
                 background-color: #198754 !important;
             }
             .badge.bg-warning {
                 background-color: #ffc107 !important;
+            }
+            .commission-badge {
+                font-size: 12px;
+                padding: 4px 8px;
+                background-color: #e7f3ff;
+                color: #0066cc;
+                border-radius: 4px;
+                font-weight: bold;
             }
         </style>
     </th:block>
@@ -71,7 +87,7 @@
 
         <!-- Shops Table -->
         <div class="row justify-content-center">
-            <div class="col-lg-10">
+            <div class="col-lg-12">
                 <div class="card shadow-sm">
                     <div class="card-header py-3">
                         <h6 class="m-0 font-weight-bold text-dark">Tất cả Cửa hàng</h6>
@@ -86,13 +102,14 @@
                                     <th>Logo</th>
                                     <th>Chủ sở hữu</th>
                                     <th>Trạng thái</th>
+                                    <th class="text-center">Chiết khấu (%)</th>
                                     <th>Ngày tạo</th>
                                     <th class="text-center">Hành động</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 <tr th:each="shop : ${shops}">
-                                    <td class="fw-bold" th:text="${shop.Id}"></td>
+                                    <td class="fw-bold" th:text="${shop.id}"></td>
                                     <td th:text="${shop.shopName}"></td>
                                     <td><img th:src="${shop.logoUrl != null ? shop.logoUrl : 'https://via.placeholder.com/80x40.png?text=Logo'}" alt="Logo" class="img-fluid rounded" style="max-width: 80px;"/></td>
                                     <td th:text="${shop.vendor.username}"></td>
@@ -100,12 +117,24 @@
                                         <span th:if="${shop.active}" class="badge bg-success">Đã duyệt</span>
                                         <span th:unless="${shop.active}" class="badge bg-warning text-dark">Chờ duyệt</span>
                                     </td>
+                                    <td class="text-center">
+                                        <span class="commission-badge" th:text="${shop.commissionPercentage != null ? shop.commissionPercentage : '0.00'} + '%'"></span>
+                                    </td>
                                     <td th:text="${#temporals.format(shop.createdAt, 'dd/MM/yyyy')}"></td>
                                     <td class="text-center">
-                                        <form th:action="@{/admin/shops/approve/{id}(id=${shop.Id})}" method="post" class="d-inline-block m-1">
+                                        <button type="button" class="btn btn-sm btn-outline-info" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#commissionModal"
+                                                th:data-shop-id="${shop.id}"
+                                                th:data-shop-name="${shop.shopName}"
+                                                th:data-commission="${shop.commissionPercentage != null ? shop.commissionPercentage : '0.00'}"
+                                                onclick="openCommissionModal(this)">
+                                            Chiết khấu
+                                        </button>
+                                        <form th:action="@{/admin/shops/approve/{id}(id=${shop.id})}" method="post" class="d-inline-block m-1">
                                             <button type="submit" class="btn btn-sm btn-outline-success" th:disabled="${shop.active}">Duyệt</button>
                                         </form>
-                                        <form th:action="@{/admin/shops/reject/{id}(id=${shop.Id})}" method="post" class="d-inline-block m-1">
+                                        <form th:action="@{/admin/shops/reject/{id}(id=${shop.id})}" method="post" class="d-inline-block m-1">
                                             <button type="submit" class="btn btn-sm btn-outline-danger" th:disabled="not ${shop.active}">Khóa</button>
                                         </form>
                                     </td>
@@ -118,7 +147,204 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal Cập nhật Chiết khấu -->
+    <div class="modal fade" id="commissionModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cập nhật Chiết khấu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="commissionForm">
+                        <div class="mb-3">
+                            <label class="form-label">Tên Shop</label>
+                            <input type="text" class="form-control" id="shopNameDisplay" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="commissionInput" class="form-label">Chiết khấu (%) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" min="0" max="100" class="form-control" id="commissionInput" placeholder="Nhập % chiết khấu (0-100)" required>
+                            <small class="form-text text-muted">Chiết khấu phải từ 0% đến 100%</small>
+                        </div>
+                        <input type="hidden" id="shopIdInput">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCommission()">Lưu</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<th:block layout:fragment="scripts">
+    <script>
+        function openCommissionModal(button) {
+            console.log("🔵 [Frontend] openCommissionModal - START");
+            const shopId = button.getAttribute('data-shop-id');
+            const shopName = button.getAttribute('data-shop-name');
+            const commission = button.getAttribute('data-commission');
+            
+            console.log("📍 [Frontend] Modal data extracted:");
+            console.log("   shopId: " + shopId);
+            console.log("   shopName: " + shopName);
+            console.log("   current commission: " + commission);
+            
+            document.getElementById('shopIdInput').value = shopId;
+            document.getElementById('shopNameDisplay').value = shopName;
+            document.getElementById('commissionInput').value = commission;
+            
+            console.log("✅ [Frontend] Modal fields populated");
+        }
+        
+        function saveCommission() {
+            console.log("🔵 [Frontend] saveCommission - START");
+            console.log("⏰ Timestamp: " + new Date().toISOString());
+            
+            const shopId = document.getElementById('shopIdInput').value;
+            const commission = document.getElementById('commissionInput').value;
+            
+            console.log("📍 [Frontend] Retrieved values from modal:");
+            console.log("   shopId: " + shopId);
+            console.log("   commission input: " + commission);
+            
+            // Validation
+            console.log("📍 [Frontend] Validating input...");
+            if (!commission) {
+                console.error("❌ [Frontend] Commission is empty");
+                alert('Vui lòng nhập chiết khấu hợp lệ (0-100%)');
+                return;
+            }
+            if (isNaN(commission)) {
+                console.error("❌ [Frontend] Commission is not a number: " + commission);
+                alert('Vui lòng nhập chiết khấu hợp lệ (0-100%)');
+                return;
+            }
+            if (commission < 0) {
+                console.error("❌ [Frontend] Commission is negative: " + commission);
+                alert('Vui lòng nhập chiết khấu hợp lệ (0-100%)');
+                return;
+            }
+            if (commission > 100) {
+                console.error("❌ [Frontend] Commission exceeds 100%: " + commission);
+                alert('Vui lòng nhập chiết khấu hợp lệ (0-100%)');
+                return;
+            }
+            console.log("✅ [Frontend] Validation passed");
+            
+            const commissionValue = parseFloat(commission);
+            console.log("📍 [Frontend] Parsed commission as float: " + commissionValue);
+            
+            const request = {
+                commissionPercentage: commissionValue
+            };
+            
+            // Get context path from current location
+            const contextPath = window.location.pathname.split('/')[1]; // Get first path segment
+            const apiUrl = "/" + contextPath + "/admin/shops/" + shopId + "/commission";
+            
+            // Get CSRF token from meta tag or cookie
+            let csrfToken = document.querySelector('meta[name="_csrf"]') ? document.querySelector('meta[name="_csrf"]').getAttribute('content') : '';
+            let csrfHeader = document.querySelector('meta[name="_csrf_header"]') ? document.querySelector('meta[name="_csrf_header"]').getAttribute('content') : 'X-CSRF-TOKEN';
+            
+            console.log("📍 [Frontend] CSRF Token info:");
+            console.log("   Token: " + (csrfToken ? csrfToken.substring(0, 10) + "..." : "NOT FOUND"));
+            console.log("   Header: " + csrfHeader);
+            
+            console.log("📍 [Frontend] Building API request");
+            console.log("   Context Path: " + contextPath);
+            console.log("   Full URL: " + apiUrl);
+            console.log("   Method: PUT");
+            console.log("   Payload: " + JSON.stringify(request));
+            
+            console.log("📍 [Frontend] Sending fetch request...");
+            
+            // Build headers
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            // Add CSRF token if available
+            if (csrfToken) {
+                headers[csrfHeader] = csrfToken;
+                console.log("📍 [Frontend] Added CSRF token to headers");
+            }
+            
+            fetch(apiUrl, {
+                method: 'PUT',
+                headers: headers,
+                body: JSON.stringify(request)
+            })
+            .then(response => {
+                console.log("📍 [Frontend] Response received");
+                console.log("   Status: " + response.status);
+                console.log("   Status Text: " + response.statusText);
+                console.log("   Content-Type: " + response.headers.get('content-type'));
+                
+                // Check if response is OK
+                if (!response.ok) {
+                    console.error("❌ [Frontend] HTTP Error: " + response.status);
+                    
+                    // Try to get error details
+                    if (response.status === 404) {
+                        console.error("❌ [Frontend] 404 Not Found - Endpoint không tồn tại!");
+                        console.error("   Endpoint: " + apiUrl);
+                        console.error("   Method: PUT");
+                        return Promise.reject(new Error("Endpoint not found (404). Check if AdminController is compiled and deployed."));
+                    } else if (response.status === 405) {
+                        console.error("❌ [Frontend] 405 Method Not Allowed - PUT method không được hỗ trợ!");
+                        return Promise.reject(new Error("Method PUT not allowed (405)"));
+                    }
+                }
+                
+                // Check content-type before parsing JSON
+                const contentType = response.headers.get("content-type");
+                console.log("   Content-Type check: " + contentType);
+                
+                if (!contentType || !contentType.includes("application/json")) {
+                    console.error("❌ [Frontend] Response is not JSON!");
+                    console.error("   Received Content-Type: " + contentType);
+                    
+                    // Try to read response as text for debugging
+                    return response.text().then(text => {
+                        console.error("   Response body (first 200 chars): " + text.substring(0, 200));
+                        throw new Error("Response is not JSON. Received: " + contentType);
+                    });
+                }
+                
+                return response.json();
+            })
+            .then(data => {
+                console.log("📍 [Frontend] Response parsed as JSON:");
+                console.log("   Status: " + data.status);
+                console.log("   Message: " + data.message);
+                console.log("   Data: " + JSON.stringify(data.data));
+                
+                if (data.status === 'success') {
+                    console.log("✅ [Frontend] SUCCESS - Commission updated successfully");
+                    alert('Cập nhật chiết khấu thành công!');
+                    location.reload();
+                } else {
+                    console.error("❌ [Frontend] API returned error status");
+                    console.error("   Error message: " + data.message);
+                    alert('Lỗi: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error("❌ [Frontend] EXCEPTION caught");
+                console.error("   Error name: " + error.name);
+                console.error("   Error message: " + error.message);
+                console.error("   Full error: ", error);
+                console.error("   Stack: " + error.stack);
+                alert('Có lỗi xảy ra khi cập nhật chiết khấu: ' + error.message);
+            });
+            
+            console.log("✅ [Frontend] Fetch request sent (async)");
+        }
+    </script>
+</th:block>
 
 </body>
 </html>
