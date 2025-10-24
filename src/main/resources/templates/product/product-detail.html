@@ -397,9 +397,7 @@
                 <div class="product-carousel" id="recentlyViewedCarousel">
                     <a th:href="@{/products/{slug}(slug=${p.slug})}" class="product-card" th:each="p : ${recentlyViewedProducts}" th:attr="data-product-id=${p.productId}">
                         <div class="product-image-container">
-<!--
-                            <img class="product-main-image" th:src="${p.imageUrl}" th:alt="${p.productName}" />
--->
+
                             <div class="sale-badge" th:if="${p.salePrice != null and p.salePrice < p.price}" th:text="|-${#numbers.formatInteger(((p.price - p.salePrice) * 100.0) / p.price, 0)}%|"></div>
                         </div>
                         <div class="product-info text-center">
@@ -488,11 +486,9 @@
                 initRecentView({
                     contextPath: /*[[@{/}]]*/ '/',
                     csrfToken: /*[[${_csrf.token}]]*/ '',
-                    csrfHeader: /*[[${_csrf.headerName}]]*/
+                    csrfHeader: /*[[${_csrf.headerName}]]*/ ''
                 });
-                // Thiết lập các nút điều khiển cho carousel
-                setupProductCarousel('recentlyViewedCarousel', 'prevBtnRecently', 'nextBtnRecently');
-            } else {
+             } else {
                 console.log('[DEBUG] Recently viewed products carousel script not loaded. Skipping carousel initialization.');
             }
         });
