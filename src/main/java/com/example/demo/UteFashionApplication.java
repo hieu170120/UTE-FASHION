@@ -15,6 +15,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class UteFashionApplication {
 
     public static void main(String[] args) {
+    	System.setProperty("file.encoding", "UTF-8");
         SpringApplication.run(UteFashionApplication.class, args);
         System.out.println("===========================================");
         System.out.println("UTE Fashion Application Started!");
