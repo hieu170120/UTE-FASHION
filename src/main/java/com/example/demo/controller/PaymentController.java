@@ -53,6 +53,9 @@ public class PaymentController {
     
     @Autowired
     private CouponService couponService;
+    
+    @Autowired
+    private PromotionService promotionService;
 
     @Value("${sepay.bank.account}")
     private String bankAccount;
@@ -103,9 +106,15 @@ public class PaymentController {
         // Lấy danh sách carriers
         List<CarrierDTO> carriers = carrierService.getActiveCarriers();
         
-        // Lấy thông tin coupon và carrier đã chọn từ session (nếu có)
+        // Lấy danh sách coupons và promotions đang active
+        List<Coupon> availableCoupons = couponService.getAvailableCoupons();
+        List<PromotionDTO> availablePromotions = promotionService.getAvailablePromotions();
+        
+        // Lấy thông tin coupon, promotion và carrier đã chọn từ session (nếu có)
         String appliedCouponCode = (String) session.getAttribute("appliedCouponCode");
-        BigDecimal discountAmount = (BigDecimal) session.getAttribute("discountAmount");
+        String appliedPromotionId = (String) session.getAttribute("appliedPromotionId");
+        BigDecimal couponDiscount = (BigDecimal) session.getAttribute("couponDiscount");
+        BigDecimal promotionDiscount = (BigDecimal) session.getAttribute("promotionDiscount");
         Integer selectedCarrierId = (Integer) session.getAttribute("selectedCarrierId");
         BigDecimal shippingFee = (BigDecimal) session.getAttribute("shippingFee");
         
@@ -116,16 +125,31 @@ public class PaymentController {
         if (shippingFee != null) {
             total = total.add(shippingFee);
         }
-        if (discountAmount != null) {
-            total = total.subtract(discountAmount);
+        
+        // Tính tổng discount từ cả coupon và promotion
+        BigDecimal totalDiscount = BigDecimal.ZERO;
+        if (couponDiscount != null) {
+            totalDiscount = totalDiscount.add(couponDiscount);
+        }
+        if (promotionDiscount != null) {
+            totalDiscount = totalDiscount.add(promotionDiscount);
+        }
+        
+        if (totalDiscount.compareTo(BigDecimal.ZERO) > 0) {
+            total = total.subtract(totalDiscount);
         }
         
         model.addAttribute("cart", cart);
         model.addAttribute("checkoutData", checkoutData);
         model.addAttribute("paymentMethods", paymentMethods);
         model.addAttribute("carriers", carriers);
+        model.addAttribute("availableCoupons", availableCoupons);
+        model.addAttribute("availablePromotions", availablePromotions);
         model.addAttribute("appliedCouponCode", appliedCouponCode);
-        model.addAttribute("discountAmount", discountAmount);
+        model.addAttribute("appliedPromotionId", appliedPromotionId);
+        model.addAttribute("couponDiscount", couponDiscount);
+        model.addAttribute("promotionDiscount", promotionDiscount);
+        model.addAttribute("totalDiscount", totalDiscount);
         model.addAttribute("selectedCarrierId", selectedCarrierId);
         model.addAttribute("shippingFee", shippingFee);
         model.addAttribute("subtotal", subtotal);
@@ -154,7 +178,7 @@ public class PaymentController {
             
             // Lưu vào session
             session.setAttribute("appliedCouponCode", couponCode);
-            session.setAttribute("discountAmount", discount);
+            session.setAttribute("couponDiscount", discount);
             
             redirectAttributes.addFlashAttribute("successMessage", 
                 "Áp dụng mã giảm giá thành công!");
@@ -173,8 +197,52 @@ public class PaymentController {
     @PostMapping("/remove-coupon")
     public String removeCoupon(HttpSession session, RedirectAttributes redirectAttributes) {
         session.removeAttribute("appliedCouponCode");
-        session.removeAttribute("discountAmount");
+        session.removeAttribute("couponDiscount");
         redirectAttributes.addFlashAttribute("successMessage", "Xóa mã giảm giá thành công");
+        return "redirect:/payment/method-selection";
+    }
+    
+    /**
+     * Áp dụng mã khuyến mãi (Promotion)
+     * POST /payment/apply-promotion
+     */
+    @PostMapping("/apply-promotion")
+    public String applyPromotion(@RequestParam Integer promotionId,
+                                HttpSession session,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            Integer userId = (Integer) session.getAttribute("checkoutUserId");
+            CartDTO cart = cartService.getCartByUserId(userId);
+            
+            // Validate promotion
+            PromotionDTO promotion = promotionService.validatePromotionForUser(promotionId, userId, cart.getTotalAmount());
+            
+            // Tính discount
+            BigDecimal discount = promotionService.calculateDiscount(promotion, cart.getTotalAmount());
+            
+            // Lưu vào session
+            session.setAttribute("appliedPromotionId", promotionId.toString());
+            session.setAttribute("promotionDiscount", discount);
+            
+            redirectAttributes.addFlashAttribute("successMessage", 
+                "Áp dụng mã khuyến mãi thành công!");
+            
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        
+        return "redirect:/payment/method-selection";
+    }
+    
+    /**
+     * Xóa mã khuyến mãi
+     * POST /payment/remove-promotion
+     */
+    @PostMapping("/remove-promotion")
+    public String removePromotion(HttpSession session, RedirectAttributes redirectAttributes) {
+        session.removeAttribute("appliedPromotionId");
+        session.removeAttribute("promotionDiscount");
+        redirectAttributes.addFlashAttribute("successMessage", "Xóa mã khuyến mãi thành công");
         return "redirect:/payment/method-selection";
     }
     

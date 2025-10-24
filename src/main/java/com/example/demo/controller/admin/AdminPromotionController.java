@@ -286,7 +286,6 @@ public class AdminPromotionController {
             try {
                 promotion.setValidFrom(LocalDateTime.parse(validFrom, formatter));
                 promotion.setValidTo(LocalDateTime.parse(validTo, formatter));
-                logger.info("Dates parsed: From={}, To={}", validFrom, validTo);
             } catch (Exception e) {
                 logger.error("Date parsing error: {}", e.getMessage());
                 throw new IllegalArgumentException("Lỗi định dạng ngày tháng: " + e.getMessage());

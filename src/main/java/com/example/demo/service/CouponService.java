@@ -89,4 +89,17 @@ public class CouponService {
         return couponRepository.findByCouponCodeAndIsActiveTrue(couponCode)
                 .orElse(null);
     }
+    
+    /**
+     * Lấy danh sách coupons đang active và còn hiệu lực
+     */
+    public java.util.List<Coupon> getAvailableCoupons() {
+        LocalDateTime now = LocalDateTime.now();
+        return couponRepository.findAll().stream()
+                .filter(c -> c.isActive() && 
+                           c.getValidFrom().isBefore(now) && 
+                           c.getValidTo().isAfter(now) &&
+                           (c.getUsageLimit() == null || c.getUsageCount() < c.getUsageLimit()))
+                .collect(java.util.stream.Collectors.toList());
+    }
 }

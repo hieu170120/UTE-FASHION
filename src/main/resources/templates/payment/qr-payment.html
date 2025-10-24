@@ -108,8 +108,8 @@
         let countdownInterval;
         
         // Get context path for proper URL (without trailing slash)
-        const contextPath = /*[[@{/}]]*/ '/UTE_Fashion';
-        const apiPath = contextPath.replace(/\/$/, ''); // Remove trailing slash if exists
+        const contextPath = /*[[@{/}]]*/ '/UTE_Fashion/';
+        const apiPath = contextPath.endsWith('/') ? contextPath.slice(0, -1) : contextPath; // Remove trailing slash
 
         // Countdown timer (1 second intervals)
         countdownInterval = setInterval(() => {
@@ -119,8 +119,8 @@
             if (secondsLeft <= 0) {
                 clearInterval(countdownInterval);
                 clearInterval(pollingInterval);
-                document.getElementById('status').innerHTML = 
-                    '<i class="fas fa-times-circle"></i> Hết thời gian! <a href="' + contextPath + '/payment/method-selection">Thử lại</a>';
+                    document.getElementById('status').innerHTML = 
+                        '<i class="fas fa-times-circle"></i> Hết thời gian! <a href="' + apiPath + '/payment/method-selection">Thử lại</a>';
                 document.getElementById('status').className = 'alert alert-danger';
             }
         }, 1000);
@@ -141,7 +141,7 @@
                     
                     // Redirect to success page after 2 seconds
                     setTimeout(() => {
-                        window.location.href = contextPath + '/checkout/order-success?orderId=' + data.orderId;
+                        window.location.href = apiPath + '/checkout/order-success?orderId=' + data.orderId;
                     }, 2000);
                     
                 } else if (data.status === 'timeout') {
@@ -149,7 +149,7 @@
                     clearInterval(pollingInterval);
                     clearInterval(countdownInterval);
                     document.getElementById('status').innerHTML = 
-                        '<i class="fas fa-times-circle"></i> ' + data.message + ' <a href="' + contextPath + '/payment/method-selection">Thử lại</a>';
+                        '<i class="fas fa-times-circle"></i> ' + data.message + ' <a href="' + apiPath + '/payment/method-selection">Thử lại</a>';
                     document.getElementById('status').className = 'alert alert-danger';
                     
                 } else if (data.status === 'error') {
@@ -169,7 +169,7 @@
                     document.getElementById('status').className = 'alert alert-info';
                     // Redirect to home after 3 seconds
                     setTimeout(() => {
-                        window.location.href = contextPath + '/';
+                        window.location.href = contextPath;
                     }, 3000);
                     
                 } else if (data.status === 'pending') {
