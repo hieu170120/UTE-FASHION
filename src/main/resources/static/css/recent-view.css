@@ -1,0 +1,24 @@
+
+        .product-carousel-section {
+            padding-top: 2rem;
+            border-top: 1px solid #eee;
+            margin-top: 2rem;
+        }
+        .product-carousel-section .product-carousel-container { position: relative; }
+        .product-carousel-section .product-carousel { display: flex; overflow-x: auto; scroll-behavior: smooth; -ms-overflow-style: none; scrollbar-width: none; gap: 1rem; padding-bottom: 1rem; }
+        .product-carousel-section .product-carousel::-webkit-scrollbar { display: none; }
+        .product-carousel-section .product-card { flex: 0 0 24%; max-width: 24%; text-decoration: none; color: inherit; }
+        .product-carousel-section .product-card:hover { color: inherit; }
+        .product-carousel-section .product-card h6 { margin-top: 0.5rem; font-size: 0.9rem; font-weight: normal; height: 36px; overflow: hidden; }
+        .product-carousel-section .carousel-control-prev,
+        .product-carousel-section .carousel-control-next { position: absolute; top: 40%; transform: translateY(-50%); background-color: rgba(128, 128, 128, 0.7); color: white; border: none; width: 40px; height: 40px; line-height: 40px; text-align: center; border-radius: 50%; z-index: 10; }
+        .product-carousel-section .carousel-control-prev { left: -20px; }
+        .product-carousel-section .carousel-control-next { right: -20px; }
+        .product-image-container { position: relative; overflow: hidden; background-color: #f0f0f0; }
+        .product-image-container img { width: 100%; height: 320px; object-fit: cover; display: block; transition: transform 0.4s ease; }
+        .product-card:hover img { transform: scale(1.05); }
+        .product-image-container .sale-badge { position: absolute; top: 10px; right: 10px; background-color: #fff; color: rgb(255, 0, 0); padding: 2px 8px; font-size: 0.8rem; border: 1px solid #ccc; z-index: 5; }
+        @media (max-width: 992px) { .product-carousel-section .product-card { flex: 0 0 32%; max-width: 32%; } }
+        @media (max-width: 768px) { .product-carousel-section .product-card { flex: 0 0 48%; max-width: 48%; } }
+        @media (max-width: 576px) { .product-carousel-section .product-card { flex: 0 0 80%; max-width: 80%; } }
+    

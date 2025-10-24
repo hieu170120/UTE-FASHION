@@ -26,6 +26,11 @@ public interface ProductService {
 
     CompletableFuture<List<ProductSummaryDTO>> getNewestProducts();
 
+    // --- Recently Viewed Products ---
+    void trackViewedProduct(Integer userId, Integer productId);
+
+    List<ProductSummaryDTO> getRecentlyViewedProducts(Integer userId, Integer currentProductId, int limit);
+
     // --- CRUD Operations ---
     ProductDTO createProduct(ProductDTO productDTO, List<ProductImageDTO> images, Integer shopId);
 
