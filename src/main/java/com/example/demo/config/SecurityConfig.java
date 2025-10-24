@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.filter.CharacterEncodingFilter;
 
 import com.example.demo.security.JwtAuthenticationFilter;
 
@@ -33,11 +34,25 @@ public class SecurityConfig {
 		return authConfig.getAuthenticationManager();
 	}
 
+	/**
+	 * CharacterEncodingFilter bean để đảm bảo UTF-8 encoding
+	 */
+	@Bean
+	public CharacterEncodingFilter characterEncodingFilter() {
+		CharacterEncodingFilter filter = new CharacterEncodingFilter();
+		filter.setEncoding("UTF-8");
+		filter.setForceEncoding(true);
+		return filter;
+	}
+
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http
-				// .csrf(csrf -> csrf.disable())
-				.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**") // bỏ kiểm tra CSRF cho API
+				.csrf(csrf -> csrf
+					.ignoringRequestMatchers(
+						"/api/**",                          // Bỏ CSRF cho tất cả API
+						"/admin/promotions/toggle/**"       // Bỏ CSRF cho toggle endpoint
+					)
 				)
 
 				.authorizeHttpRequests(auth -> auth
