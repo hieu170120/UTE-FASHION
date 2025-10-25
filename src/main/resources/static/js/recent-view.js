@@ -20,7 +20,7 @@ function setupProductCarousel(carouselId, prevBtnId, nextBtnId) {
     }
 
     // Run initially and on resize. Timeout helps ensure elements are rendered.
-    setTimeout(updateCarouselScroll, 500);
+    /*setTimeout(updateCarouselScroll, 500);*/
     window.addEventListener('resize', updateCarouselScroll);
 }
 
@@ -126,6 +126,7 @@ function initRecentView(config) {
             img.onerror = () => { img.src = fallbackUrl; }; // Handle broken image links
             imageContainer.prepend(img);
         });
+		setupProductCarousel('recentlyViewedCarousel', 'prevBtnRecently', 'nextBtnRecently');
     }
 
     // 4. Displays placeholders if the API call fails
@@ -143,5 +144,6 @@ function initRecentView(config) {
             img.className = 'product-main-image';
             imageContainer.prepend(img);
         });
+		setupProductCarousel('recentlyViewedCarousel', 'prevBtnRecently', 'nextBtnRecently');
     }
 }

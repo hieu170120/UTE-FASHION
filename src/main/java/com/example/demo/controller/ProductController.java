@@ -20,6 +20,7 @@ import com.example.demo.dto.ProductDTO;
 import com.example.demo.dto.ProductSearchCriteria;
 import com.example.demo.dto.ProductSummaryDTO;
 import com.example.demo.dto.ReviewDTO;
+import com.example.demo.dto.ShopDTO;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.CategoryService;
@@ -38,8 +39,6 @@ public class ProductController {
     private ProductService productService;
     @Autowired
     private CategoryService categoryService;
-    //	@Autowired
-    //	private BrandService brandService;
     @Autowired
     private ReviewService reviewService;
     @Autowired
@@ -56,25 +55,33 @@ public class ProductController {
     }
 
     private ProductSearchCriteria createCriteriaFromParams(String categorySlug, String brandSlug, String keyword,
-                                                           String sort) {
+            String sort, Integer shopId) {
         ProductSearchCriteria criteria = new ProductSearchCriteria();
         criteria.setCategorySlug(categorySlug);
         criteria.setBrandSlug(brandSlug);
         criteria.setKeyword(keyword);
         criteria.setSort(sort);
+        criteria.setShopId(shopId);
         return criteria;
     }
 
     @GetMapping("/products")
     public String listAndFilterProducts(Model model, @RequestParam(defaultValue = "0") int page,
-                                        @RequestParam(defaultValue = "20") int size, @RequestParam(required = false) String categorySlug,
-                                        @RequestParam(required = false) String brandSlug, @RequestParam(required = false) String keyword,
-                                        @RequestParam(required = false) String sort) {
+            @RequestParam(defaultValue = "20") int size, @RequestParam(required = false) String categorySlug,
+            @RequestParam(required = false) String brandSlug, @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String sort, @RequestParam(required = false) Integer shopId) {
 
-        ProductSearchCriteria criteria = createCriteriaFromParams(categorySlug, brandSlug, keyword, sort);
+        ProductSearchCriteria criteria = createCriteriaFromParams(categorySlug, brandSlug, keyword, sort, shopId);
 
         String pageTitle = "Tất cả sản phẩm";
-        if (StringUtils.hasText(criteria.getCategorySlug())) {
+        if (criteria.getShopId() != null) {
+            try {
+                ShopDTO shop = shopService.getShopById(criteria.getShopId());
+                pageTitle = "Sản phẩm từ " + shop.getShopName();
+            } catch (Exception e) {
+                pageTitle = "Cửa hàng không tồn tại";
+            }
+        } else if (StringUtils.hasText(criteria.getCategorySlug())) {
             try {
                 CategoryDTO category = categoryService.getCategoryBySlug(criteria.getCategorySlug());
                 pageTitle = category.getCategoryName();
@@ -91,16 +98,17 @@ public class ProductController {
         model.addAttribute("currentBrand", criteria.getBrandSlug());
         model.addAttribute("keyword", criteria.getKeyword());
         model.addAttribute("sort", criteria.getSort());
+        model.addAttribute("shopId", criteria.getShopId());
 
         return "product/products";
     }
 
     @GetMapping("/products/fragments/list")
     public String getProductListFragment(Model model, @RequestParam(defaultValue = "0") int page,
-                                         @RequestParam(defaultValue = "20") int size, @RequestParam(required = false) String categorySlug,
-                                         @RequestParam(required = false) String brandSlug, @RequestParam(required = false) String keyword,
-                                         @RequestParam(required = false) String sort) {
-        ProductSearchCriteria criteria = createCriteriaFromParams(categorySlug, brandSlug, keyword, sort);
+            @RequestParam(defaultValue = "20") int size, @RequestParam(required = false) String categorySlug,
+            @RequestParam(required = false) String brandSlug, @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String sort, @RequestParam(required = false) Integer shopId) {
+        ProductSearchCriteria criteria = createCriteriaFromParams(categorySlug, brandSlug, keyword, sort, shopId);
         loadProductPage(criteria, page, size, model);
         return "product/products :: productListFragment";
     }
@@ -134,8 +142,8 @@ public class ProductController {
                 // Track the viewed product
                 productService.trackViewedProduct(currentUserId, product.getId());
 
-                // Get recently viewed products and add them to the model (excluding the current one)
-                List<ProductSummaryDTO> recentlyViewed = productService.getRecentlyViewedProducts(currentUserId, product.getId(), 8);
+                List<ProductSummaryDTO> recentlyViewed = productService.getRecentlyViewedProducts(currentUserId,
+                        product.getId(), 8);
                 model.addAttribute("recentlyViewedProducts", recentlyViewed);
             }
 

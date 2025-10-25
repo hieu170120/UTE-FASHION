@@ -17,9 +17,10 @@ function initChatPopup(appConfig) {
             const shopId = contactButton.dataset.shopId;
             const shopName = contactButton.dataset.shopName;
             openChatPopup(shopId, shopName);
+			connectWebSocket();
         });
     }
-    connectWebSocket();
+/*    connectWebSocket();*/
 }
 
 function openChatPopup(shopId, shopName) {
@@ -168,16 +169,16 @@ function connectWebSocket() {
     });
 }
 
-// REVERTED: This function now gets the user ID from the global config object.
 function sendMessage(shopId, inputElement) {
     const content = inputElement.value.trim();
     const conversationId = chatWindowState[shopId]?.conversationId;
     const currentUserId = config.currentUserId;
 
-    if (content && stompClient && conversationId && currentUserId) {
+    // THÊM KIỂM TRA ".connected"
+    if (content && stompClient && stompClient.connected && conversationId && currentUserId) {
         const message = {
             conversationId: conversationId,
-            senderId: currentUserId, // The ID from config should be reliable
+            senderId: currentUserId, 
             content: content
         };
         stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(message));
@@ -189,5 +190,7 @@ function sendMessage(shopId, inputElement) {
             content: content
         };
         addMessageToPopup(shopId, optimisticMessage);
+    } else if (!stompClient || !stompClient.connected) {
+         console.warn("Hệ thống đang tải! vui lòng chờ giây lát để gửi tin nhắn.");
     }
 }

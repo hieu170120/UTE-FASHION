@@ -1,5 +1,17 @@
 package com.example.demo.service.impl;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.demo.dto.ShopDTO;
 import com.example.demo.entity.Shop;
 import com.example.demo.entity.User;
@@ -7,21 +19,10 @@ import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.ShopRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.ShopService;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class ShopServiceImpl implements ShopService {
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(ShopServiceImpl.class);
 
     @Autowired

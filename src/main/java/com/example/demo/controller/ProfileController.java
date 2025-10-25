@@ -86,68 +86,132 @@ public class ProfileController {
             return "redirect:/login";
         }
         
+        System.out.println("═══════════════════════════════════════════════════════");
+        System.out.println("🔵 [ProfileController] uploadAvatar - START");
+        System.out.println("   Username: " + username);
+        System.out.println("   Request URL: " + request.getRequestURL());
+        System.out.println("═══════════════════════════════════════════════════════");
+        
         try {
             // Validate file
+            System.out.println("📍 [Upload] Step 1: Validating file...");
             if (file.isEmpty()) {
+                System.out.println("❌ [Upload] File is empty!");
                 redirectAttributes.addFlashAttribute("error", "Vui lòng chọn file ảnh");
                 return "redirect:/profile";
             }
             
+            System.out.println("   - File name: " + file.getOriginalFilename());
+            System.out.println("   - File size: " + file.getSize() + " bytes");
+            System.out.println("   - Content type: " + file.getContentType());
+            
             if (file.getSize() > MAX_FILE_SIZE) {
+                System.out.println("❌ [Upload] File too large! Size: " + file.getSize());
                 redirectAttributes.addFlashAttribute("error", "File quá lớn. Kích thước tối đa là 5MB");
                 return "redirect:/profile";
             }
             
             // Validate file type
+            System.out.println("📍 [Upload] Step 2: Validating file type...");
             String originalFilename = file.getOriginalFilename();
             if (originalFilename == null) {
+                System.out.println("❌ [Upload] Original filename is null!");
                 redirectAttributes.addFlashAttribute("error", "Tên file không hợp lệ");
                 return "redirect:/profile";
             }
             
             String fileExtension = getFileExtension(originalFilename).toLowerCase();
-            List<String> allowedExtensions = Arrays.asList(allowedTypes.split(","));
+            System.out.println("   - File extension: " + fileExtension);
+            System.out.println("   - Allowed types config: " + allowedTypes);
+            
+            // Parse allowed types and trim spaces
+            List<String> allowedExtensions = Arrays.stream(allowedTypes.split(","))
+                    .map(String::trim)
+                    .collect(java.util.stream.Collectors.toList());
+            System.out.println("   - Allowed extensions after trim: " + allowedExtensions);
             
             if (!allowedExtensions.contains(fileExtension)) {
+                System.out.println("❌ [Upload] File type not allowed!");
                 redirectAttributes.addFlashAttribute("error", "Định dạng file không được hỗ trợ. Chỉ chấp nhận: " + allowedTypes);
                 return "redirect:/profile";
             }
+            System.out.println("✅ [Upload] File type is valid");
             
             // Create upload directory if not exists
-            Path uploadPath = Paths.get("src/main/resources/static/" + uploadDir);
+            System.out.println("📍 [Upload] Step 3: Creating upload directory...");
+            System.out.println("   - Upload directory config: " + uploadDir);
+            
+            // Use absolute path from project root
+            Path uploadPath = Paths.get(new java.io.File("src/main/resources/static").getAbsolutePath(), uploadDir);
+            System.out.println("   - Upload path (configured): " + uploadPath.toString());
+            System.out.println("   - Upload path (absolute): " + uploadPath.toAbsolutePath().toString());
+            
             if (!Files.exists(uploadPath)) {
+                System.out.println("   ⚠️ Upload directory doesn't exist, creating...");
                 Files.createDirectories(uploadPath);
+                System.out.println("   ✅ Directory created successfully");
+            } else {
+                System.out.println("   ✅ Upload directory already exists");
             }
             
             // Generate unique filename
+            System.out.println("📍 [Upload] Step 4: Generating unique filename...");
             String uniqueFilename = UUID.randomUUID().toString() + "." + fileExtension;
+            System.out.println("   - Generated filename: " + uniqueFilename);
+            
             Path filePath = uploadPath.resolve(uniqueFilename);
+            System.out.println("   - File path (relative): " + filePath.toString());
+            System.out.println("   - File path (absolute): " + filePath.toAbsolutePath().toString());
             
             // Save file
+            System.out.println("📍 [Upload] Step 5: Saving file to disk...");
             Files.copy(file.getInputStream(), filePath);
             
-            // Generate URL - sử dụng đường dẫn tương đối với context path
-            String avatarUrl = "/UTE_Fashion/static/" + uploadDir + "/" + uniqueFilename;
+            // Verify file was saved
+            boolean fileExists = Files.exists(filePath);
+            long savedFileSize = fileExists ? Files.size(filePath) : 0;
+            System.out.println("   ✅ File saved successfully");
+            System.out.println("   - File exists on disk: " + fileExists);
+            System.out.println("   - Saved file size: " + savedFileSize + " bytes");
+            System.out.println("   - Original file size: " + file.getSize() + " bytes");
+            
+            // Generate URL
+            System.out.println("📍 [Upload] Step 6: Generating avatar URL...");
+            String contextPath = request.getContextPath();
+            // Store only relative path without context-path for better portability
+            String avatarUrl = "/static/" + uploadDir + "/" + uniqueFilename;
+            System.out.println("   - Context path: " + contextPath);
+            System.out.println("   - Stored avatar URL: " + avatarUrl);
             
             // Update user avatar
+            System.out.println("📍 [Upload] Step 7: Updating user profile in database...");
             UpdateProfileDTO updateProfileDTO = new UpdateProfileDTO();
             updateProfileDTO.setAvatarUrl(avatarUrl);
+            System.out.println("   - UpdateProfileDTO avatar URL: " + updateProfileDTO.getAvatarUrl());
             
-            System.out.println("DEBUG: Uploading avatar for user: " + username);
-            System.out.println("DEBUG: Generated avatar URL: " + avatarUrl);
-            System.out.println("DEBUG: File saved to: " + filePath.toString());
-            System.out.println("DEBUG: updateProfileDTO.getAvatarUrl() before service call: " + updateProfileDTO.getAvatarUrl());
-            
+            System.out.println("   - Calling profileService.updateProfile()...");
             ProfileDTO updatedProfile = profileService.updateProfile(username, updateProfileDTO);
             
-            System.out.println("DEBUG: Profile updated successfully. New avatar URL: " + updatedProfile.getAvatarUrl());
+            System.out.println("   ✅ Profile updated successfully");
+            System.out.println("   - Updated profile avatar URL: " + updatedProfile.getAvatarUrl());
+            
+            System.out.println("✅ [ProfileController] uploadAvatar - SUCCESS");
+            System.out.println("═══════════════════════════════════════════════════════\n");
             
             redirectAttributes.addFlashAttribute("success", "Cập nhật avatar thành công");
             
         } catch (IOException e) {
+            System.out.println("❌ [Upload] IOException: " + e.getMessage());
+            e.printStackTrace();
             redirectAttributes.addFlashAttribute("error", "Lỗi khi upload file: " + e.getMessage());
         } catch (RuntimeException e) {
+            System.out.println("❌ [Upload] RuntimeException: " + e.getMessage());
+            e.printStackTrace();
             redirectAttributes.addFlashAttribute("error", e.getMessage());
+        } catch (Exception e) {
+            System.out.println("❌ [Upload] Unexpected Exception: " + e.getMessage());
+            e.printStackTrace();
+            redirectAttributes.addFlashAttribute("error", "Lỗi không xác định: " + e.getMessage());
         }
         
         return "redirect:/profile";

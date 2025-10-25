@@ -115,14 +115,14 @@
             <div class="row my-4">
                 <div class="col-12">
                     <div class="shop-card">
-                        <div class="shop-info">
+                        <a th:href="@{/products(shopId=${shop.id})}" class="shop-info" style="text-decoration: none; color: inherit;">
                             <img th:src="${shop.logoUrl != null ? shop.logoUrl : 'https://ui-avatars.com/api/?name=' + product.shopName + '&background=random'}"
                                  alt="Shop Logo" class="shop-logo">
                             <div>
                                 <div class="shop-label">Cung cấp bởi</div>
                                 <div class="shop-name" th:text="${product.shopName}">Tên Shop</div>
                             </div>
-                        </div>
+                        </a>
                         <button type="button" class="btn btn-outline-dark btn-contact-shop" id="contact-shop-btn"
                                 th:attr="data-shop-id=${shop.id}, data-shop-name=${shop.shopName}"
                                 sec:authorize="isAuthenticated()">
@@ -397,9 +397,7 @@
                 <div class="product-carousel" id="recentlyViewedCarousel">
                     <a th:href="@{/products/{slug}(slug=${p.slug})}" class="product-card" th:each="p : ${recentlyViewedProducts}" th:attr="data-product-id=${p.productId}">
                         <div class="product-image-container">
-<!--
-                            <img class="product-main-image" th:src="${p.imageUrl}" th:alt="${p.productName}" />
--->
+
                             <div class="sale-badge" th:if="${p.salePrice != null and p.salePrice < p.price}" th:text="|-${#numbers.formatInteger(((p.price - p.salePrice) * 100.0) / p.price, 0)}%|"></div>
                         </div>
                         <div class="product-info text-center">
@@ -488,11 +486,9 @@
                 initRecentView({
                     contextPath: /*[[@{/}]]*/ '/',
                     csrfToken: /*[[${_csrf.token}]]*/ '',
-                    csrfHeader: /*[[${_csrf.headerName}]]*/
+                    csrfHeader: /*[[${_csrf.headerName}]]*/ ''
                 });
-                // Thiết lập các nút điều khiển cho carousel
-                setupProductCarousel('recentlyViewedCarousel', 'prevBtnRecently', 'nextBtnRecently');
-            } else {
+             } else {
                 console.log('[DEBUG] Recently viewed products carousel script not loaded. Skipping carousel initialization.');
             }
         });
