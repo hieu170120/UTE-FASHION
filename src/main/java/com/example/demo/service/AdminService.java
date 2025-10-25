@@ -239,7 +239,9 @@ public class AdminService {
         dto.setEmail(user.getEmail());
         dto.setFullName(user.getFullName());
         dto.setPhone(user.getPhoneNumber());
+        dto.setAvatarUrl(user.getAvatarUrl());
         dto.setIsActive(user.getIsActive());
+        dto.setIsEmailVerified(user.getIsEmailVerified());
         dto.setCreatedAt(user.getCreatedAt());
         dto.setLastLogin(user.getLastLogin());
         dto.setUpdatedAt(user.getUpdatedAt());
