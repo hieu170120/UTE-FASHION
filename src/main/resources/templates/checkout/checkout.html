@@ -108,8 +108,12 @@
                     
                     <!-- Danh sách sản phẩm -->
                     <div class="mb-3" style="max-height: 400px; overflow-y: auto;">
-                        <div class="d-flex align-items-center mb-3 pb-3 border-bottom" th:each="item : ${cart.cartItems}">
-                            <img th:src="${item.productImage}" alt="Product" 
+                        <div th:if="${cart == null || cart.cartItems == null || cart.cartItems.isEmpty()}" class="text-center text-muted p-3">
+                            <i class="fas fa-shopping-cart fa-2x mb-2"></i>
+                            <p>Giỏ hàng trống</p>
+                        </div>
+                        <div class="d-flex align-items-center mb-3 pb-3 border-bottom" th:each="item : ${cart.cartItems}" th:if="${cart != null && cart.cartItems != null}">
+                            <img th:src="${item.productImage}" alt="Product"
                                  class="rounded" style="width: 60px; height: 75px; object-fit: cover;">
                             <div class="ms-3 flex-grow-1">
                                 <h6 class="mb-1" style="font-size: 14px;" th:text="${item.productName}"></h6>
@@ -136,7 +140,7 @@
                     <hr>
                     <div class="d-flex justify-content-between">
                         <h5 class="mb-0">Tạm tính:</h5>
-                        <h5 class="mb-0 text-danger" th:text="${#numbers.formatDecimal(cart.totalAmount, 0, 'COMMA', 0, 'POINT')} + '₫'"></h5>
+                        <h5 class="mb-0 text-danger" th:text="${cart != null ? (#numbers.formatDecimal(cart.totalAmount, 0, 'COMMA', 0, 'POINT') + '₫') : '0₫'}"></h5>
                     </div>
                     <p class="text-muted small mt-2 mb-0">
                         <i class="fas fa-info-circle me-1"></i>
@@ -154,18 +158,59 @@
         // API Địa chỉ Việt Nam (Public API)
         const BASE_API = 'https://provinces.open-api.vn/api';
         
-        // Load danh sách tỉnh/thành phố khi trang load
         document.addEventListener('DOMContentLoaded', async function() {
             await loadProvinces();
             
-            // Track checkout event - backend will derive shop from product
-            if (typeof Analytics !== 'undefined') {
-                const firstProductId = /*[[${cart.cartItems[0]?.productId}]]*/ null;
-                if (firstProductId) {
-                    Analytics.trackCheckoutByProduct(firstProductId);
-                }
+            // 📊 Track checkout cho tất cả sản phẩm trong giỏ hàng
+            const cart = /*[[${cart}]]*/ null;
+            console.log('📊 Cart:', cart);
+            
+            let productIds = [];
+            if (cart && cart.cartItems && Array.isArray(cart.cartItems)) {
+                productIds = cart.cartItems
+                    .filter(item => item && item.productId)
+                    .map(item => item.productId);
+            }
+            
+            console.log('📊 Checkout page loaded');
+            console.log('📊 Product IDs in cart:', productIds);
+            
+            // Track từng sản phẩm (để track cho mỗi shop)
+            if (productIds.length > 0) {
+                // Gọi API để lấy danh sách unique shop IDs từ product IDs
+                trackCheckoutByProducts(productIds);
+            } else {
+                console.warn('⚠️ No products found in cart');
             }
         });
+        
+        // Track checkout cho nhiều sản phẩm
+        async function trackCheckoutByProducts(productIds) {
+            try {
+                // Lấy context path từ URL hiện tại
+                const contextPath = window.location.pathname.split('/')[1];
+                const apiUrl = `/${contextPath}/api/analytics/track/checkout-batch`;
+                
+                console.log('📡 Calling API:', apiUrl);
+                console.log('📦 Payload:', { productIds: productIds });
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ productIds: productIds })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Checkout tracked successfully!', result);
+                } else {
+                    const msg = await response.text();
+                    console.error('❌ Failed:', msg);
+                }
+            } catch (err) {
+                console.error('❌ Error:', err);
+            }
+        }
         
         // Load danh sách tỉnh/thành phố
         async function loadProvinces() {

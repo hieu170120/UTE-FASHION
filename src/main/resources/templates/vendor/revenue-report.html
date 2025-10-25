@@ -646,7 +646,7 @@ tbody td:last-child {
 				<div class="stat-change">
 					<span
 						th:classappend="${report.revenueGrowthPercent >= 0} ? 'change-positive' : 'change-negative'"
-						th:text="${report.revenueGrowthPercent >= 0 ? '▲' : '▼'} + ' ' + ${#numbers.formatDecimal(#numbers.abs(report.revenueGrowthPercent), 0, 'COMMA', 1, 'POINT')} + '%'">▲
+						th:text="${report.revenueGrowthPercent >= 0 ? '▲' : '▼'} + ' ' + ${#numbers.formatDecimal(report.revenueGrowthPercent >= 0 ? report.revenueGrowthPercent : -report.revenueGrowthPercent, 0, 'COMMA', 1, 'POINT')} + '%'">▲
 						0%</span> <span class="change-text">so với tuần trước</span>
 				</div>
 			</div>
@@ -658,7 +658,7 @@ tbody td:last-child {
 				<div class="stat-change">
 					<span
 						th:classappend="${report.ordersGrowthPercent >= 0} ? 'change-positive' : 'change-negative'"
-						th:text="${report.ordersGrowthPercent >= 0 ? '▲' : '▼'} + ' ' + ${#numbers.formatDecimal(#numbers.abs(report.ordersGrowthPercent), 0, 'COMMA', 1, 'POINT')} + '%'">▲
+						th:text="${report.ordersGrowthPercent >= 0 ? '▲' : '▼'} + ' ' + ${#numbers.formatDecimal(report.ordersGrowthPercent >= 0 ? report.ordersGrowthPercent : -report.ordersGrowthPercent, 0, 'COMMA', 1, 'POINT')} + '%'">▲
 						0%</span> <span class="change-text">so với tuần trước</span>
 				</div>
 			</div>
@@ -671,7 +671,7 @@ tbody td:last-child {
 				<div class="stat-change">
 					<span
 						th:classappend="${report.viewsGrowthPercent >= 0} ? 'change-positive' : 'change-negative'"
-						th:text="${report.viewsGrowthPercent >= 0 ? '▲' : '▼'} + ' ' + ${#numbers.formatDecimal(#numbers.abs(report.viewsGrowthPercent), 0, 'COMMA', 1, 'POINT')} + '%'">▲
+						th:text="${report.viewsGrowthPercent >= 0 ? '▲' : '▼'} + ' ' + ${#numbers.formatDecimal(report.viewsGrowthPercent >= 0 ? report.viewsGrowthPercent : -report.viewsGrowthPercent, 0, 'COMMA', 1, 'POINT')} + '%'">▲
 						0%</span> <span class="change-text">so với tuần trước</span>
 				</div>
 			</div>

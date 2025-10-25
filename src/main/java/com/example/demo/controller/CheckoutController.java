@@ -4,7 +4,9 @@ import com.example.demo.dto.CartDTO;
 import com.example.demo.dto.CarrierDTO;
 import com.example.demo.dto.OrderDTO;
 import com.example.demo.entity.User;
+import com.example.demo.entity.Product;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.repository.ProductRepository;
 import com.example.demo.service.CartService;
 import com.example.demo.service.CarrierService;
 import com.example.demo.service.OrderService;
@@ -39,6 +41,9 @@ public class CheckoutController {
     
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private ProductRepository productRepository;
     
     /**
      * Lấy user hiện tại từ JWT authentication hoặc session
@@ -96,6 +101,15 @@ public class CheckoutController {
             model.addAttribute("cart", cart);
             model.addAttribute("currentUser", currentUser);
             model.addAttribute("orderDTO", orderDTO);
+            
+            // 📊 Add firstProductId for checkout tracking
+            Integer firstProductId = null;
+            if (!cart.getCartItems().isEmpty()) {
+                firstProductId = cart.getCartItems().get(0).getProductId();
+            }
+            model.addAttribute("firstProductId", firstProductId);
+            
+            System.out.println("📊 [Checkout] First product ID: " + firstProductId);
             
             return "checkout/checkout";
             

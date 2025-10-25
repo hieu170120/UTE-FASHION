@@ -182,6 +182,20 @@ public class OrderServiceImpl implements OrderService {
     public OrderDTO updateOrderStatus(Integer orderId, String newStatus, String notes, Integer changedBy) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+        
+        // 🔥 FORCE LOAD OrderItems, Product, and Category to avoid lazy loading issues
+        if (order.getOrderItems() != null) {
+            order.getOrderItems().size(); // Trigger lazy load
+            order.getOrderItems().forEach(item -> {
+                if (item.getProduct() != null) {
+                    item.getProduct().getProductName(); // Trigger lazy load
+                    if (item.getProduct().getCategory() != null) {
+                        item.getProduct().getCategory().getCategoryName(); // Trigger lazy load
+                    }
+                }
+            });
+        }
+        
         OrderStatusHistory history = new OrderStatusHistory();
         history.setOrder(order);
         history.setOldStatus(order.getOrderStatus());
