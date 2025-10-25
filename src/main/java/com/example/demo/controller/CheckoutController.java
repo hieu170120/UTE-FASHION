@@ -10,6 +10,7 @@ import com.example.demo.repository.ProductRepository;
 import com.example.demo.service.CartService;
 import com.example.demo.service.CarrierService;
 import com.example.demo.service.OrderService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -102,14 +103,30 @@ public class CheckoutController {
             model.addAttribute("currentUser", currentUser);
             model.addAttribute("orderDTO", orderDTO);
             
-            // 📊 Add firstProductId for checkout tracking
-            Integer firstProductId = null;
-            if (!cart.getCartItems().isEmpty()) {
-                firstProductId = cart.getCartItems().get(0).getProductId();
+            // 📊 Add productIds for checkout tracking
+            try {
+                System.out.println("📊 [Checkout] Cart items count: " + cart.getCartItems().size());
+                cart.getCartItems().forEach(item -> {
+                    System.out.println("📊 [Checkout] Item productId: " + item.getProductId() + ", productName: " + item.getProductName());
+                });
+                
+                java.util.List<Integer> productIds = cart.getCartItems().stream()
+                    .filter(item -> item.getProductId() != null)
+                    .map(item -> item.getProductId())
+                    .collect(java.util.stream.Collectors.toList());
+                
+                // Convert to JSON string to ensure proper serialization
+                ObjectMapper mapper = new ObjectMapper();
+                String productIdsJson = mapper.writeValueAsString(productIds);
+                model.addAttribute("productIdsJson", productIdsJson);
+                
+                System.out.println("📊 [Checkout] Final product IDs: " + productIds);
+                System.out.println("📊 [Checkout] Product IDs JSON: " + productIdsJson);
+            } catch (Exception e) {
+                System.err.println("⚠️ [Checkout] Error serializing productIds: " + e.getMessage());
+                e.printStackTrace();
+                model.addAttribute("productIdsJson", "[]");
             }
-            model.addAttribute("firstProductId", firstProductId);
-            
-            System.out.println("📊 [Checkout] First product ID: " + firstProductId);
             
             return "checkout/checkout";
             

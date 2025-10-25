@@ -9,6 +9,9 @@
 <body>
 
 <div class="container mt-5" layout:fragment="content">
+    <!-- Hidden element to store productIdsJson -->
+    <div id="productIdsContainer" th:data-product-ids="${productIdsJson}" style="display:none;"></div>
+    
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
@@ -153,6 +156,15 @@
 </div>
 
 <th:block layout:fragment="scripts">
+    <script>
+        // 📊 Read productIds from hidden element
+        let PRODUCT_IDS = '[]';
+        const container = document.getElementById('productIdsContainer');
+        if (container) {
+            PRODUCT_IDS = container.getAttribute('data-product-ids') || '[]';
+        }
+        console.log('📊 PRODUCT_IDS raw:', PRODUCT_IDS);
+    </script>
     <script src="/UTE_Fashion/static/js/tracking.js"></script>
     <script>
         // API Địa chỉ Việt Nam (Public API)
@@ -162,18 +174,16 @@
             await loadProvinces();
             
             // 📊 Track checkout cho tất cả sản phẩm trong giỏ hàng
-            const cart = /*[[${cart}]]*/ null;
-            console.log('📊 Cart:', cart);
-            
             let productIds = [];
-            if (cart && cart.cartItems && Array.isArray(cart.cartItems)) {
-                productIds = cart.cartItems
-                    .filter(item => item && item.productId)
-                    .map(item => item.productId);
+            try {
+                productIds = JSON.parse(PRODUCT_IDS);
+                console.log('📊 Parsed productIds:', productIds);
+            } catch (e) {
+                console.warn('⚠️ Failed to parse productIds:', e);
             }
             
             console.log('📊 Checkout page loaded');
-            console.log('📊 Product IDs in cart:', productIds);
+            console.log('📊 Product IDs (parsed):', productIds);
             
             // Track từng sản phẩm (để track cho mỗi shop)
             if (productIds.length > 0) {
