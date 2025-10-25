@@ -305,6 +305,12 @@
             try {
                 tbody.innerHTML = orders.map((order, index) => {
                     console.log(`Processing order ${index}:`, order);
+                    const currentPath = window.location.pathname;
+                    const contextPath = currentPath.substring(0, currentPath.indexOf('/admin'));
+                    const baseUrl = contextPath ? `${contextPath}/admin/orders/` : '/admin/orders/';
+                    const orderId = order.orderId || order.id;
+                    const orderDetailUrl = baseUrl + orderId;
+                    console.log('Order detail URL:', orderDetailUrl, 'orderId:', orderId);
                     return `
                         <tr>
                             <td><strong>#${order.orderNumber || 'N/A'}</strong></td>
@@ -314,7 +320,8 @@
                             <td>${order.itemCount || 0} sản phẩm</td>
                             <td>${order.shippingAddress || 'N/A'}</td>
                             <td>
-                                <a href="/admin/orders/${order.orderId || order.id}" class="btn btn-primary btn-sm">
+                                <a href="${orderDetailUrl}" 
+                                   class="btn btn-primary btn-sm">
                                     <i class="fas fa-eye"></i> Xem chi tiết
                                 </a>
                             </td>
@@ -322,6 +329,15 @@
                     `;
                 }).join('');
                 console.log('Orders displayed successfully');
+                
+                // Add click event listener to all "Xem chi tiết" links
+                const viewDetailLinks = tbody.querySelectorAll('a.btn-primary');
+                viewDetailLinks.forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        console.log('DEBUG: Order detail link clicked, setting sessionStorage');
+                        sessionStorage.setItem('fromUserManagement', 'true');
+                    });
+                });
             } catch (error) {
                 console.error('Error in displayOrders:', error);
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Lỗi hiển thị danh sách đơn hàng</td></tr>';
@@ -616,7 +632,6 @@
                     <table class="table table-hover">
                         <thead class="table-dark">
                             <tr>
-                                <th>Avatar</th>
                                 <th>Username</th>
                                 <th>Email</th>
                                 <th>Họ tên</th>
@@ -630,11 +645,6 @@
                         </thead>
                         <tbody>
                             <tr th:each="user : ${userPage.content}">
-                                <td>
-                                    <img th:src="${user.avatarUrl ?: '/static/image/default-avatar.jpg'}" 
-                                         class="user-avatar" 
-                                         th:alt="${user.username}">
-                                </td>
                                 <td>
                                     <span class="username-link" th:onclick="'showUserOrderHistory(' + ${user.userId} + ')'"
                                           th:text="${user.username}">username</span>
