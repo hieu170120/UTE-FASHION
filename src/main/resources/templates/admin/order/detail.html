@@ -23,6 +23,42 @@
         }
         .dropdown-toggle::after { display: none; }
     </style>
+    <script>
+        // Detect nếu đến từ user-management và update nút back
+        window.addEventListener('load', function() {
+            console.log('=== DEBUG: Order Detail Page Loaded ===');
+            
+            const backButton = document.getElementById('backToListBtn');
+            const fromUserManagement = sessionStorage.getItem('fromUserManagement');
+            
+            // Get context path from current URL
+            const currentPath = window.location.pathname;
+            const contextPath = currentPath.substring(0, currentPath.indexOf('/admin'));
+            const userManagementUrl = contextPath + '/admin/users';
+            
+            console.log('DEBUG: currentPath:', currentPath);
+            console.log('DEBUG: contextPath:', contextPath);
+            console.log('DEBUG: userManagementUrl:', userManagementUrl);
+            console.log('DEBUG: backButton found:', !!backButton);
+            console.log('DEBUG: fromUserManagement:', fromUserManagement);
+            console.log('DEBUG: referrer:', document.referrer);
+            
+            if (backButton) {
+                if (fromUserManagement === 'true') {
+                    console.log('DEBUG: Setting back button to user management (from sessionStorage)');
+                    backButton.href = userManagementUrl;
+                    backButton.innerHTML = '<i class="fas fa-arrow-left"></i> Quay Lại Danh Sách User';
+                    sessionStorage.removeItem('fromUserManagement');
+                } else if (document.referrer.includes('/admin/users') || document.referrer.includes('user-management')) {
+                    console.log('DEBUG: Setting back button to user management (from referrer)');
+                    backButton.href = userManagementUrl;
+                    backButton.innerHTML = '<i class="fas fa-arrow-left"></i> Quay Lại Danh Sách User';
+                }
+            } else {
+                console.error('DEBUG: backToListBtn not found!');
+            }
+        });
+    </script>
 </head>
 <body>
     <nav class="navbar navbar-custom navbar-dark mb-4">
@@ -31,7 +67,7 @@
                 <i class="fas fa-shopping-bag"></i> UTE Fashion Admin
             </a>
             <div class="d-flex align-items-center gap-2">
-                <a th:href="@{/admin/orders}" class="btn btn-light btn-sm me-2">
+                <a id="backToListBtn" th:href="@{/admin/orders}" class="btn btn-light btn-sm me-2">
                     <i class="fas fa-arrow-left"></i> Quay Lại Danh Sách
                 </a>
                 <a th:href="@{/admin/orders/pending}" class="btn btn-warning btn-sm me-2">
