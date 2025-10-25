@@ -64,16 +64,12 @@ public class ProfileService {
         
         // Luôn cập nhật avatar URL nếu có giá trị
         System.out.println("DEBUG: updateProfileDTO.getAvatarUrl() = '" + updateProfileDTO.getAvatarUrl() + "'");
-        if (updateProfileDTO.getAvatarUrl() != null) {
+        if (updateProfileDTO.getAvatarUrl() != null && !updateProfileDTO.getAvatarUrl().trim().isEmpty()) {
             String newAvatarUrl = updateProfileDTO.getAvatarUrl().trim();
-            // Chỉ set null nếu URL thực sự rỗng hoặc chỉ có khoảng trắng
-            if (newAvatarUrl.isEmpty()) {
-                newAvatarUrl = null;
-            }
             System.out.println("DEBUG: Updating avatar URL from '" + user.getAvatarUrl() + "' to '" + newAvatarUrl + "'");
             user.setAvatarUrl(newAvatarUrl);
         } else {
-            System.out.println("DEBUG: Avatar URL is null in updateProfileDTO");
+            System.out.println("DEBUG: Avatar URL is null or empty in updateProfileDTO");
         }
         
         System.out.println("DEBUG: Saving user to database...");
