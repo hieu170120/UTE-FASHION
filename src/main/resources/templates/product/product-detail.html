@@ -115,14 +115,14 @@
             <div class="row my-4">
                 <div class="col-12">
                     <div class="shop-card">
-                        <div class="shop-info">
+                        <a th:href="@{/products(shopId=${shop.id})}" class="shop-info" style="text-decoration: none; color: inherit;">
                             <img th:src="${shop.logoUrl != null ? shop.logoUrl : 'https://ui-avatars.com/api/?name=' + product.shopName + '&background=random'}"
                                  alt="Shop Logo" class="shop-logo">
                             <div>
                                 <div class="shop-label">Cung cấp bởi</div>
                                 <div class="shop-name" th:text="${product.shopName}">Tên Shop</div>
                             </div>
-                        </div>
+                        </a>
                         <button type="button" class="btn btn-outline-dark btn-contact-shop" id="contact-shop-btn"
                                 th:attr="data-shop-id=${shop.id}, data-shop-name=${shop.shopName}"
                                 sec:authorize="isAuthenticated()">
