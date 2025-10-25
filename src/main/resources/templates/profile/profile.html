@@ -159,9 +159,32 @@
                 <div class="col-lg-4 mb-4">
                     <div class="card profile-card">
                         <div class="profile-header">
-                            <img th:src="${profile.avatarUrl ?: 'https://via.placeholder.com/120x120/667eea/ffffff?text=' + profile.username}" 
+                            <!-- Avatar Display with Debug Logging -->
+                            <script th:inline="javascript">
+                                console.log("═══════════════════════════════════════════════");
+                                console.log("🔵 [Profile] Avatar Debug Info");
+                                const avatarUrl = [[${profile.avatarUrl}]];
+                                console.log("   avatarUrl from DB: " + avatarUrl);
+                                console.log("   Type: " + typeof avatarUrl);
+                                console.log("   Is null: " + (avatarUrl === null));
+                                console.log("   Is empty: " + (avatarUrl === '' || avatarUrl === 'null'));
+                                console.log("═══════════════════════════════════════════════");
+                            </script>
+                            
+                            <!-- Show actual avatar if available, otherwise placeholder -->
+                            <img th:if="${profile.avatarUrl != null && profile.avatarUrl != '' && profile.avatarUrl != 'null'}"
+                                 th:src="@{${profile.avatarUrl}}" 
+                                 th:alt="${profile.fullName}" 
+                                 class="profile-avatar"
+                                 onerror="console.error('❌ [Profile] Failed to load avatar from: ' + this.src);"
+                                 onload="console.log('✅ [Profile] Avatar loaded from: ' + this.src);">
+                            
+                            <!-- Show placeholder if no avatar -->
+                            <img th:unless="${profile.avatarUrl != null && profile.avatarUrl != '' && profile.avatarUrl != 'null'}"
+                                 th:src="@{'https://via.placeholder.com/120x120/667eea/ffffff?text=' + ${profile.username}}" 
                                  th:alt="${profile.fullName}" 
                                  class="profile-avatar">
+                            
                             <h4 th:text="${profile.fullName}"></h4>
                             <p class="mb-0" th:text="'@' + ${profile.username}"></p>
                         </div>
@@ -216,7 +239,7 @@
                             <div class="alert alert-info mb-3">
                                 <i class="fas fa-info-circle me-2"></i>
                                 <strong>Hướng dẫn:</strong> Bạn có thể sửa từng trường thông tin độc lập. Để trống các trường không muốn thay đổi. 
-                                Để trống số điện thoại hoặc URL avatar sẽ xóa thông tin đó.
+                                Để trống số điện thoại sẽ xóa thông tin đó. Avatar sẽ được tự động cập nhật sau khi upload thành công.
                             </div>
                             
                             <form th:action="@{/profile/update}" method="post" th:object="${updateProfileDTO}">
@@ -263,53 +286,8 @@
                                                 <span th:errors="*{phoneNumber}"></span>
                                             </div>
                                         </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label for="avatarUrl" class="form-label">URL Avatar</label>
-                                            <input type="url" 
-                                                   class="form-control" 
-                                                   id="avatarUrl" 
-                                                   th:field="*{avatarUrl}"
-                                                   th:value="${profile.avatarUrl}"
-                                                   th:class="${#fields.hasErrors('avatarUrl')} ? 'form-control is-invalid' : 'form-control'"
-                                                   placeholder="Nhập URL hình ảnh mới (để trống để xóa)">
-                                            <div th:if="${#fields.hasErrors('avatarUrl')}" class="invalid-feedback">
-                                                <span th:errors="*{avatarUrl}"></span>
-                                            </div>
-                                        </div>
                                     </div>
                                     
-                                    <!-- Upload Avatar Section -->
-                                    <div class="row">
-                                        <div class="col-md-12 mb-3">
-                                            <label class="form-label">Hoặc Upload Avatar từ máy tính</label>
-                                            <div class="card border-2 border-dashed" style="border-color: #dee2e6 !important;">
-                                                <div class="card-body text-center">
-                                                    <form th:action="@{/profile/upload-avatar}" method="post" enctype="multipart/form-data" id="avatarUploadForm">
-                                                        <div class="mb-3">
-                                                            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
-                                                            <h5 class="text-muted">Chọn ảnh avatar</h5>
-                                                            <p class="text-muted mb-3">
-                                                                Hỗ trợ: JPG, JPEG, PNG, GIF, WEBP<br>
-                                                                Kích thước tối đa: 5MB
-                                                            </p>
-                                                            <input type="file" 
-                                                                   class="form-control" 
-                                                                   id="avatarFile" 
-                                                                   name="avatarFile" 
-                                                                   accept="image/*"
-                                                                   onchange="previewImage(this)">
-                                                        </div>
-                                                        <div id="imagePreview" class="mb-3" style="display: none;">
-                                                            <img id="previewImg" src="" alt="Preview" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
-                                                        </div>
-                                                        <button type="submit" class="btn btn-success" id="uploadBtn" disabled>
-                                                            <i class="fas fa-upload me-2"></i>Upload Avatar
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
                                     <div class="text-end">
                                         <button type="submit" class="btn btn-primary btn-save">
                                             <i class="fas fa-save me-2"></i>Cập nhật thông tin
@@ -317,68 +295,116 @@
                                     </div>
                                 </div>
                             </form>
-                            
-                            <!-- Change Password -->
+                        </div>
+                    </div>
+                    
+                    <!-- Upload Avatar Section - SEPARATE FORM -->
+                    <div class="card profile-card mt-4">
+                        <div class="card-body">
                             <h5 class="section-title">
-                                <i class="fas fa-key me-2"></i>Đổi mật khẩu
+                                <i class="fas fa-image me-2"></i>Cập nhật Avatar
                             </h5>
                             
-                            <form th:action="@{/profile/change-password}" method="post" th:object="${changePasswordDTO}">
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Hướng dẫn:</strong> Chọn ảnh từ máy tính, preview sẽ hiển thị tự động và upload sẽ tiến hành.
+                            </div>
+                            
+                            <form th:action="@{/profile/upload-avatar}" method="post" enctype="multipart/form-data" id="avatarUploadForm">
                                 <div class="form-section">
                                     <div class="row">
                                         <div class="col-md-12 mb-3">
-                                            <label for="currentPassword" class="form-label">Mật khẩu hiện tại *</label>
-                                            <input type="password" 
-                                                   class="form-control" 
-                                                   id="currentPassword" 
-                                                   th:field="*{currentPassword}"
-                                                   th:class="${#fields.hasErrors('currentPassword')} ? 'form-control is-invalid' : 'form-control'"
-                                                   placeholder="Nhập mật khẩu hiện tại">
-                                            <div th:if="${#fields.hasErrors('currentPassword')}" class="invalid-feedback">
-                                                <span th:errors="*{currentPassword}"></span>
+                                            <label class="form-label">Chọn ảnh avatar</label>
+                                            <div class="card border-2 border-dashed" style="border-color: #dee2e6 !important;">
+                                                <div class="card-body text-center">
+                                                    <div class="mb-3">
+                                                        <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                                        <h5 class="text-muted">Chọn ảnh avatar</h5>
+                                                        <p class="text-muted mb-3">
+                                                            Hỗ trợ: JPG, JPEG, PNG, GIF, WEBP<br>
+                                                            Kích thước tối đa: 5MB
+                                                        </p>
+                                                        <input type="file" 
+                                                               class="form-control" 
+                                                               id="avatarFile" 
+                                                               name="avatarFile" 
+                                                               accept="image/*"
+                                                               onchange="previewImage(this)">
+                                                    </div>
+                                                    <div id="imagePreview" class="mb-3" style="display: none;">
+                                                        <img id="previewImg" src="" alt="Preview" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
+                                                    </div>
+                                                    <button type="submit" class="btn btn-success" id="uploadBtn" disabled>
+                                                        <i class="fas fa-upload me-2"></i>Upload Avatar
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label for="newPassword" class="form-label">Mật khẩu mới *</label>
-                                            <input type="password" 
-                                                   class="form-control" 
-                                                   id="newPassword" 
-                                                   th:field="*{newPassword}"
-                                                   th:class="${#fields.hasErrors('newPassword')} ? 'form-control is-invalid' : 'form-control'"
-                                                   placeholder="Nhập mật khẩu mới">
-                                            <div th:if="${#fields.hasErrors('newPassword')}" class="invalid-feedback">
-                                                <span th:errors="*{newPassword}"></span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label for="confirmPassword" class="form-label">Xác nhận mật khẩu *</label>
-                                            <input type="password" 
-                                                   class="form-control" 
-                                                   id="confirmPassword" 
-                                                   th:field="*{confirmPassword}"
-                                                   th:class="${#fields.hasErrors('confirmPassword')} ? 'form-control is-invalid' : 'form-control'"
-                                                   placeholder="Nhập lại mật khẩu mới">
-                                            <div th:if="${#fields.hasErrors('confirmPassword')}" class="invalid-feedback">
-                                                <span th:errors="*{confirmPassword}"></span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="text-end">
-                                        <button type="submit" class="btn btn-warning btn-save">
-                                            <i class="fas fa-key me-2"></i>Đổi mật khẩu
-                                        </button>
                                     </div>
                                 </div>
                             </form>
-                            
-                            <!-- Notice -->
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle me-2"></i>
-                                <strong>Lưu ý:</strong> Tên đăng nhập không thể thay đổi. Nếu bạn muốn thay đổi tên đăng nhập, vui lòng liên hệ với quản trị viên.
+                        </div>
+                    </div>
+                    
+                    <!-- Change Password -->
+                    <h5 class="section-title">
+                        <i class="fas fa-key me-2"></i>Đổi mật khẩu
+                    </h5>
+                    
+                    <form th:action="@{/profile/change-password}" method="post" th:object="${changePasswordDTO}">
+                        <div class="form-section">
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="currentPassword" class="form-label">Mật khẩu hiện tại *</label>
+                                    <input type="password" 
+                                           class="form-control" 
+                                           id="currentPassword" 
+                                           th:field="*{currentPassword}"
+                                           th:class="${#fields.hasErrors('currentPassword')} ? 'form-control is-invalid' : 'form-control'"
+                                           placeholder="Nhập mật khẩu hiện tại">
+                                    <div th:if="${#fields.hasErrors('currentPassword')}" class="invalid-feedback">
+                                        <span th:errors="*{currentPassword}"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="newPassword" class="form-label">Mật khẩu mới *</label>
+                                    <input type="password" 
+                                           class="form-control" 
+                                           id="newPassword" 
+                                           th:field="*{newPassword}"
+                                           th:class="${#fields.hasErrors('newPassword')} ? 'form-control is-invalid' : 'form-control'"
+                                           placeholder="Nhập mật khẩu mới">
+                                    <div th:if="${#fields.hasErrors('newPassword')}" class="invalid-feedback">
+                                        <span th:errors="*{newPassword}"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="confirmPassword" class="form-label">Xác nhận mật khẩu *</label>
+                                    <input type="password" 
+                                           class="form-control" 
+                                           id="confirmPassword" 
+                                           th:field="*{confirmPassword}"
+                                           th:class="${#fields.hasErrors('confirmPassword')} ? 'form-control is-invalid' : 'form-control'"
+                                           placeholder="Nhập lại mật khẩu mới">
+                                    <div th:if="${#fields.hasErrors('confirmPassword')}" class="invalid-feedback">
+                                        <span th:errors="*{confirmPassword}"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-warning btn-save">
+                                    <i class="fas fa-key me-2"></i>Đổi mật khẩu
+                                </button>
                             </div>
                         </div>
+                    </form>
+                    
+                    <!-- Notice -->
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Lưu ý:</strong> Tên đăng nhập không thể thay đổi. Nếu bạn muốn thay đổi tên đăng nhập, vui lòng liên hệ với quản trị viên.
                     </div>
                 </div>
             </div>
@@ -422,8 +448,11 @@
                 const uploadBtn = document.getElementById('uploadBtn');
                 
                 if (file) {
+                    console.log("📍 [Profile] File selected: " + file.name);
+                    
                     // Validate file size (5MB)
                     if (file.size > 5 * 1024 * 1024) {
+                        console.error("❌ [Profile] File too large: " + file.size + " bytes");
                         alert('File quá lớn! Kích thước tối đa là 5MB.');
                         input.value = '';
                         preview.style.display = 'none';
@@ -434,6 +463,7 @@
                     // Validate file type
                     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
                     if (!allowedTypes.includes(file.type)) {
+                        console.error("❌ [Profile] File type not allowed: " + file.type);
                         alert('Định dạng file không được hỗ trợ! Chỉ chấp nhận: JPG, JPEG, PNG, GIF, WEBP.');
                         input.value = '';
                         preview.style.display = 'none';
@@ -441,15 +471,27 @@
                         return;
                     }
                     
+                    console.log("✅ [Profile] File validation passed");
+                    
                     // Show preview
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         previewImg.src = e.target.result;
                         preview.style.display = 'block';
                         uploadBtn.disabled = false;
+                        
+                        console.log("📍 [Profile] Preview displayed");
+                        console.log("📍 [Profile] Auto-submitting upload form in 1 second...");
+                        
+                        // Auto-submit after 1 second to show preview
+                        setTimeout(function() {
+                            console.log("🔵 [Profile] Auto-submitting form...");
+                            document.getElementById('avatarUploadForm').submit();
+                        }, 1000);
                     };
                     reader.readAsDataURL(file);
                 } else {
+                    console.log("📍 [Profile] No file selected");
                     preview.style.display = 'none';
                     uploadBtn.disabled = true;
                 }
@@ -460,15 +502,41 @@
                 const fileInput = document.getElementById('avatarFile');
                 const uploadBtn = document.getElementById('uploadBtn');
                 
+                console.log("═════════════════════════════════════════════════════════");
+                console.log("🔵 [Profile] Avatar upload form - SUBMIT");
+                console.log("   Timestamp: " + new Date().toISOString());
+                
                 if (!fileInput.files[0]) {
+                    console.log("❌ [Profile] No file selected!");
                     e.preventDefault();
                     alert('Vui lòng chọn file ảnh!');
                     return;
                 }
                 
+                const file = fileInput.files[0];
+                console.log("📍 [Profile] Submitting file:");
+                console.log("   Name: " + file.name);
+                console.log("   Size: " + file.size + " bytes");
+                console.log("   Type: " + file.type);
+                
+                console.log("📍 [Profile] Form details:");
+                console.log("   Action: " + this.action);
+                console.log("   Method: " + this.method);
+                console.log("   Enctype: " + this.enctype);
+                
                 // Show loading state
                 uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang upload...';
                 uploadBtn.disabled = true;
+                
+                console.log("📍 [Profile] Form submitted to server...");
+                console.log("═════════════════════════════════════════════════════════");
+                
+                // Allow form to submit normally
+            });
+            
+            // Log when page reloads after upload
+            window.addEventListener('beforeunload', function() {
+                console.log("🔄 [Profile] Page reloading (probably redirect from upload)");
             });
         </script>
     </th:block>
