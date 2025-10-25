@@ -827,11 +827,13 @@ tbody td:last-child {
 							r="70"></circle>
                         <circle class="progress-bar" cx="100" cy="100"
 							r="70"
-							th:attr="stroke-dasharray='440', stroke-dashoffset=${440 - (440 * report.targetProgress / 100)}"></circle>
+							th:attr="stroke-dasharray='440', stroke-dashoffset=${440 - (440 * report.targetProgress / 100)}"
+							th:style="${report.currentMonthRevenue.compareTo(report.monthlyTarget) < 0 ? 'stroke: #ff5252;' : 'stroke: #ff8c42;'}"></circle>
                     </svg>
 					<div class="progress-text">
 						<div class="progress-percent"
-							th:text="${#numbers.formatDecimal(report.targetProgress, 0, 'COMMA', 0, 'POINT')} + '%'">0%</div>
+							th:text="${#numbers.formatDecimal(report.targetProgress, 0, 'COMMA', 0, 'POINT')} + '%'"
+							th:style="${report.currentMonthRevenue.compareTo(report.monthlyTarget) < 0 ? 'color: #ff5252;' : ''}">0%</div>
 						<div class="progress-change"
 							th:text="'+' + ${#numbers.formatDecimal(report.targetGrowth, 0, 'COMMA', 0, 'POINT')} + '% từ tháng trước'">+0%</div>
 					</div>

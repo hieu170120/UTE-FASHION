@@ -180,6 +180,7 @@ public class CartServiceImpl implements CartService {
     
     private CartItemDTO mapToCartItemDTO(CartItem item) {
         CartItemDTO itemDTO = modelMapper.map(item, CartItemDTO.class);
+        itemDTO.setProductId(item.getProduct().getId());
         itemDTO.setProductName(item.getProduct().getProductName());
         itemDTO.setProductImage(getPrimaryImageUrl(item.getProduct()));
         
