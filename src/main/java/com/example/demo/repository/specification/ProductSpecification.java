@@ -22,6 +22,10 @@ public class ProductSpecification {
             spec = spec.and(hasBrand(criteria.getBrandSlug()));
         }
 
+        if (criteria.getShopId() != null) {
+            spec = spec.and(hasShopId(criteria.getShopId()));
+        }
+
         return spec;
     }
 
@@ -48,6 +52,13 @@ public class ProductSpecification {
         return (root, query, criteriaBuilder) -> {
             // Join to the brand entity and check its slug
             return criteriaBuilder.equal(root.join("brand").get("slug"), brandSlug);
+        };
+    }
+
+    private static Specification<Product> hasShopId(Integer shopId) {
+        return (root, query, criteriaBuilder) -> {
+            // Join to the shop entity and check its id
+            return criteriaBuilder.equal(root.join("shop").get("id"), shopId);
         };
     }
 }

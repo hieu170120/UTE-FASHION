@@ -141,11 +141,14 @@
     document.addEventListener("DOMContentLoaded", function () {
         const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
         const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+            // CORRECT & RELIABLE WAY to get the URL
 
-        // --- STATE MANAGEMENT ---
+
+        // --- STATE MANAGEMENT ---+
         const state = {
             categorySlug: /*[[${currentCategory}]]*/ null,
             brandSlug: /*[[${currentBrand}]]*/ null,
+            shopId: /*[[${shopId}]]*/ null, // Added shopId to state
             keyword: /*[[${keyword}]]*/ null,
             sort: /*[[${sort}]]*/ 'newest',
             page: /*[[${currentPage}]]*/ 0,
@@ -181,15 +184,14 @@
                 sort: state.sort,
                 ...(state.categorySlug && { categorySlug: state.categorySlug }),
                 ...(state.brandSlug && { brandSlug: state.brandSlug }),
+                ...(state.shopId && { shopId: state.shopId }), // Add shopId to params
                 ...(state.keyword && { keyword: state.keyword }),
             });
-
-            // CORRECT & RELIABLE WAY to get the URL
 
             const url = /*[[@{/products/fragments/list}]]*/ + `?${params.toString()}`;
             const queryString = params.toString();
             const finalUrl = url + (queryString ? `?${queryString}` : '');
-			console.log("Fetching products from URL:", finalUrl);
+            console.log("Fetching products from URL:", finalUrl);
             fetch(finalUrl)
                 .then(response => {
                     if (!response.ok) throw new Error('Network response was not ok.');
@@ -212,6 +214,7 @@
             const params = new URLSearchParams();
             if (state.categorySlug) params.set('categorySlug', state.categorySlug);
             if (state.brandSlug) params.set('brandSlug', state.brandSlug);
+            if (state.shopId) params.set('shopId', state.shopId); 
             if (state.keyword) params.set('keyword', state.keyword);
             if (state.sort !== 'newest') params.set('sort', state.sort);
             if (state.page > 0) params.set('page', state.page);
@@ -290,7 +293,7 @@
              if(state.categorySlug) {
                  const selectedCategory = state.allCategories.find(c => c.slug === state.categorySlug);
                  if(selectedCategory) pageTitleElement.textContent = selectedCategory.categoryName;
-             } else {
+             } else if (!state.shopId) { // Only reset if not filtering by shop
                  pageTitleElement.textContent = 'Tất cả sản phẩm';
              }
         };
