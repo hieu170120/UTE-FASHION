@@ -1,13 +1,19 @@
 package com.example.demo.controller.vendor;
 
+import com.example.demo.dto.OrderDTO;
 import com.example.demo.dto.RevenueReportDTO;
 import com.example.demo.dto.ShopRegistrationDTO;
 import com.example.demo.entity.Shop;
 import com.example.demo.service.ExcelExportService;
+import com.example.demo.service.OrderService;
 import com.example.demo.service.RevenueReportService;
 import com.example.demo.service.VendorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,12 +22,14 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Controller
@@ -32,6 +40,7 @@ public class VendorController {
     private final VendorService vendorService;
     private final RevenueReportService revenueReportService;
     private final ExcelExportService excelExportService;
+    private final OrderService orderService;
 
     @GetMapping("/register")
     public String showRegistrationForm(Model model) {
@@ -118,20 +127,20 @@ public class VendorController {
         }
 
         Shop shop = shopOpt.get();
-        
+
         // Default to last 7 days if no date range provided
         LocalDate start = startDate != null ? LocalDate.parse(startDate) : LocalDate.now().minusDays(6);
         LocalDate end = endDate != null ? LocalDate.parse(endDate) : LocalDate.now();
-        
+
         RevenueReportDTO report = revenueReportService.getRevenueReport(shop.getId(), start, end);
-        
+
         model.addAttribute("shop", shop);
         model.addAttribute("report", report);
         model.addAttribute("startDate", start.toString());
         model.addAttribute("endDate", end.toString());
         return "vendor/revenue-report";
     }
-    
+
     @GetMapping("/report/revenue/export")
     public ResponseEntity<byte[]> exportRevenueReport(@RequestParam(required = false) String startDate,
                                                        @RequestParam(required = false) String endDate,
@@ -140,17 +149,17 @@ public class VendorController {
         if (shopOpt.isEmpty()) {
             return ResponseEntity.badRequest().build();
         }
-        
+
         Shop shop = shopOpt.get();
         LocalDate start = startDate != null ? LocalDate.parse(startDate) : LocalDate.now().minusDays(6);
         LocalDate end = endDate != null ? LocalDate.parse(endDate) : LocalDate.now();
-        
+
         try {
             RevenueReportDTO report = revenueReportService.getRevenueReport(shop.getId(), start, end);
             byte[] excelData = excelExportService.exportRevenueReport(report, start.toString(), end.toString());
-            
+
             String filename = "BaoCaoDoanhThu_" + shop.getShopName() + "_" + start + "_" + end + ".xlsx";
-            
+
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
@@ -158,5 +167,57 @@ public class VendorController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    @GetMapping("/order-status")
+    public String showOrderStatus(@RequestParam(defaultValue = "0") int page,
+                                  @RequestParam(defaultValue = "10") int size,
+                                  @RequestParam(required = false) String status,
+                                  @RequestParam(required = false) String fromDate,
+                                  @RequestParam(required = false) String toDate,
+                                  Model model,
+                                  RedirectAttributes redirectAttributes) {
+        Optional<Shop> shopOpt = vendorService.getCurrentVendorShop();
+        if (shopOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần có cửa hàng để xem đơn hàng.");
+            return "redirect:/vendor/register";
+        }
+        Shop shop = shopOpt.get();
+
+        // Parse date từ string (nếu có)
+        LocalDateTime fromDateTime = null;
+        LocalDateTime toDateTime = null;
+        if (fromDate != null && !fromDate.isEmpty()) {
+            fromDateTime = LocalDate.parse(fromDate).atStartOfDay();  // Bắt đầu ngày
+        }
+        if (toDate != null && !toDate.isEmpty()) {
+            toDateTime = LocalDate.parse(toDate).atTime(23, 59, 59);  // Cuối ngày
+        }
+
+        // Thêm sort DESC theo orderDate (mới nhất đầu tiên)
+        Sort sort = Sort.by(Sort.Direction.DESC, "orderDate");
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        // Gọi service với filters
+        Page<OrderDTO> orderPage = orderService.getOrdersByShopIdWithFilters(shop.getId(), status, fromDateTime, toDateTime, pageable);
+
+        model.addAttribute("orderPage", orderPage);
+        model.addAttribute("currentPage", page + 1);  // Hiển thị page 1-based trong HTML
+        model.addAttribute("selectedStatus", status);
+        model.addAttribute("fromDate", fromDate);  // Giữ nguyên string để bind lại form
+        model.addAttribute("toDate", toDate);      // Giữ nguyên string để bind lại form
+
+        return "vendor/order-status";
+    }
+    
+    @GetMapping("/orders/{orderId}")
+    public String showOrderDetail(@PathVariable Integer orderId, Model model) {
+        Optional<OrderDTO> orderDTO = orderService.getOrderDetails(orderId);
+        if (orderDTO.isPresent()) {
+            model.addAttribute("order", orderDTO.get());
+        } else {
+            model.addAttribute("errorMessage", "Không tìm thấy đơn hàng.");
+        }
+        return "vendor/order-status-detail";
     }
 }

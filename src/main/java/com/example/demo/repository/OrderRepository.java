@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Integer> {
@@ -41,13 +41,13 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
 
     // Methods for order management
     List<Order> findByOrderStatus(String orderStatus);
-    
+
     List<Order> findByShipperIdAndOrderStatus(Integer shipperId, String orderStatus);
-    
+
     List<Order> findByShipperId(Integer shipperId);
-    
+
     List<Order> findByUserUserId(Integer userId);
-    
+
     @Query("SELECT DISTINCT o FROM Order o " +
            "LEFT JOIN FETCH o.orderItems oi " +
            "LEFT JOIN FETCH o.user " +
@@ -56,12 +56,12 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "WHERE o.user.userId = :userId " +
            "ORDER BY o.orderDate DESC")
     List<Order> findByUserUserIdWithDetails(@Param("userId") Integer userId);
-    
+
     @Query("SELECT o FROM Order o " +
            "WHERE o.user.userId = :userId " +
            "ORDER BY o.orderDate DESC")
     Page<Order> findByUserUserIdOrderByOrderDateDesc(@Param("userId") Integer userId, Pageable pageable);
-    
+
     @Query("SELECT DISTINCT o FROM Order o " +
            "LEFT JOIN FETCH o.orderItems oi " +
            "LEFT JOIN FETCH oi.product " +
@@ -69,8 +69,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "LEFT JOIN FETCH o.shipper " +
            "LEFT JOIN FETCH o.carrier " +
            "WHERE o.id = :orderId")
-    java.util.Optional<Order> findByIdWithDetails(@Param("orderId") Integer orderId);
-    
+    Optional<Order> findByIdWithDetails(@Param("orderId") Integer orderId);
+
     @Query("SELECT o FROM Order o WHERE " +
            "(:status IS NULL OR :status = '' OR o.orderStatus = :status) AND " +
            "(:fromDate IS NULL OR o.orderDate >= :fromDate) AND " +
@@ -79,31 +79,31 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
                               @Param("fromDate") LocalDateTime fromDate,
                               @Param("toDate") LocalDateTime toDate,
                               Pageable pageable);
-    
+
     // Methods for AdminService
     /**
      * Đếm số đơn hàng của user
      */
     long countByUserUserId(Integer userId);
-    
+
     /**
      * Tính tổng tiền đã chi của user
      */
     @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.user.userId = :userId")
     BigDecimal getTotalSpentByUserId(@Param("userId") Integer userId);
-    
+
     /**
      * Lấy ngày đặt hàng gần nhất của user
      */
     @Query("SELECT MAX(o.orderDate) FROM Order o WHERE o.user.userId = :userId")
     LocalDateTime getLastOrderDateByUserId(@Param("userId") Integer userId);
-    
+
     /**
      * Đếm đơn hàng theo trạng thái của user
      */
     @Query("SELECT o.orderStatus, COUNT(o) FROM Order o WHERE o.user.userId = :userId AND o.orderStatus IS NOT NULL GROUP BY o.orderStatus")
     List<Object[]> countOrdersByStatusAndUserId(@Param("userId") Integer userId);
-    
+
     @Query("SELECT o FROM Order o " +
            "LEFT JOIN FETCH o.orderItems oi " +
            "LEFT JOIN FETCH oi.product p " +
@@ -111,4 +111,16 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "WHERE o.shop.id = :shopId " +
            "ORDER BY o.orderDate DESC")
     List<Order> findRecentOrdersByShopId(@Param("shopId") Integer shopId, Pageable pageable);
+
+    Page<Order> findByShopId(Integer shopId, Pageable pageable);
+
+    @Query("SELECT o FROM Order o WHERE o.shop.id = :shopId " +
+           "AND (:status IS NULL OR :status = '' OR o.orderStatus = :status) " +
+           "AND (:fromDate IS NULL OR o.orderDate >= :fromDate) " +
+           "AND (:toDate IS NULL OR o.orderDate <= :toDate)")
+    Page<Order> findByShopIdAndFilters(@Param("shopId") Integer shopId,
+                                       @Param("status") String status,
+                                       @Param("fromDate") LocalDateTime fromDate,
+                                       @Param("toDate") LocalDateTime toDate,
+                                       Pageable pageable);
 }

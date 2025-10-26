@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>Tình Trạng Đơn Hàng - UTE Fashion</title>
+    <th:block layout:fragment="styles">
+        <style>
+            /* Status badges */
+            .status-badge {
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 13px;
+                font-weight: 600;
+                display: inline-block;
+            }
+            .status-processing { 
+                background: #ffc107;
+                color: #000;
+            }
+            .status-confirmed { 
+                background: #17a2b8;
+                color: #fff;
+            }
+            .status-shipping { 
+                background: #007bff;
+                color: #fff;
+            }
+            .status-delivered { 
+                background: #28a745;
+                color: #fff;
+            }
+            .status-return_requested { 
+                background: #fd7e14;
+                color: #fff;
+            }
+            .status-returned { 
+                background: #6c757d;
+                color: #fff;
+            }
+            .status-cancelled { 
+                background: #dc3545;
+                color: #fff;
+            }
+            
+            .card {
+                border: none;
+                border-radius: 10px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            
+            .table-hover tbody tr:hover {
+                background-color: #f8f9fa;
+            }
+        </style>
+    </th:block>
+</head>
+<body>
+<div layout:fragment="content" class="container my-5">
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3><i class="fas fa-shopping-bag"></i> Tình Trạng Đơn Hàng</h3>
+            
+            <!-- Filter Form -->
+            <form method="get" th:action="@{/vendor/order-status}" class="row g-3 mt-3">
+                <!-- Hidden field để reset về trang 0 khi lọc -->
+                <input type="hidden" name="page" value="0">
+                <div class="col-md-4">
+                    <label class="form-label">Trạng thái</label>
+                    <select name="status" class="form-select">
+                        <option value="">-- Tất cả --</option>
+                        <option value="Processing" th:selected="${selectedStatus == 'Processing'}">Đang Xử Lý</option>
+                        <option value="Confirmed" th:selected="${selectedStatus == 'Confirmed'}">Đã Xác Nhận</option>
+                        <option value="Shipping" th:selected="${selectedStatus == 'Shipping'}">Đang Giao</option>
+                        <option value="Delivered" th:selected="${selectedStatus == 'Delivered'}">Đã Giao</option>
+                        <option value="Return_Requested" th:selected="${selectedStatus == 'Return_Requested'}">Yêu Cầu Trả Hàng</option>
+                        <option value="Returned" th:selected="${selectedStatus == 'Returned'}">Đã Trả Hàng</option>
+                        <option value="Cancelled" th:selected="${selectedStatus == 'Cancelled'}">Đã Hủy</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Từ ngày</label>
+                    <input type="date" name="fromDate" class="form-control" th:value="${fromDate}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Đến ngày</label>
+                    <input type="date" name="toDate" class="form-control" th:value="${toDate}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter"></i> Lọc
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Empty State -->
+    <div th:if="${orderPage.totalElements == 0}" class="text-center py-5" style="min-height: 600px; display: flex; align-items: center; justify-content: center;">
+        <div class="card" style="width: 100%;">
+            <div class="card-body">
+                <i class="fas fa-shopping-bag fa-5x text-muted mb-3"></i>
+                <h4 class="text-muted">Chưa có đơn hàng nào</h4>
+                <p class="text-muted">Hiện tại chưa có đơn hàng nào.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Table -->
+    <div th:if="${orderPage.totalElements > 0}" class="card">
+        <div class="card-body">
+            <div class="table-responsive" style="min-height: 600px;">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Mã Đơn</th>
+                            <th>Khách Hàng</th>
+                            <th>Tổng Tiền</th>
+                            <th>Trạng Thái</th>
+                            <th>Ngày Đặt</th>
+                            <th>Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="order : ${orderPage.content}">
+                            <td><strong th:text="${order.orderNumber}"></strong></td>
+                            <td th:text="${order.recipientName}"></td>
+                            <td><span class="text-danger fw-bold" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span></td>
+                            <td>
+                                <span class="status-badge"
+                                      th:classappend="${order.orderStatus == 'Processing' || order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'status-processing' :
+                                                       (order.orderStatus == 'Shipping' ? 'status-shipping' :
+                                                       (order.orderStatus == 'Delivered' ? 'status-delivered' :
+                                                       (order.orderStatus == 'Return_Requested' ? 'status-return_requested' :
+                                                       (order.orderStatus == 'Returned' ? 'status-returned' : 'status-cancelled'))))}"
+                                      th:text="${order.orderStatus == 'Processing' || order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'Đang Xử Lý' :
+                                                (order.orderStatus == 'Shipping' ? 'Đang Giao' :
+                                                (order.orderStatus == 'Delivered' ? 'Đã Giao' :
+                                                (order.orderStatus == 'Return_Requested' ? 'Yêu Cầu Trả Hàng' :
+                                                (order.orderStatus == 'Returned' ? 'Đã Trả Hàng' : 'Đã Hủy'))))}"></span>
+                            </td>
+                            <td th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
+                            <td>
+                                <!-- Chi Tiết -->
+                                <a th:href="@{/vendor/orders/{orderId}(orderId=${order.id})}" 
+                                   class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i> Chi Tiết
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pagination (chỉ hiển khi có đơn hàng) -->
+    <nav class="mt-4" th:if="${orderPage.totalElements > 0}">
+        <ul class="pagination justify-content-center">
+            <!-- Previous -->
+            <li class="page-item" th:classappend="${orderPage.first} ? 'disabled'">
+                <a class="page-link" 
+                   th:href="@{/vendor/order-status(page=${orderPage.number - 1}, status=${selectedStatus}, fromDate=${fromDate}, toDate=${toDate})}" 
+                   th:if="${!orderPage.first}">
+                    <i class="fas fa-chevron-left"></i> Trước
+                </a>
+                <span class="page-link" th:if="${orderPage.first}">
+                    <i class="fas fa-chevron-left"></i> Trước
+                </span>
+            </li>
+            
+            <!-- Page numbers -->
+            <li class="page-item" 
+                th:each="i : ${#numbers.sequence(0, orderPage.totalPages - 1)}"
+                th:classappend="${i == orderPage.number} ? 'active'">
+                <a class="page-link" 
+                   th:href="@{/vendor/order-status(page=${i}, status=${selectedStatus}, fromDate=${fromDate}, toDate=${toDate})}" 
+                   th:text="${i + 1}"></a>
+            </li>
+            
+            <!-- Next -->
+            <li class="page-item" th:classappend="${orderPage.last} ? 'disabled'">
+                <a class="page-link" 
+                   th:href="@{/vendor/order-status(page=${orderPage.number + 1}, status=${selectedStatus}, fromDate=${fromDate}, toDate=${toDate})}" 
+                   th:if="${!orderPage.last}">
+                    Sau <i class="fas fa-chevron-right"></i>
+                </a>
+                <span class="page-link" th:if="${orderPage.last}">
+                    Sau <i class="fas fa-chevron-right"></i>
+                </span>
+            </li>
+        </ul>
+    </nav>
+</div>
+</body>
+</html>
