@@ -354,7 +354,7 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" id="cancelCount" th:text="${cancelCount}">0</div>
-                    <div class="stat-label"><i class="fas fa-times-circle"></i> Đã hủy (Tối đa 3)</div>
+                    <div class="stat-label"><i class="fas fa-times-circle"></i> Đã hủy </div>
                 </div>
             </div>
 
@@ -451,15 +451,8 @@
                     
                     if (distance < 0) {
                         clearInterval(interval);
-                        timerEl.textContent = 'Đã giao!';
-                        timerEl.style.background = '#10B981';
-                        
-                        // Auto complete delivery
-                        fetch('/UTE_Fashion/shipper/orders/' + orderId + '/complete', {
-                            method: 'POST'
-                        }).then(() => {
-                            setTimeout(() => location.reload(), 2000);
-                        });
+                        timerEl.textContent = 'Hết giờ! Vui lòng xác nhận';
+                        timerEl.style.background = '#EF4444';
                         return;
                     }
                     

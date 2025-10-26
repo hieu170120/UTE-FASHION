@@ -40,6 +40,9 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     @Autowired
     private NotificationService notificationService;
     
+    @Autowired
+    private PaymentRepository paymentRepository;
+    
     private static final int MAX_SHIPPER_CANCEL_COUNT = 3;
     private static final Random random = new Random();
 
@@ -272,6 +275,79 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         
         orderRepository.save(order);
     }
+    
+    @Override
+    @Transactional
+    public void shipperConfirmCODPayment(Integer orderId, Integer shipperId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
+        
+        // Kiểm tra shipper có đúng là người được giao không
+        if (!order.getShipper().getId().equals(shipperId)) {
+            throw new IllegalStateException("Bạn không có quyền xác nhận đơn này");
+        }
+        
+        // Kiểm tra trạng thái
+        if (!OrderStatus.SHIPPING.getValue().equals(order.getOrderStatus())) {
+            throw new IllegalStateException("Đơn hàng không ở trạng thái đang giao");
+        }
+        
+        // Cập nhật trạng thái đơn hàng
+        order.setOrderStatus(OrderStatus.DELIVERED.getValue());
+        order.setDeliveredAt(LocalDateTime.now());
+        order.setPaymentStatus("Paid");
+        
+        orderRepository.save(order);
+        
+        // Cập nhật trạng thái thanh toán trong bảng Payment (nếu là COD)
+        paymentRepository.findByOrderIdWithPaymentMethod(orderId).ifPresent(payment -> {
+            if ("COD".equalsIgnoreCase(payment.getPaymentMethod().getMethodCode())) {
+                payment.setPaymentStatus("Success");
+                payment.setPaidAt(LocalDateTime.now());
+                paymentRepository.save(payment);
+            }
+        });
+    }
+    
+    @Override
+    @Transactional
+    public void shipperMarkAsFailedDelivery(Integer orderId, Integer shipperId, String reason) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
+        
+        Shipper shipper = shipperRepository.findById(shipperId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy shipper"));
+        
+        // Kiểm tra quyền
+        if (!order.getShipper().getId().equals(shipperId)) {
+            throw new IllegalStateException("Bạn không có quyền xử lý đơn này");
+        }
+        
+        // Kiểm tra trạng thái
+        if (!OrderStatus.SHIPPING.getValue().equals(order.getOrderStatus())) {
+            throw new IllegalStateException("Đơn hàng không ở trạng thái đang giao");
+        }
+        
+        ShipperCancelHistory history = new ShipperCancelHistory();
+        history.setShipper(shipper);
+        history.setOrder(order);
+        history.setReason("Không giao được:" + reason);
+        cancelHistoryRepository.save(history);
+        
+        // Chuyển về trạng thái PROCESSING để admin xử lý
+        order.setOrderStatus(OrderStatus.PROCESSING.getValue());
+        order.setShipper(null);
+        order.setConfirmedAt(null);
+        order.setAcceptedAt(null);
+        order.setShippedAt(null);
+        order.setEstimatedDeliveryTime(null);
+        order.setShippingTime(null);
+        order.setCancelledBy("Shipper");
+        order.setCancelReason("Không giao được: " + reason);
+        order.setCancelledAt(LocalDateTime.now());
+        
+        orderRepository.save(order);
+    }
 
     // === CUSTOMER FUNCTIONS ===
 
@@ -354,7 +430,21 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         List<Order> orders = orderRepository.findByShipperIdAndOrderStatus(
                 shipperId, OrderStatus.SHIPPING.getValue());
         return orders.stream()
-                .map(order -> modelMapper.map(order, OrderDTO.class))
+                .map(order -> {
+                    OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+                    // Lấy phương thức thanh toán
+                    try {
+                        paymentRepository.findByOrderIdWithPaymentMethod(order.getId()).ifPresent(payment -> {
+                            if (payment.getPaymentMethod() != null) {
+                                orderDTO.setPaymentMethod(payment.getPaymentMethod().getMethodCode());
+                            }
+                        });
+                    } catch (Exception e) {
+                        // Nếu không tìm thấy payment hoặc lỗi, đặt mặc định là COD
+                        orderDTO.setPaymentMethod("COD");
+                    }
+                    return orderDTO;
+                })
                 .collect(Collectors.toList());
     }
     
@@ -365,6 +455,19 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         return orders.stream()
                 .map(order -> {
                     OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+                    
+                    // Lấy phương thức thanh toán
+                    try {
+                        paymentRepository.findByOrderIdWithPaymentMethod(order.getId()).ifPresent(payment -> {
+                            if (payment.getPaymentMethod() != null) {
+                                orderDTO.setPaymentMethod(payment.getPaymentMethod().getMethodCode());
+                            }
+                        });
+                    } catch (Exception e) {
+                        // Nếu không tìm thấy payment hoặc lỗi, đặt mặc định là COD
+                        orderDTO.setPaymentMethod("COD");
+                    }
+                    
                     // Lấy lý do trả hàng nếu có (bao gồm cả trường hợp đã reject)
                     if ("Return_Requested".equals(order.getOrderStatus()) || 
                         "Returned".equals(order.getOrderStatus()) ||
@@ -387,9 +490,21 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         
         OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
         
-        // Explicitly map shipperId (ModelMapper có thể không tự động map)
+        // Explicitly map shipperId (ModelMapper có thể không tỳ động map)
         if (order.getShipper() != null) {
             orderDTO.setShipperId(order.getShipper().getId());
+        }
+        
+        // Lấy phương thức thanh toán
+        try {
+            paymentRepository.findByOrderIdWithPaymentMethod(orderId).ifPresent(payment -> {
+                if (payment.getPaymentMethod() != null) {
+                    orderDTO.setPaymentMethod(payment.getPaymentMethod().getMethodCode());
+                }
+            });
+        } catch (Exception e) {
+            // Nếu không tìm thấy payment hoặc lỗi, đặt mặc định là COD
+            orderDTO.setPaymentMethod("COD");
         }
         
         // Lấy lý do trả hàng nếu có (bao gồm cả trường hợp đã reject)

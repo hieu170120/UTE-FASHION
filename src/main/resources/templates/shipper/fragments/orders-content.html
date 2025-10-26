@@ -238,31 +238,8 @@
                     
                     if (distance < 0) {
                         clearInterval(interval);
-                        timerEl.textContent = 'Đã giao!';
-                        timerEl.style.background = '#10B981';
-                        
-                        // Auto complete delivery
-                        const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
-                        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
-                        
-                        const headers = {};
-                        if (csrfToken && csrfHeader) {
-                            headers[csrfHeader] = csrfToken;
-                        }
-                        
-                        fetch('/UTE_Fashion/shipper/orders/' + orderId + '/complete', {
-                            method: 'POST',
-                            headers: headers,
-                            credentials: 'include'
-                        }).then(() => {
-                            setTimeout(() => {
-                                if (typeof loadContent === 'function') {
-                                    loadContent('orders');
-                                } else {
-                                    location.reload();
-                                }
-                            }, 2000);
-                        });
+                        timerEl.textContent = 'Hết giờ! Vui lòng xác nhận';
+                        timerEl.style.background = '#EF4444';
                         return;
                     }
                     

@@ -181,6 +181,59 @@ public class ShipperOrderController {
         }
     }
     
+    @PostMapping("/{id}/confirm-payment")
+    @ResponseBody
+    public String confirmCODPayment(@PathVariable Integer id, HttpSession session) {
+        User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser == null || currentUser.getRoles() == null || currentUser.getRoles().stream().noneMatch(role -> "SHIPPER".equals(role.getRoleName()))) {
+            return "Unauthorized";
+        }
+        try {
+            Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
+            orderManagementService.shipperConfirmCODPayment(id, shipperId);
+            return "Success";
+        } catch (Exception e) {
+            return "Error: " + e.getMessage();
+        }
+    }
+    
+    @GetMapping("/{id}/failed-delivery")
+    public String showFailedDeliveryPage(@PathVariable Integer id, Model model, HttpSession session, RedirectAttributes redirectAttributes) {
+        User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser == null || currentUser.getRoles() == null || currentUser.getRoles().stream().noneMatch(role -> "SHIPPER".equals(role.getRoleName()))) {
+            return "redirect:/login";
+        }
+        try {
+            OrderDTO order = orderManagementService.getOrderById(id);
+            model.addAttribute("order", order);
+            return "shipper/order/failed-delivery-reason";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+            return "redirect:/shipper";
+        }
+    }
+    
+    @PostMapping("/{id}/failed-delivery")
+    public String markAsFailedDelivery(@PathVariable Integer id, 
+                                       @RequestParam String reason,
+                                       HttpSession session,
+                                       RedirectAttributes redirectAttributes) {
+        User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser == null || currentUser.getRoles() == null || currentUser.getRoles().stream().noneMatch(role -> "SHIPPER".equals(role.getRoleName()))) {
+            return "redirect:/login";
+        }
+        try {
+            Integer shipperId = shipperService.getShipperIdByUserId(currentUser.getUserId());
+            orderManagementService.shipperMarkAsFailedDelivery(id, shipperId, reason);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã báo không giao được hàng!.");
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/shipper";
+    }
+    
     @GetMapping("/notifications")
     @ResponseBody
     public java.util.List<java.util.Map<String, Object>> getNotifications(HttpSession session) {

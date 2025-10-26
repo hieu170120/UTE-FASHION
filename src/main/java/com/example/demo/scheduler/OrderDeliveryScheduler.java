@@ -14,8 +14,10 @@ import java.util.List;
 /**
  * Scheduled task để tự động cập nhật đơn hàng sang trạng thái "Đã Giao"
  * khi hết thời gian đếm ngược (estimated_delivery_time)
+ * 
+ * VÔ HIỆU HÓA: Shipper phải xác nhận thủ công thông qua nút "Đã nhận tiền" (COD) hoặc "Đã giao thành công" (QR)
  */
-@Component
+// @Component // Vô hiệu hóa scheduler
 public class OrderDeliveryScheduler {
 
     @Autowired
@@ -26,8 +28,9 @@ public class OrderDeliveryScheduler {
 
     /**
      * Chạy mỗi 30 giây để kiểm tra các đơn hàng đang giao
+     * VÔ HIỆU HÓA: Không còn tự động complete nữa
      */
-    @Scheduled(fixedRate = 30000) // 30 giây
+    // @Scheduled(fixedRate = 30000) // 30 giây
     public void checkAndUpdateDeliveredOrders() {
         try {
             // Lấy tất cả đơn hàng đang ở trạng thái "SHIPPING"
