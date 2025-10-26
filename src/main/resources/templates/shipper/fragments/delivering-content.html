@@ -38,7 +38,11 @@
                     <div style="font-weight: 600; font-size: 16px;">
                         <i class="fas fa-truck"></i> <span th:text="${order.orderNumber}"></span>
                     </div>
-                    <span style="background: #DBEAFE; color: #1E40AF; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">Đang giao</span>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <span th:if="${order.paymentMethod == 'COD'}" style="background: #FEF3C7; color: #92400E; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">COD</span>
+                        <span th:if="${order.paymentMethod == 'SEPAY_QR'}" style="background: #D1FAE5; color: #065F46; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">Đã thanh toán</span>
+                        <span style="background: #DBEAFE; color: #1E40AF; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">Đang giao</span>
+                    </div>
                 </div>
                 <div style="color: #64748B; font-size: 14px; line-height: 1.6;">
                     <div><i class="fas fa-user"></i> <strong>Khách hàng:</strong> <span th:text="${order.recipientName}"></span></div>
@@ -51,8 +55,34 @@
                         <i class="fas fa-clock"></i> <strong>Thời gian còn lại:</strong> 
                         <span style="background: #3B82F6; color: white; padding: 8px 16px; border-radius: 8px; font-weight: 600;" 
                               th:id="'timer-del-' + ${order.id}"
-                              th:attr="data-delivery-time=${order.estimatedDeliveryTime}"
+                              th:attr="data-delivery-time=${order.estimatedDeliveryTime},data-payment-method=${order.paymentMethod}"
                               class="countdown-timer">--:--</span>
+                    </div>
+                    
+                    <!-- Buttons cho COD -->
+                    <div th:if="${order.paymentMethod == 'COD'}" style="margin-top: 16px; display: flex; gap: 8px;">
+                        <button class="btn btn-success btn-sm" 
+                                th:onclick="'confirmCODPayment(' + ${order.id} + ')'"
+                                style="flex: 1;">
+                            <i class="fas fa-check-circle"></i> Đã nhận tiền
+                        </button>
+                        <a th:href="@{/shipper/orders/{id}/failed-delivery(id=${order.id})}" 
+                           class="btn btn-danger btn-sm" style="flex: 1;">
+                            <i class="fas fa-times-circle"></i> Không giao được
+                        </a>
+                    </div>
+                    
+                    <!-- Buttons cho QR payment (đã thanh toán) -->
+                    <div th:if="${order.paymentMethod != 'COD'}" style="margin-top: 16px; display: flex; gap: 8px;">
+                        <button class="btn btn-success btn-sm" 
+                                th:onclick="'confirmDelivery(' + ${order.id} + ')'"
+                                style="flex: 1;">
+                            <i class="fas fa-check-circle"></i> Đã giao thành công
+                        </button>
+                        <a th:href="@{/shipper/orders/{id}/failed-delivery(id=${order.id})}" 
+                           class="btn btn-danger btn-sm" style="flex: 1;">
+                            <i class="fas fa-times-circle"></i> Không giao được
+                        </a>
                     </div>
                 </div>
             </div>
@@ -146,11 +176,82 @@
     </div>
     
     <script>
+        // Confirm COD Payment
+        function confirmCODPayment(orderId) {
+            if (!confirm('Đã nhận đủ tiền từ khách hàng?')) return;
+            
+            const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+            
+            const headers = {};
+            if (csrfToken && csrfHeader) {
+                headers[csrfHeader] = csrfToken;
+            }
+            
+            fetch('/UTE_Fashion/shipper/orders/' + orderId + '/confirm-payment', {
+                method: 'POST',
+                headers: headers,
+                credentials: 'include'
+            })
+            .then(response => response.text())
+            .then(result => {
+                if (result === 'Success') {
+                    alert('Đã xác nhận giao hàng thành công!');
+                    if (typeof loadContent === 'function') {
+                        loadContent('delivering');
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    alert('Lỗi: ' + result);
+                }
+            })
+            .catch(error => {
+                alert('Lỗi kết nối: ' + error);
+            });
+        }
+        
+        // Confirm Delivery (for already paid orders)
+        function confirmDelivery(orderId) {
+            if (!confirm('Đã giao hàng thành công?')) return;
+            
+            const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+            
+            const headers = {};
+            if (csrfToken && csrfHeader) {
+                headers[csrfHeader] = csrfToken;
+            }
+            
+            fetch('/UTE_Fashion/shipper/orders/' + orderId + '/complete', {
+                method: 'POST',
+                headers: headers,
+                credentials: 'include'
+            })
+            .then(response => response.text())
+            .then(result => {
+                if (result === 'Success') {
+                    alert('Đã xác nhận giao hàng thành công!');
+                    if (typeof loadContent === 'function') {
+                        loadContent('delivering');
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    alert('Lỗi: ' + result);
+                }
+            })
+            .catch(error => {
+                alert('Lỗi kết nối: ' + error);
+            });
+        }
+        
         // Start countdown timers for all delivering orders
         (function() {
             document.querySelectorAll('.countdown-timer[data-delivery-time]').forEach(function(timerEl) {
                 const orderId = timerEl.id.replace('timer-del-', '');
                 const deliveryTime = new Date(timerEl.getAttribute('data-delivery-time')).getTime();
+                const paymentMethod = timerEl.getAttribute('data-payment-method');
                 
                 const interval = setInterval(function() {
                     const now = new Date().getTime();
@@ -158,21 +259,9 @@
                     
                     if (distance < 0) {
                         clearInterval(interval);
-                        timerEl.textContent = 'Đã giao!';
-                        timerEl.style.background = '#10B981';
-                        
-                        // Auto complete delivery
-                        fetch('/UTE_Fashion/shipper/orders/' + orderId + '/complete', {
-                            method: 'POST'
-                        }).then(() => {
-                            setTimeout(() => {
-                                if (typeof loadContent === 'function') {
-                                    loadContent('delivering');
-                                } else {
-                                    location.reload();
-                                }
-                            }, 2000);
-                        });
+                        // Hiển thị thông báo hết giờ cho cả COD và QR, shipper phải xác nhận thủ công
+                        timerEl.textContent = 'Hết giờ! Vui lòng xác nhận';
+                        timerEl.style.background = '#EF4444';
                         return;
                     }
                     

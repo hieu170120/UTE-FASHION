@@ -87,6 +87,18 @@ public interface OrderManagementService {
      */
     void markOrderAsDelivered(Integer orderId);
     
+    /**
+     * Shipper xác nhận đã nhận tiền COD và hoàn thành giao hàng
+     * Cập nhật orderStatus = Delivered và paymentStatus = Paid
+     */
+    void shipperConfirmCODPayment(Integer orderId, Integer shipperId);
+    
+    /**
+     * Shipper báo không giao được hàng
+     * Cập nhật orderStatus về Processing để admin xử lý
+     */
+    void shipperMarkAsFailedDelivery(Integer orderId, Integer shipperId, String reason);
+    
     
     // === CUSTOMER FUNCTIONS ===
     

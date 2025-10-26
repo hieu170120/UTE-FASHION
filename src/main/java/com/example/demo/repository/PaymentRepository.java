@@ -19,6 +19,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
     Optional<Payment> findByOrder_Id(Integer orderId);
     
     /**
+     * Tìm payment theo order ID với JOIN FETCH PaymentMethod
+     */
+    @org.springframework.data.jpa.repository.Query("SELECT p FROM Payment p JOIN FETCH p.paymentMethod WHERE p.order.id = :orderId")
+    Optional<Payment> findByOrderIdWithPaymentMethod(@org.springframework.data.repository.query.Param("orderId") Integer orderId);
+    
+    /**
      * Tìm payment theo transaction ID (SePay transaction)
      */
     Optional<Payment> findByTransactionId(String transactionId);
