@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -46,10 +47,10 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private ShipperRepository shipperRepository;
-    
+
     @Autowired
     private OrderReturnRequestRepository returnRequestRepository;
-    
+
     @Autowired
     private DailyAnalyticsService dailyAnalyticsService;
 
@@ -111,7 +112,7 @@ public class OrderServiceImpl implements OrderService {
             orderItem.setProductSku(cartItem.getProduct().getSku());
             // Note: productImageUrl left null to avoid lazy loading issues
             // Images can be fetched separately if needed in the future
-            
+
             if (cartItem.getVariant() != null) {
                 orderItem.setSize(cartItem.getVariant().getSize().getSizeName());
                 orderItem.setColor(cartItem.getVariant().getColor().getColorName());
@@ -150,10 +151,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public OrderDTO getOrderById(Integer orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
-        return mapToOrderDTO(order);
+    public Optional<OrderDTO> getOrderDetails(Integer orderId) {
+        return orderRepository.findByIdWithDetails(orderId)
+                .map(this::mapToOrderDTO);
     }
 
     @Override
@@ -182,7 +182,7 @@ public class OrderServiceImpl implements OrderService {
     public OrderDTO updateOrderStatus(Integer orderId, String newStatus, String notes, Integer changedBy) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
-        
+
         // 🔥 FORCE LOAD OrderItems, Product, and Category to avoid lazy loading issues
         if (order.getOrderItems() != null) {
             order.getOrderItems().size(); // Trigger lazy load
@@ -195,7 +195,7 @@ public class OrderServiceImpl implements OrderService {
                 }
             });
         }
-        
+
         OrderStatusHistory history = new OrderStatusHistory();
         history.setOrder(order);
         history.setOldStatus(order.getOrderStatus());
@@ -358,30 +358,44 @@ public class OrderServiceImpl implements OrderService {
             updateOrderStatus(orderId, OrderStatus.DELIVERED.getValue(), "Delivery completed", null);
         }
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     public Page<OrderDTO> findOrdersByFilters(String status, String fromDate, String toDate, Pageable pageable) {
         LocalDateTime fromDateTime = null;
         LocalDateTime toDateTime = null;
-        
+
         if (fromDate != null && !fromDate.isEmpty()) {
             fromDateTime = java.time.LocalDate.parse(fromDate).atStartOfDay();
         }
-        
+
         if (toDate != null && !toDate.isEmpty()) {
             toDateTime = java.time.LocalDate.parse(toDate).atTime(23, 59, 59);
         }
-        
+
         return orderRepository.findByFilters(status, fromDateTime, toDateTime, pageable)
+                .map(this::mapToOrderDTO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<OrderDTO> getOrdersByShopId(Integer shopId, Pageable pageable) {
+        return orderRepository.findByShopId(shopId, pageable)
+                .map(this::mapToOrderDTO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<OrderDTO> getOrdersByShopIdWithFilters(Integer shopId, String status, LocalDateTime fromDate, LocalDateTime toDate, Pageable pageable) {
+        return orderRepository.findByShopIdAndFilters(shopId, status, fromDate, toDate, pageable)
                 .map(this::mapToOrderDTO);
     }
 
     private OrderDTO mapToOrderDTO(Order order) {
         OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
-        
+
         // Lấy lý do trả hàng nếu có (bao gồm cả trường hợp đã reject và đã trả hàng)
-        if ("Return_Requested".equals(order.getOrderStatus()) || 
+        if ("Return_Requested".equals(order.getOrderStatus()) ||
             "Returned".equals(order.getOrderStatus()) ||
             ("Delivered".equals(order.getOrderStatus()) && order.getAdminNotes() != null && order.getAdminNotes().contains("Lý do từ chối trả hàng"))) {
             returnRequestRepository.findByOrderId(order.getId())
@@ -389,7 +403,7 @@ public class OrderServiceImpl implements OrderService {
                 .findFirst()
                 .ifPresent(returnRequest -> orderDTO.setReturnReason(returnRequest.getReason()));
         }
-        
+
         // Map order items with full details
         if (order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
             orderDTO.setOrderItems(order.getOrderItems().stream()
@@ -405,25 +419,31 @@ public class OrderServiceImpl implements OrderService {
                     })
                     .collect(Collectors.toList()));
         }
-        
+
         // Map carrier details
         if (order.getCarrier() != null) {
             orderDTO.setCarrierId(order.getCarrier().getId());
             orderDTO.setCarrierName(order.getCarrier().getCarrierName());
         }
-        
+
         // Map shipper details
         if (order.getShipper() != null) {
             orderDTO.setShipperId(order.getShipper().getId());
             orderDTO.setShipperName(order.getShipper().getFullName());
             orderDTO.setShipperPhone(order.getShipper().getPhoneNumber());
         }
-        
+
         // Map user ID
         if (order.getUser() != null) {
             orderDTO.setUserId(order.getUser().getUserId());
         }
-        
+
         return orderDTO;
     }
+
+	@Override
+	public OrderDTO getOrderById(Integer orderId) {
+		return getOrderDetails(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+	}
 }

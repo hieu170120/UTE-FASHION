@@ -4,6 +4,7 @@ import com.example.demo.dto.OrderDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -25,4 +26,7 @@ public interface OrderService {
     void rejectReturn(Integer orderId, String notes, Integer adminId);
     void completeDelivery(Integer orderId);
     Page<OrderDTO> findOrdersByFilters(String status, String fromDate, String toDate, Pageable pageable);
+    Page<OrderDTO> getOrdersByShopId(Integer shopId, Pageable pageable);
+    java.util.Optional<OrderDTO> getOrderDetails(Integer orderId);
+    Page<OrderDTO> getOrdersByShopIdWithFilters(Integer shopId, String status, LocalDateTime fromDate, LocalDateTime toDate, Pageable pageable);
 }

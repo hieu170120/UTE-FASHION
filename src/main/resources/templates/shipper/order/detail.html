@@ -239,11 +239,13 @@
                         <tbody>
                             <tr th:each="item : ${order.orderItems}">
                                 <td>
-                                    <img th:src="${#strings.isEmpty(item.productImage) ? 'https://cdn.hstatic.net/products/200000182297/1.10_b8c81da853bd47bcb8dfe0addedfdd69_master.jpg' : item.productImage}" 
+                                    <img th:src="${#strings.isEmpty(item.productImage)
+                  ? 'https://cdn.hstatic.net/products/200000182297/1.10_b8c81da853bd47bcb8dfe0addedfdd69_master.jpg'
+                  : item.productImage}"
                                          alt="Product Image" 
                                          class="img-thumbnail" 
                                          style="width: 100px; height: 120px; object-fit: cover; border-radius: 8px;"
-                                         onerror="this.onerror=null;this.src='https://cdn.hstatic.net/products/200000182297/1.10_b8c81da853bd47bcb8dfe0addedfdd69_master.jpg';" />
+                                         onerror="this.onerror=null;this.src='https://cdn.hstatic.net/products/200000182297/1.10_b8c81da853bd47bcb8dfe0addedfdd69_master.jpg';">
                                 </td>
                                 <td><strong th:text="${item.productName}"></strong></td>
                                 <td><span class="badge bg-secondary" th:text="${item.size}"></span></td>
