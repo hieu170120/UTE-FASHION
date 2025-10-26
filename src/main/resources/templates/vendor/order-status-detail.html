@@ -86,7 +86,7 @@
                 Mã đơn: <strong th:text="${order.orderNumber}"></strong>
             </p>
         </div>
-        <a th:href="@{/orders/my-orders}" class="btn btn-outline-secondary">
+        <a th:href="@{/vendor/order-status}" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-2"></i>Quay lại
         </a>
     </div>
@@ -139,7 +139,7 @@
                     
                     <div th:each="item : ${order.orderItems}" class="product-item">
                         <!-- Product Image -->
-                        <img th:src="${#strings.isEmpty(item.productImage)
+                       <img th:src="${#strings.isEmpty(item.productImage)
                   ? 'https://cdn.hstatic.net/products/200000182297/1.10_b8c81da853bd47bcb8dfe0addedfdd69_master.jpg'
                   : item.productImage}"
                              class="product-image me-3" 
@@ -176,25 +176,10 @@
                         <i class="fas fa-cog text-primary me-2"></i>Hành động
                     </h5>
                     
-                    <!-- Nút Hủy Đơn (khi Processing, Confirmed hoặc Shipper_Cancelled) -->
-                    <a th:if="${order.orderStatus == 'Processing' or order.orderStatus == 'Confirmed' or order.orderStatus == 'Shipper_Cancelled'}"
-                       th:href="@{/orders/{orderId}/cancel(orderId=${order.id})}"
-                       class="btn btn-danger w-100 mb-2">
-                        <i class="fas fa-times-circle me-2"></i> Hủy Đơn Hàng
-                    </a>
-                    
-                    <!-- Nút Trả Hàng (chỉ khi Delivered và chưa từng request return) -->
-                    <a th:if="${order.orderStatus == 'Delivered' && (order.adminNotes == null || !order.adminNotes.contains('Lý do từ chối trả hàng'))}"
-                       th:href="@{/orders/{orderId}/request-return(orderId=${order.id})}"
-                       class="btn btn-warning w-100 mb-2">
-                        <i class="fas fa-undo me-2"></i> Yêu Cầu Trả Hàng
-                    </a>
-                    
-                    
                     <!-- Thông báo nếu đơn đang chờ xử lý -->
                     <div th:if="${order.orderStatus == 'Processing' || order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled'}" class="alert alert-info mb-0">
                         <i class="fas fa-info-circle me-2"></i>
-                        Đơn hàng đang chờ xử lý. Bạn có thể hủy đơn nếu cần.
+                        Đơn hàng đang chờ xử lý.
                     </div>
                     
                     <div th:if="${order.orderStatus == 'Shipping'}" class="alert alert-primary mb-0">
