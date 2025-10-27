@@ -295,7 +295,23 @@ public class PaymentController {
             // Set carrier vào checkoutData
             checkoutData.setCarrierId(selectedCarrierId);
             
-            // ✅ TẠO ORDER
+            // ✅ LẤY VÀ SET DISCOUNT TỪ SESSION
+            BigDecimal couponDiscount = (BigDecimal) session.getAttribute("couponDiscount");
+            BigDecimal promotionDiscount = (BigDecimal) session.getAttribute("promotionDiscount");
+            
+            // Tính tổng discount
+            BigDecimal totalDiscount = BigDecimal.ZERO;
+            if (couponDiscount != null) {
+                totalDiscount = totalDiscount.add(couponDiscount);
+            }
+            if (promotionDiscount != null) {
+                totalDiscount = totalDiscount.add(promotionDiscount);
+            }
+            
+            // Set discount vào checkoutData để truyền vào order
+            checkoutData.setDiscountAmount(totalDiscount);
+            
+            // ✅ TẠO ORDER (với discount)
             OrderDTO createdOrder = orderService.createOrderFromCart(userId, session.getId(), checkoutData);
             
             // ✅ TẠO PAYMENT (COD - Pending)
@@ -304,6 +320,10 @@ public class PaymentController {
             // Xóa session
             session.removeAttribute("checkoutData");
             session.removeAttribute("checkoutUserId");
+            session.removeAttribute("couponDiscount");
+            session.removeAttribute("promotionDiscount");
+            session.removeAttribute("appliedCouponCode");
+            session.removeAttribute("appliedPromotionId");
             
             redirectAttributes.addFlashAttribute("successMessage", "Đặt hàng thành công! Thanh toán khi nhận hàng.");
             return "redirect:/checkout/order-success?orderId=" + createdOrder.getId();
@@ -340,15 +360,25 @@ public class PaymentController {
             
             // Lấy shipping fee và discount từ session
             BigDecimal shippingFee = (BigDecimal) session.getAttribute("shippingFee");
-            BigDecimal discountAmount = (BigDecimal) session.getAttribute("discountAmount");
+            BigDecimal couponDiscount = (BigDecimal) session.getAttribute("couponDiscount");
+            BigDecimal promotionDiscount = (BigDecimal) session.getAttribute("promotionDiscount");
+            
+            // Tính tổng discount
+            BigDecimal totalDiscount = BigDecimal.ZERO;
+            if (couponDiscount != null) {
+                totalDiscount = totalDiscount.add(couponDiscount);
+            }
+            if (promotionDiscount != null) {
+                totalDiscount = totalDiscount.add(promotionDiscount);
+            }
             
             // Tính tổng tiền = subtotal + shipping - discount
             BigDecimal amount = cart.getTotalAmount();
             if (shippingFee != null) {
                 amount = amount.add(shippingFee);
             }
-            if (discountAmount != null) {
-                amount = amount.subtract(discountAmount);
+            if (totalDiscount.compareTo(BigDecimal.ZERO) > 0) {
+                amount = amount.subtract(totalDiscount);
             }
             
             // ⭐ GENERATE ORDER NUMBER (chưa lưu DB)
@@ -426,7 +456,23 @@ public class PaymentController {
                     checkoutData.setCarrierId(selectedCarrierId);
                 }
                 
-                // TẠO ORDER
+                // ✅ LẤY VÀ SET DISCOUNT TỪ SESSION
+                BigDecimal couponDiscount = (BigDecimal) session.getAttribute("couponDiscount");
+                BigDecimal promotionDiscount = (BigDecimal) session.getAttribute("promotionDiscount");
+                
+                // Tính tổng discount
+                BigDecimal totalDiscount = BigDecimal.ZERO;
+                if (couponDiscount != null) {
+                    totalDiscount = totalDiscount.add(couponDiscount);
+                }
+                if (promotionDiscount != null) {
+                    totalDiscount = totalDiscount.add(promotionDiscount);
+                }
+                
+                // Set discount vào checkoutData để truyền vào order
+                checkoutData.setDiscountAmount(totalDiscount);
+                
+                // TẠO ORDER (với discount)
                 OrderDTO createdOrder = orderService.createOrderFromCart(userId, session.getId(), checkoutData);
                 
                 // TẠO PAYMENT (Success)
@@ -442,6 +488,10 @@ public class PaymentController {
                 session.removeAttribute("pendingOrderNumber");
                 session.removeAttribute("pendingOrderAmount");
                 session.removeAttribute("qrGeneratedAt");
+                session.removeAttribute("couponDiscount");
+                session.removeAttribute("promotionDiscount");
+                session.removeAttribute("appliedCouponCode");
+                session.removeAttribute("appliedPromotionId");
                 
                 response.put("status", "success");
                 response.put("orderId", createdOrder.getId());

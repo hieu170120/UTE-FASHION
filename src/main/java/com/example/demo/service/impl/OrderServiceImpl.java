@@ -91,6 +91,13 @@ public class OrderServiceImpl implements OrderService {
             // Set default shipping fee if no carrier selected
             order.setShippingFee(BigDecimal.valueOf(30000)); // Default 30k
         }
+        
+        // ✅ Set discount amount từ OrderDTO (coupon + promotion)
+        if (orderDTO.getDiscountAmount() != null) {
+            order.setDiscountAmount(orderDTO.getDiscountAmount());
+        } else {
+            order.setDiscountAmount(BigDecimal.ZERO);
+        }
 
         // Auto-assign shop from cart items (assuming all items belong to same shop)
         Shop shop = null;
