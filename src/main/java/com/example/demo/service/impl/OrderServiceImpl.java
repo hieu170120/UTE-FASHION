@@ -56,6 +56,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private ModelMapper modelMapper;
+    
+    // Add logger
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(OrderServiceImpl.class);
 
     @Override
     @Transactional
@@ -214,8 +217,51 @@ public class OrderServiceImpl implements OrderService {
         else if (newStatus.equals(OrderStatus.SHIPPING.getValue())) order.setShippedAt(LocalDateTime.now());
         else if (newStatus.equals(OrderStatus.DELIVERED.getValue())) {
             order.setDeliveredAt(LocalDateTime.now());
-            // Update daily analytics when order is delivered
-            dailyAnalyticsService.updateDailyAnalyticsForOrder(order);
+            
+            // 🔥 TRIGGER COMMISSION CALCULATION
+            logger.info("═══════════════════════════════════════════════════════════");
+            logger.info("🔔 [COMMISSION] ORDER DELIVERED - Commission Calculation Started");
+            logger.info("   OrderID: {}, Shop: {}, TotalAmount: {}", 
+                orderId, 
+                order.getShop() != null ? order.getShop().getShopName() : "Unknown",
+                order.getTotalAmount());
+            
+            try {
+                // Load shop info for logging
+                if (order.getShop() != null && order.getShop().getCommissionPercentage() != null) {
+                    logger.info("   Shop Commission: {}%", order.getShop().getCommissionPercentage());
+                    BigDecimal expectedCommission = order.getTotalAmount()
+                        .multiply(order.getShop().getCommissionPercentage())
+                        .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+                    logger.info("   Expected Commission Amount: {}", expectedCommission);
+                } else {
+                    logger.warn("   ⚠️ Shop or commission percentage is NULL");
+                }
+                
+                // Call analytics service to calculate commission
+                dailyAnalyticsService.updateDailyAnalyticsForOrder(order);
+                
+                logger.info("✅ [COMMISSION] Commission calculation completed successfully");
+                logger.info("═══════════════════════════════════════════════════════════");
+            } catch (RuntimeException e) {
+                logger.error("═══════════════════════════════════════════════════════════");
+                logger.error("❌ [COMMISSION] ERROR calculating commission for order: {}", orderId);
+                logger.error("🔴 Exception: {}", e.getMessage());
+                logger.error("🔴 Cause: {}", e.getCause() != null ? e.getCause().getMessage() : "Unknown");
+                logger.error("", e);
+                logger.error("═══════════════════════════════════════════════════════════");
+                // Re-throw to show error to admin
+                throw e;
+            } catch (Exception e) {
+                logger.error("═══════════════════════════════════════════════════════════");
+                logger.error("❌ [COMMISSION] UNEXPECTED ERROR calculating commission for order: {}", orderId);
+                logger.error("🔴 Exception Type: {}", e.getClass().getName());
+                logger.error("🔴 Exception: {}", e.getMessage());
+                logger.error("", e);
+                logger.error("═══════════════════════════════════════════════════════════");
+                // Wrap and re-throw
+                throw new RuntimeException("Lỗi tính chiết khấu - " + e.getMessage(), e);
+            }
         }
         else if (newStatus.equals(OrderStatus.CANCELLED.getValue())) order.setCancelledAt(LocalDateTime.now());
         orderRepository.save(order);
@@ -335,6 +381,24 @@ public class OrderServiceImpl implements OrderService {
         if (!order.getOrderStatus().equals("Return Requested")) {
             throw new RuntimeException("No return requested");
         }
+        
+        // 🔥 HOÀN CHIẾT KHẤU TRƯỚC KHI CHUYỂN SANG RETURNED STATUS
+        if (order.getShop() != null && order.getOrderStatus().equals(OrderStatus.DELIVERED.getValue())) {
+            try {
+                logger.info("═══════════════════════════════════════════════════════════");
+                logger.info("🔴 [REFUND] Approving return - Processing commission refund");
+                logger.info("   OrderID: {}, Shop: {}", orderId, order.getShop().getShopName());
+                
+                dailyAnalyticsService.refundCommissionForOrder(order);
+                
+                logger.info("✅ [REFUND] Commission refunded successfully");
+                logger.info("═══════════════════════════════════════════════════════════");
+            } catch (Exception e) {
+                logger.error("❌ [REFUND] Error refunding commission, but continuing with return approval", e);
+                // Không throw exception - cho phép approve return dù lỗi refund
+            }
+        }
+        
         updateOrderStatus(orderId, OrderStatus.RETURNED.getValue(), notes, adminId);
         // Additional refund logic if needed
     }

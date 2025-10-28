@@ -678,6 +678,55 @@ tbody td:last-child {
 
 		</div>
 
+		<!-- Commission Section (NEW) -->
+		<div style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); margin-top: 20px; border-left: 4px solid #ff8c42;">
+			<div class="card-header" style="margin-bottom: 20px;">
+				<h3 class="card-title">💰 Chiết Khấu & Tiền Thực Nhận</h3>
+			</div>
+			
+			<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+				<!-- Commission Percentage -->
+				<div style="background: #fff8f3; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #ffe0cc;">
+					<div style="font-size: 12px; color: #999; margin-bottom: 8px;">Tỷ Lệ Chiết Khấu</div>
+					<div style="font-size: 32px; font-weight: 700; color: #ff8c42;" th:text="${report.commissionPercentage != null ? report.commissionPercentage + '%' : '0%'}">0%</div>
+					<div style="font-size: 11px; color: #666; margin-top: 4px;">Theo cấu hình shop</div>
+				</div>
+				
+				<!-- Commission Amount (This Period) -->
+				<div style="background: #ffebee; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #ff5252;">
+					<div style="font-size: 12px; color: #999; margin-bottom: 8px;">💸 Chiết Khấu Kỳ Này</div>
+					<div style="font-size: 28px; font-weight: 700; color: #ff5252;" th:text="${report.commissionAmount != null ? #numbers.formatDecimal(report.commissionAmount, 0, 'COMMA', 0, 'POINT') + 'đ' : '0đ'}">0đ</div>
+					<div style="font-size: 11px; color: #666; margin-top: 4px;">Nền tảng lấy</div>
+				</div>
+				
+				<!-- Total Revenue -->
+				<div style="background: #e8f5e9; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #4caf50;">
+					<div style="font-size: 12px; color: #999; margin-bottom: 8px;">📊 Tổng Doanh Thu</div>
+					<div style="font-size: 28px; font-weight: 700; color: #00c853;" th:text="${report.totalRevenue != null ? #numbers.formatDecimal(report.totalRevenue, 0, 'COMMA', 0, 'POINT') + 'đ' : '0đ'}">0đ</div>
+					<div style="font-size: 11px; color: #666; margin-top: 4px;">Doanh thu ghi nhận</div>
+				</div>
+				
+				<!-- Net Revenue (After Commission) -->
+				<div style="background: #f0f7ff; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #1976d2;">
+					<div style="font-size: 12px; color: #999; margin-bottom: 8px;">✅ Tiền Thực Nhận</div>
+					<div style="font-size: 28px; font-weight: 700; color: #1976d2;" th:text="${report.shopNetRevenue != null ? #numbers.formatDecimal(report.shopNetRevenue, 0, 'COMMA', 0, 'POINT') + 'đ' : '0đ'}">0đ</div>
+					<div style="font-size: 11px; color: #666; margin-top: 4px;">Sau trừ chiết khấu</div>
+				</div>
+			</div>
+			
+			<!-- Commission Formula Display -->
+			<div style="margin-top: 20px; padding: 16px; background: #fafafa; border-radius: 8px; border-left: 3px solid #ff8c42;">
+				<div style="font-size: 12px; color: #666; margin-bottom: 8px;">📐 Công Thức Tính:</div>
+				<div style="font-size: 13px; color: #333; line-height: 1.8;">
+					<div><strong>Tiền Chiết Khấu</strong> = Tổng Doanh Thu × Tỷ Lệ Chiết Khấu ÷ 100</div>
+					<div style="margin-top: 4px;"><strong>Tiền Shop Nhận</strong> = Tổng Doanh Thu - Tiền Chiết Khấu</div>
+					<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e0e0e0; color: #999;">
+						<strong th:text="${'Ví dụ: ' + #numbers.formatDecimal(report.totalRevenue, 0, 'COMMA', 0, 'POINT') + 'đ × ' + (report.commissionPercentage != null ? report.commissionPercentage : 0) + '% = ' + #numbers.formatDecimal(report.commissionAmount, 0, 'COMMA', 0, 'POINT') + 'đ chiết khấu'}">Ví dụ...</strong>
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<!-- Middle Row -->
 		<div class="middle-row">
 			<!-- Revenue Analytics Chart -->

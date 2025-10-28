@@ -3,12 +3,40 @@
 -- Author: Admin
 -- Description: Thêm cột commission_percentage để quản lý chiết khấu cho mỗi shop
 
-ALTER TABLE Shops
-ADD COLUMN commission_percentage DECIMAL(5, 2) DEFAULT 0.00 NOT NULL;
+USE UTE_Fashion;
+GO
 
--- Thêm index cho việc truy vấn nhanh hơn (tùy chọn)
-CREATE INDEX idx_shops_commission_percentage ON Shops(commission_percentage);
+-- Check if column already exists
+IF NOT EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_NAME = 'Shops' AND COLUMN_NAME = 'commission_percentage'
+)
+BEGIN
+    ALTER TABLE Shops
+    ADD commission_percentage DECIMAL(5, 2) DEFAULT 0.00 NOT NULL;
+    
+    PRINT '✅ Added commission_percentage column to Shops table'
+END
+ELSE
+BEGIN
+    PRINT '⚠️  commission_percentage column already exists in Shops table'
+END
+GO
 
--- Log migration
-INSERT INTO migration_log (migration_name, status, executed_at) 
-VALUES ('migration_add_commission_percentage', 'completed', GETDATE());
+-- Check if index exists
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes 
+    WHERE name = 'idx_shops_commission_percentage' AND object_id = OBJECT_ID('Shops')
+)
+BEGIN
+    CREATE INDEX idx_shops_commission_percentage ON Shops(commission_percentage);
+    PRINT '✅ Created index idx_shops_commission_percentage'
+END
+ELSE
+BEGIN
+    PRINT '⚠️  Index idx_shops_commission_percentage already exists'
+END
+GO
+
+PRINT '✅ Migration: Shops.commission_percentage completed'
+GO

@@ -231,7 +231,322 @@ ENDPOINT API: PUT /admin/shops/{id}/commission
    - So sánh hiệu suất các shop với cùng mức chiết khấu
 
 ================================================================================
-10. LIÊN HỆ & HỖ TRỢ
+10. CÁCH SỬ DỤNG CHO DEVELOPERS
+================================================================================
+
+7.1 Inject Service:
+   @Autowired
+   private ShopService shopService;
+
+7.2 Gọi Service:
+   BigDecimal commission = new BigDecimal("15.50");
+   ShopDTO updatedShop = shopService.updateShopCommission(shopId, commission);
+
+7.3 Xử lý Exception:
+   try {
+       ShopDTO updatedShop = shopService.updateShopCommission(shopId, commission);
+   } catch (ResourceNotFoundException ex) {
+       // Shop không tìm thấy
+   } catch (IllegalArgumentException ex) {
+       // Chiết khấu không hợp lệ
+   }
+
+================================================================================
+11. CHIẾN LƯỢC ÁP DỤNG CHIẾT KHẤU KHI ĐƠN HÀNG THÀNH CÔNG
+================================================================================
+
+PHẦN NÀY CHI TIẾT CÁC BƯỚC TRIỂN KHAI TÍNH TOÁN VÀ LƯU TRỮ CHIẾT KHẤU
+
+📋 TỔNG QUÁT WORKFLOW:
+─────────────────────────────────────────────────────────────────────────────
+
+1. KHÁCH HÀNG ĐẶT HÀNG + THANH TOÁN
+   ↓
+2. HỆ THỐNG TẠO ORDER VỚI TỔNG TIỀN (totalAmount)
+   ↓
+3. SHIPPER GIAO HÀNG (Status: SHIPPING)
+   ↓
+4. KHÁCH NHẬN HÀNG ✓ (Status: DELIVERED) ← ĐIỂM KÍCH HOẠT TÍNH CHIẾT KHẤU
+   ↓
+5. TÍNH TOÁN CHIẾT KHẤU DỰA TRÊN COMMISSION_PERCENTAGE
+   ↓
+6. LƯU VÀO SHOPANALYTICS & TRỪ TỪ TIỀN SHOP NHẬN
+   ↓
+7. CẬP NHẬT DASHBOARD CHO ADMIN & SHOP OWNER
+
+
+📝 IMPLEMENTATION DETAILS - TỪNG BƯỚC CHI TIẾT
+═════════════════════════════════════════════════════════════════════════════
+
+BƯỚC 1: ĐIỂM KÍCH HOẠT - PHÁT HIỆN ĐƠN HÀNG DELIVERED
+─────────────────────────────────────────────────────
+
+Vị trí: OrderServiceImpl.java - Hàm updateOrderStatus()
+Kích hoạt khi: Order chuyển từ SHIPPING → DELIVERED
+
+```java
+@Override
+@Transactional
+public OrderDTO updateOrderStatus(Integer orderId, String newStatus, 
+                                  String notes, Integer changedBy) {
+    Order order = orderRepository.findById(orderId)
+        .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+    
+    String oldStatus = order.getOrderStatus();
+    
+    // Cập nhật trạng thái
+    order.setOrderStatus(newStatus);
+    order.setDeliveredAt(LocalDateTime.now());
+    
+    // 🔥 KÍCH HOẠT TÍNH CHIẾT KHẤU KHI DELIVERED
+    if ("DELIVERED".equals(newStatus) && 
+        !"DELIVERED".equals(oldStatus)) {
+        
+        // Gọi service tính toán chiết khấu
+        dailyAnalyticsService.updateDailyAnalyticsForOrder(order);
+        logger.info("✅ Commission calculation triggered for order: {}", orderId);
+    }
+    
+    // ... các xử lý khác ...
+    return mapToOrderDTO(order);
+}
+```
+
+BƯỚC 2: TÍNH TOÁN CHIẾT KHẤU
+────────────────────────────
+
+Vị trí: DailyAnalyticsServiceImpl.java - Hàm updateShopAnalytics()
+Đã triển khai sẵn! (Xem chi tiết trong mã nguồn)
+
+Công thức:
+┌─────────────────────────────────────────────────────────────┐
+│ commissionAmount = totalAmount × commissionPercentage / 100 │
+│ shopNetRevenue = totalAmount - commissionAmount             │
+└─────────────────────────────────────────────────────────────┘
+
+Code logic:
+```java
+private void updateShopAnalytics(Integer shopId, LocalDate date, Order order) {
+    // Tìm hoặc tạo ShopAnalytics cho ngày hôm nay
+    ShopAnalytics analytics = findOrCreateShopAnalytics(shopId, date, order);
+    
+    // Cộng doanh thu
+    analytics.setTotalRevenue(
+        analytics.getTotalRevenue().add(order.getTotalAmount())
+    );
+    analytics.setTotalOrders(analytics.getTotalOrders() + 1);
+    
+    // 🆕 TÍNH CHIẾT KHẤU
+    Shop shop = order.getShop();
+    if (shop != null && shop.getCommissionPercentage() != null) {
+        BigDecimal commissionPercentage = shop.getCommissionPercentage();
+        
+        // Tính tiền chiết khấu cho đơn hàng này
+        BigDecimal commissionAmount = order.getTotalAmount()
+            .multiply(commissionPercentage)
+            .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+        
+        // Tính tiền shop thực nhận
+        BigDecimal shopNetRevenue = order.getTotalAmount()
+            .subtract(commissionAmount);
+        
+        // Cộng dồn vào ShopAnalytics hôm nay
+        analytics.setCommissionPercentage(commissionPercentage);
+        analytics.setCommissionAmount(
+            (analytics.getCommissionAmount() != null ? 
+             analytics.getCommissionAmount() : BigDecimal.ZERO)
+            .add(commissionAmount)
+        );
+        analytics.setShopNetRevenue(
+            (analytics.getShopNetRevenue() != null ? 
+             analytics.getShopNetRevenue() : BigDecimal.ZERO)
+            .add(shopNetRevenue)
+        );
+    }
+    
+    shopAnalyticsRepository.save(analytics);
+}
+```
+
+BƯỚC 3: LƯU CHIẾT KHẤU VÀO DATABASE
+──────────────────────────────────
+
+Bảng: ShopAnalytics
+Bản ghi lưu những thông tin sau:
+
+┌─────────────────────────────────────┐
+│ ShopAnalytics Record                │
+├─────────────────────────────────────┤
+│ analytics_id:         1001          │
+│ shop_id:              1             │
+│ period_type:          'DAY'         │
+│ period_start:         2025-10-24    │
+│ period_end:           2025-10-24    │
+│ total_revenue:        400.000 đ     │  ← Doanh thu ghi nhận
+│ total_orders:         1             │  ← Số đơn hàng
+│ commission_percentage: 10.00%       │  ← Tỷ lệ chiết khấu
+│ commission_amount:    40.000 đ      │  ← Tiền chiết khấu
+│ shop_net_revenue:     360.000 đ     │  ← Tiền shop nhận
+│ growth_percent:       0%            │
+│ created_at:           2025-10-24    │
+│ updated_at:           2025-10-24    │
+└─────────────────────────────────────┘
+
+BƯỚC 4: SỬ DỤNG CHIẾT KHẤU CHO CÁC MỤC ĐÍCH
+───────────────────────────────────────────
+
+1. DASHBOARD ADMIN: Xem tiền chiết khấu lấy được
+   - Tổng tiền từ tất cả orders
+   - Tổng chiết khấu hôm nay
+   - Danh sách các shop và chiết khấu từng shop
+
+2. DASHBOARD SHOP OWNER: Xem tiền thực nhận
+   - Doanh thu ghi nhận: 400.000 đ
+   - Trừ chiết khấu: -40.000 đ
+   - Tiền có thể rút: 360.000 đ
+
+3. BÁNG CÁO & ANALYTICS:
+   - Tính tốc độ phát triển (growth%)
+   - So sánh hiệu suất shop
+   - Báo cáo doanh thu theo giai đoạn (DAY, WEEK, MONTH)
+
+4. TÍNH TIỀN RÚT:
+   - Tiền rút = ShopNetRevenue - (Số tiền đã rút trước đây)
+
+
+📊 BẢNG SỬ LÝ TOÀN QUY TRÌNH
+═════════════════════════════════════════════════════════════════════════════
+
+Giả sử: Shop A có commission 10%, khách thanh toán 400.000 đ
+
+┌──────────────────────────────────────────────────────────────┐
+│ BƯỚC 1: KHÁCH HÀNG THANH TOÁN 400.000 đ                     │
+├──────────────────────────────────────────────────────────────┤
+│ Order.totalAmount = 400.000 đ ✓                             │
+│ Order.status = "PROCESSING"                                 │
+│ Chiết khấu chưa tính                                        │
+└──────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────┐
+│ BƯỚC 2: KHÁCH NHẬN HÀNG THÀNH CÔNG                          │
+├──────────────────────────────────────────────────────────────┤
+│ Order.status = "DELIVERED" ✓ ← KÍCH HOẠT TÍNH CHIẾT KHẤU   │
+│ Order.deliveredAt = 2025-10-24 14:00:00                     │
+└──────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────┐
+│ BƯỚC 3: HỆ THỐNG TÍNH CHIẾT KHẤU                            │
+├──────────────────────────────────────────────────────────────┤
+│ commissionAmount = 400.000 × 10% / 100 = 40.000 đ           │
+│ shopNetRevenue = 400.000 - 40.000 = 360.000 đ               │
+└──────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────┐
+│ BƯỚC 4: LƯU VÀO SHOPANALYTICS                               │
+├──────────────────────────────────────────────────────────────┤
+│ ShopAnalytics.totalRevenue += 400.000 đ                     │
+│ ShopAnalytics.commissionAmount += 40.000 đ                  │
+│ ShopAnalytics.shopNetRevenue += 360.000 đ                   │
+│ ShopAnalytics.totalOrders += 1                              │
+└──────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────┐
+│ BƯỚC 5: HIỂN THỊ TRÊN DASHBOARD                             │
+├──────────────────────────────────────────────────────────────┤
+│ ADMIN XEM:                                                   │
+│ ├─ Hôm nay Platform lấy: 40.000 đ (từ commission)           │
+│ ├─ Shop A doanh thu: 400.000 đ                              │
+│ └─ Shop A thực nhận: 360.000 đ                              │
+│                                                              │
+│ SHOP OWNER XEM:                                              │
+│ ├─ Doanh thu ghi nhận: 400.000 đ                            │
+│ ├─ Trừ chiết khấu: -40.000 đ                                │
+│ └─ Có thể rút: 360.000 đ                                    │
+└──────────────────────────────────────────────────────────────┘
+
+
+🔧 CÁC TRƯỜNG HỢP ĐẶC BIỆT CẦN XỬ LÝ
+═════════════════════════════════════════════════════════════════════════════
+
+1. ORDER BỊ HỦY (CANCELLED)
+   - Không tính chiết khấu
+   - Không cập nhật ShopAnalytics
+   - Hoàn tiền cho khách
+
+2. ORDER BỊ TRƯẢ (REFUNDED)
+   - Nếu đã tính chiết khấu → Hoàn lại chiết khấu cho shop
+   - Cập nhật ShopAnalytics: trừ đi commissionAmount
+   - Hoàn toàn bộ tiền cho khách
+
+3. ORDER KHÔNG CÓ SHOP (EDGE CASE)
+   - Validate: order.getShop() != null
+   - Nếu NULL → Skip tính chiết khấu, log warning
+
+4. SHOP KHÔNG CÓ COMMISSION PERCENTAGE
+   - Mặc định = 0.00%
+   - Không lấy chiết khấu từ order này
+   - ShopNetRevenue = totalAmount (toàn bộ cho shop)
+
+5. NHIỀU ORDER TRONG 1 NGÀY
+   - Mỗi order được tính chiết khấu riêng
+   - Cộng dồn tất cả vào 1 ShopAnalytics record
+   - Không tạo bản ghi riêng cho từng order
+
+
+✅ CHECKLIST TRIỂN KHAI
+═════════════════════════════════════════════════════════════════════════════
+
+Frontend:
+  ☑ Hiển thị commission_percentage trên trang quản lý shop (Admin)
+  ☑ Thêm modal/form để cập nhật commission
+  ☑ Hiển thị chiết khấu trên dashboard shop owner
+  ☑ Hiển thị tiền thực nhận (sau trừ chiết khấu) trên dashboard
+
+Backend - Services:
+  ☑ ShopService.updateShopCommission() - Cập nhật mức chiết khấu
+  ☑ DailyAnalyticsService.updateDailyAnalyticsForOrder() - Tính chiết khấu
+  ☑ OrderService.updateOrderStatus() - Kích hoạt tính chiết khấu khi DELIVERED
+  ☑ Thêm xử lý hoàn chiết khấu khi refund
+
+Backend - Database:
+  ☑ Shops table có commission_percentage
+  ☑ ShopAnalytics có commission_percentage, commission_amount, shop_net_revenue
+  ☑ Migration scripts tạo các cột mới
+
+Testing:
+  ☑ Test tính toán chiết khấu chính xác
+  ☑ Test order hủy không tính chiết khấu
+  ☑ Test refund hoàn chiết khấu
+  ☑ Test multiple orders cumulative calculation
+  ☑ Test commission 0% không lấy tiền
+
+
+📈 CÔNG THỨC TÍNH TOÁN - CHUẨN HÓA
+═════════════════════════════════════════════════════════════════════════════
+
+Cho mỗi đơn hàng thành công (DELIVERED):
+
+1. Chiết khấu từ Platform:
+   CommissionAmount = TotalAmount × (CommissionPercentage / 100)
+
+2. Tiền Shop nhận:
+   ShopNetRevenue = TotalAmount - CommissionAmount
+
+3. Kiểm chứng:
+   CommissionAmount + ShopNetRevenue = TotalAmount ✓
+
+Ví dụ thực tế:
+   TotalAmount = 1.000.000 đ
+   CommissionPercentage = 15%
+   
+   CommissionAmount = 1.000.000 × (15 / 100) = 150.000 đ
+   ShopNetRevenue = 1.000.000 - 150.000 = 850.000 đ
+   
+   Kiểm chứng: 150.000 + 850.000 = 1.000.000 ✓
+
+
+================================================================================
+12. LIÊN HỆ & HỖ TRỢ
 ================================================================================
 
 Nếu có bất kỳ câu hỏi hoặc vấn đề, vui lòng liên hệ:

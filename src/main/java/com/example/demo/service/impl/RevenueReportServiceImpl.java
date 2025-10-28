@@ -17,9 +17,13 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class RevenueReportServiceImpl implements RevenueReportService {
+
+    private static final Logger logger = LoggerFactory.getLogger(RevenueReportServiceImpl.class);
 
     @Autowired
     private OrderRepository orderRepository;
@@ -50,6 +54,9 @@ public class RevenueReportServiceImpl implements RevenueReportService {
     
     @Autowired
     private ProductRepository productRepository;
+    
+    @Autowired
+    private ShopRepository shopRepository;
     
     private static final String[] COLORS = {"#ff8c42", "#ffb366", "#ffd4a8", "#ffe8d6"};
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd MMM", Locale.ENGLISH);
@@ -138,6 +145,9 @@ public class RevenueReportServiceImpl implements RevenueReportService {
         
         // High stock products (top 5)
         report.setHighStockProducts(getHighStockProducts(shopId));
+        
+        // 🆕 COMMISSION CALCULATION
+        calculateAndSetCommission(shopId, startDate, endDate, report);
         
         return report;
     }
@@ -421,5 +431,105 @@ public class RevenueReportServiceImpl implements RevenueReportService {
                 return dto;
             })
             .collect(Collectors.toList());
+    }
+    
+    /**
+     * 🆕 Calculate and set commission data on the revenue report
+     */
+    private void calculateAndSetCommission(Integer shopId, LocalDate startDate, LocalDate endDate, RevenueReportDTO report) {
+        logger.info("═════════════════════════════════════════════════════════════");
+        logger.info("🔵 [RevenueReport] calculateAndSetCommission - START");
+        logger.info("   shopId: {}, period: {} to {}", shopId, startDate, endDate);
+        
+        try {
+            // Fetch shop to get commission percentage
+            logger.info("📍 [RevenueReport] Fetching shop with ID: {}", shopId);
+            Shop shop = shopRepository.findById(shopId).orElse(null);
+            
+            if (shop == null) {
+                logger.warn("⚠️  [RevenueReport] Shop not found for shopId: {}", shopId);
+                report.setCommissionPercentage(BigDecimal.ZERO);
+                report.setCommissionAmount(BigDecimal.ZERO);
+                report.setShopNetRevenue(report.getTotalRevenue() != null ? report.getTotalRevenue() : BigDecimal.ZERO);
+                return;
+            }
+            
+            logger.info("✅ [RevenueReport] Found shop: {} (ID: {})", shop.getShopName(), shop.getId());
+            logger.info("   Shop commission percentage from database: {}", shop.getCommissionPercentage());
+            
+            if (shop.getCommissionPercentage() == null) {
+                logger.warn("⚠️  [RevenueReport] Shop commission_percentage is NULL - defaulting to 0%");
+                report.setCommissionPercentage(BigDecimal.ZERO);
+                report.setCommissionAmount(BigDecimal.ZERO);
+                report.setShopNetRevenue(report.getTotalRevenue() != null ? report.getTotalRevenue() : BigDecimal.ZERO);
+                return;
+            }
+            
+            BigDecimal commissionPercentage = shop.getCommissionPercentage();
+            logger.info("✅ [RevenueReport] Commission percentage retrieved: {}%", commissionPercentage);
+            
+            // Fetch ShopAnalytics để lấy tổng chiết khấu trong kỳ này
+            logger.info("📍 [RevenueReport] Fetching ShopAnalytics for date range: {} to {}", startDate, endDate);
+            List<ShopAnalytics> analytics = shopAnalyticsRepository.findDayAnalyticsByDateRange(shopId, startDate, endDate);
+            logger.info("✅ [RevenueReport] Found {} ShopAnalytics records", analytics.size());
+            
+            if (analytics.isEmpty()) {
+                logger.warn("⚠️  [RevenueReport] No ShopAnalytics data found for this period - commission will be 0");
+            }
+            
+            // Log each analytics record
+            for (int i = 0; i < analytics.size(); i++) {
+                ShopAnalytics record = analytics.get(i);
+                logger.info("   Record {}: Date={} to {}, Commission={}, NetRevenue={}, TotalRevenue={}", 
+                    i + 1, 
+                    record.getPeriodStart(), 
+                    record.getPeriodEnd(),
+                    record.getCommissionAmount(),
+                    record.getShopNetRevenue(),
+                    record.getTotalRevenue());
+            }
+            
+            // Cộng dồn tất cả commission_amount từ ShopAnalytics
+            logger.info("📍 [RevenueReport] Aggregating commission_amount from all records...");
+            BigDecimal totalCommissionAmount = analytics.stream()
+                .map(ShopAnalytics::getCommissionAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            logger.info("✅ [RevenueReport] Total commission amount: {}", totalCommissionAmount);
+            
+            // Cộng dồn tất cả shop_net_revenue từ ShopAnalytics
+            logger.info("📍 [RevenueReport] Aggregating shop_net_revenue from all records...");
+            BigDecimal totalShopNetRevenue = analytics.stream()
+                .map(ShopAnalytics::getShopNetRevenue)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            logger.info("✅ [RevenueReport] Total shop net revenue: {}", totalShopNetRevenue);
+            
+            // Set vào report
+            logger.info("📍 [RevenueReport] Setting commission data on report DTO");
+            report.setCommissionPercentage(commissionPercentage);
+            report.setCommissionAmount(totalCommissionAmount);
+            report.setShopNetRevenue(totalShopNetRevenue);
+            
+            logger.info("✅ [RevenueReport] Commission data set successfully:");
+            logger.info("   Commission %: {}", report.getCommissionPercentage());
+            logger.info("   Commission Amount: {}", report.getCommissionAmount());
+            logger.info("   Shop Net Revenue: {}", report.getShopNetRevenue());
+            logger.info("═════════════════════════════════════════════════════════════");
+            
+        } catch (Exception e) {
+            logger.error("═════════════════════════════════════════════════════════════");
+            logger.error("❌ [RevenueReport] ERROR in calculateAndSetCommission");
+            logger.error("═════════════════════════════════════════════════════════════");
+            logger.error("🔴 Exception Type: {}", e.getClass().getName());
+            logger.error("🔴 Exception Message: {}", e.getMessage());
+            logger.error("", e);
+            logger.error("═════════════════════════════════════════════════════════════");
+            
+            // Set default values and continue (don't throw - we want the report to load)
+            report.setCommissionPercentage(BigDecimal.ZERO);
+            report.setCommissionAmount(BigDecimal.ZERO);
+            report.setShopNetRevenue(BigDecimal.ZERO);
+        }
     }
 }

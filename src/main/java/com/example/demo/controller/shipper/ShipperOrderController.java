@@ -13,10 +13,15 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Controller
 @RequestMapping("/shipper/orders")
 public class ShipperOrderController {
+
+    private static final Logger logger = LoggerFactory.getLogger(ShipperOrderController.class);
 
     @Autowired
     private OrderManagementService orderManagementService;
@@ -168,15 +173,30 @@ public class ShipperOrderController {
 
     @PostMapping("/{id}/complete")
     @ResponseBody
+    @Transactional
     public String completeOrder(@PathVariable Integer id, HttpSession session) {
+        logger.info("═══════════════════════════════════════════════════════════");
+        logger.info("🚀 [ShipperController] completeOrder endpoint called");
+        logger.info("   Order ID: {}", id);
+        
         User currentUser = (User) session.getAttribute("currentUser");
         if (currentUser == null || currentUser.getRoles() == null || currentUser.getRoles().stream().noneMatch(role -> "SHIPPER".equals(role.getRoleName()))) {
+            logger.warn("⚠️ [ShipperController] Unauthorized access - returning 'Unauthorized'");
             return "Unauthorized";
         }
         try {
+            logger.info("📍 [ShipperController] Calling orderManagementService.markOrderAsDelivered()");
             orderManagementService.markOrderAsDelivered(id);
+            logger.info("✅ [ShipperController] Order marked as delivered successfully");
+            logger.info("═══════════════════════════════════════════════════════════");
             return "Success";
         } catch (Exception e) {
+            logger.error("═══════════════════════════════════════════════════════════");
+            logger.error("❌ [ShipperController] Exception in completeOrder");
+            logger.error("🔴 Exception Type: {}", e.getClass().getName());
+            logger.error("🔴 Exception Message: {}", e.getMessage());
+            logger.error("", e);
+            logger.error("═══════════════════════════════════════════════════════════");
             return "Error: " + e.getMessage();
         }
     }
