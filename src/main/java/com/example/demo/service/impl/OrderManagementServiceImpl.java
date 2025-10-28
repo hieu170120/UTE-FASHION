@@ -54,11 +54,66 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     private static final int MAX_SHIPPER_CANCEL_COUNT = 3;
     private static final Random random = new Random();
 
+    // === VENDOR FUNCTIONS ===
+
+    @Override
+    @Transactional
+    public void vendorConfirmOrder(Integer orderId, Integer shopId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng không tồn tại"));
+        
+        // Kiểm tra đơn hàng có thuộc shop này không
+        if (order.getShop() == null || !order.getShop().getId().equals(shopId)) {
+            throw new IllegalStateException("Bạn không có quyền xử lý đơn hàng này");
+        }
+        
+        // Kiểm tra trạng thái - chỉ cho phép xác nhận khi đang Processing
+        if (!OrderStatus.PROCESSING.getValue().equals(order.getOrderStatus())) {
+            throw new IllegalStateException("Đơn hàng không ở trạng thái chờ xác nhận");
+        }
+        
+        // Cập nhật trạng thái sang Vendor_Confirmed
+        order.setOrderStatus(OrderStatus.VENDOR_CONFIRMED.getValue());
+        order.setConfirmedAt(LocalDateTime.now());
+        
+        orderRepository.save(order);
+        
+        logger.info("✅ Vendor (Shop ID: {}) đã xác nhận đơn hàng #{}", shopId, order.getOrderNumber());
+    }
+
+    @Override
+    @Transactional
+    public void vendorRejectOrder(Integer orderId, Integer shopId, String reason) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng không tồn tại"));
+        
+        // Kiểm tra đơn hàng có thuộc shop này không
+        if (order.getShop() == null || !order.getShop().getId().equals(shopId)) {
+            throw new IllegalStateException("Bạn không có quyền xử lý đơn hàng này");
+        }
+        
+        // Kiểm tra trạng thái - chỉ cho phép từ chối khi đang Processing
+        if (!OrderStatus.PROCESSING.getValue().equals(order.getOrderStatus())) {
+            throw new IllegalStateException("Đơn hàng không ở trạng thái chờ xác nhận");
+        }
+        
+        // Cập nhật trạng thái sang Cancelled và lưu lý do
+        order.setOrderStatus(OrderStatus.CANCELLED.getValue());
+        order.setCancelReason("Vendor từ chối: " + reason);
+        order.setCancelledAt(LocalDateTime.now());
+        order.setCancelledBy("VENDOR");
+        
+        orderRepository.save(order);
+        
+        logger.info("❌ Vendor (Shop ID: {}) đã từ chối đơn hàng #{} - Lý do: {}", shopId, order.getOrderNumber(), reason);
+    }
+
     // === ADMIN FUNCTIONS ===
 
     @Override
     public List<OrderDTO> getPendingOrders() {
-        List<Order> orders = orderRepository.findByOrderStatus(OrderStatus.PROCESSING.getValue());
+        // Admin chỉ thấy đơn đã được vendor xác nhận (Vendor_Confirmed)
+        List<Order> orders = orderRepository.findByOrderStatus(OrderStatus.VENDOR_CONFIRMED.getValue());
         return orders.stream()
                 .map(order -> modelMapper.map(order, OrderDTO.class))
                 .collect(Collectors.toList());
@@ -73,10 +128,10 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         Shipper shipper = shipperRepository.findById(shipperId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy shipper"));
         
-        // Kiểm tra trạng thái đơn hàng (cho phép Processing hoặc Shipper_Cancelled)
-        if (!OrderStatus.PROCESSING.getValue().equals(order.getOrderStatus()) 
+        // Kiểm tra trạng thái đơn hàng (cho phép Vendor_Confirmed hoặc Shipper_Cancelled)
+        if (!OrderStatus.VENDOR_CONFIRMED.getValue().equals(order.getOrderStatus()) 
             && !OrderStatus.SHIPPER_CANCELLED.getValue().equals(order.getOrderStatus())) {
-            throw new IllegalStateException("Đơn hàng không ở trạng thái chờ xử lý hoặc shipper hủy");
+            throw new IllegalStateException("Đơn hàng không ở trạng thái chờ xử lý (vendor đã xác nhận) hoặc shipper hủy");
         }
         
         // KHÔNG xóa thông tin hủy cũ - giữ lại để admin xem lịch sử
@@ -440,9 +495,10 @@ public class OrderManagementServiceImpl implements OrderManagementService {
             throw new IllegalStateException("Bạn không có quyền hủy đơn này");
         }
         
-        // Chỉ cho phép hủy khi đơn đang xử lý, đã xử lý hoặc shipper hủy (chưa giao)
+        // Chỉ cho phép hủy khi đơn đang xử lý, vendor đã xác nhận, đã xử lý hoặc shipper hủy (chưa giao)
         String status = order.getOrderStatus();
         if (!OrderStatus.PROCESSING.getValue().equals(status) && 
+            !OrderStatus.VENDOR_CONFIRMED.getValue().equals(status) &&
             !OrderStatus.CONFIRMED.getValue().equals(status) &&
             !OrderStatus.SHIPPER_CANCELLED.getValue().equals(status)) {
             throw new IllegalStateException("Không thể hủy đơn ở trạng thái này");

@@ -104,8 +104,9 @@
                         <label class="form-label">Trạng thái</label>
                         <select name="status" class="form-select">
                             <option value="">-- Tất cả --</option>
-                            <option value="Processing" th:selected="${selectedStatus == 'Processing'}">Đang Xử Lý</option>
-                            <option value="Confirmed" th:selected="${selectedStatus == 'Confirmed'}">Đã Xác Nhận</option>
+                            <option value="Processing" th:selected="${selectedStatus == 'Processing'}">Chờ Vendor Xác Nhận</option>
+                            <option value="Vendor_Confirmed" th:selected="${selectedStatus == 'Vendor_Confirmed'}">Vendor Đã Xác Nhận</option>
+                            <option value="Confirmed" th:selected="${selectedStatus == 'Confirmed'}">Đã Chọn Shipper</option>
                             <option value="Shipping" th:selected="${selectedStatus == 'Shipping'}">Đang Giao</option>
                             <option value="Delivered" th:selected="${selectedStatus == 'Delivered'}">Đã Giao</option>
                             <option value="Return_Requested" th:selected="${selectedStatus == 'Return_Requested'}">Yêu Cầu Trả Hàng</option>
@@ -167,19 +168,21 @@
                                 <td>
                                     <span class="status-badge" 
                                           th:classappend="${order.orderStatus == 'Processing' ? 'status-processing' : 
+                                                         (order.orderStatus == 'Vendor_Confirmed' ? 'status-confirmed' :
                                                          (order.orderStatus == 'Confirmed' ? 'status-confirmed' : 
                                                          (order.orderStatus == 'Shipping' ? 'status-shipping' : 
                                                          (order.orderStatus == 'Delivered' ? 'status-delivered' : 
                                                          (order.orderStatus == 'Return_Requested' ? 'status-return_requested' : 
                                                          (order.orderStatus == 'Returned' ? 'status-returned' : 
-                                                         (order.orderStatus == 'Shipper_Cancelled' ? 'status-shipper_cancelled' : 'status-cancelled'))))))}"
-                                          th:text="${order.orderStatus == 'Processing' ? 'Đang Xử Lý' : 
-                                                  (order.orderStatus == 'Confirmed' ? 'Đã Xác Nhận' : 
+                                                         (order.orderStatus == 'Shipper_Cancelled' ? 'status-shipper_cancelled' : 'status-cancelled')))))))}"
+                                          th:text="${order.orderStatus == 'Processing' ? 'Chờ Vendor Xác Nhận' : 
+                                                  (order.orderStatus == 'Vendor_Confirmed' ? 'Vendor Đã Xác Nhận' :
+                                                  (order.orderStatus == 'Confirmed' ? 'Đã Chọn Shipper' : 
                                                   (order.orderStatus == 'Shipping' ? 'Đang Giao' : 
                                                   (order.orderStatus == 'Delivered' ? 'Đã Giao' : 
                                                   (order.orderStatus == 'Return_Requested' ? 'Yêu Cầu Trả Hàng' : 
                                                   (order.orderStatus == 'Returned' ? 'Đã Trả Hàng' : 
-                                                  (order.orderStatus == 'Shipper_Cancelled' ? 'Shipper Hủy' : 'Đã Hủy'))))))}"></span>
+                                                  (order.orderStatus == 'Shipper_Cancelled' ? 'Shipper Hủy' : 'Đã Hủy')))))))}"></span>
                                 </td>
                                 <td th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
                                 <td>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>Từ chối đơn hàng</title>
+    <th:block layout:fragment="styles">
+        <style>
+            .reject-form-card {
+                max-width: 600px;
+                margin: 50px auto;
+                border-radius: 16px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            }
+        </style>
+    </th:block>
+</head>
+<body>
+<div layout:fragment="content" class="container my-5">
+    <div class="card reject-form-card">
+        <div class="card-body p-4">
+            <h3 class="card-title text-danger mb-4">
+                <i class="fas fa-times-circle me-2"></i>Từ chối đơn hàng
+            </h3>
+            
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Lưu ý:</strong> Đơn hàng sẽ bị hủy và khách hàng sẽ được thông báo.
+            </div>
+            
+            <div class="mb-3">
+                <p><strong>Mã đơn:</strong> <span th:text="${order.orderNumber}"></span></p>
+                <p><strong>Tổng tiền:</strong> <span class="text-danger" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span></p>
+            </div>
+            
+            <form th:action="@{/vendor/orders/{id}/reject(id=${order.id})}" method="post">
+                <div class="mb-4">
+                    <label for="reason" class="form-label">Lý do từ chối <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="reason" name="reason" rows="4" 
+                              placeholder="Vui lòng nhập lý do từ chối đơn hàng (ví dụ: Hết hàng, không thể giao, ...)" 
+                              required minlength="10"></textarea>
+                    <div class="form-text">Tối thiểu 10 ký tự</div>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-danger flex-grow-1">
+                        <i class="fas fa-times-circle me-2"></i>Xác nhận từ chối
+                    </button>
+                    <a th:href="@{/vendor/orders/{id}(id=${order.id})}" class="btn btn-secondary flex-grow-1">
+                        <i class="fas fa-arrow-left me-2"></i>Quay lại
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

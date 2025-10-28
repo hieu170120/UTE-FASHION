@@ -5,6 +5,7 @@ import com.example.demo.dto.RevenueReportDTO;
 import com.example.demo.dto.ShopRegistrationDTO;
 import com.example.demo.entity.Shop;
 import com.example.demo.service.ExcelExportService;
+import com.example.demo.service.OrderManagementService;
 import com.example.demo.service.OrderService;
 import com.example.demo.service.RevenueReportService;
 import com.example.demo.service.VendorService;
@@ -41,6 +42,7 @@ public class VendorController {
     private final RevenueReportService revenueReportService;
     private final ExcelExportService excelExportService;
     private final OrderService orderService;
+    private final OrderManagementService orderManagementService;
 
     @GetMapping("/register")
     public String showRegistrationForm(Model model) {
@@ -219,5 +221,74 @@ public class VendorController {
             model.addAttribute("errorMessage", "Không tìm thấy đơn hàng.");
         }
         return "vendor/order-status-detail";
+    }
+    
+    /**
+     * Vendor xác nhận có hàng
+     */
+    @PostMapping("/orders/{orderId}/confirm")
+    public String confirmOrder(@PathVariable Integer orderId, 
+                              RedirectAttributes redirectAttributes) {
+        Optional<Shop> shopOpt = vendorService.getCurrentVendorShop();
+        if (shopOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần có cửa hàng để xác nhận đơn hàng.");
+            return "redirect:/vendor/register";
+        }
+        
+        try {
+            orderManagementService.vendorConfirmOrder(orderId, shopOpt.get().getId());
+            redirectAttributes.addFlashAttribute("successMessage", "Xác nhận đơn hàng thành công! Đơn hàng đang chờ admin chọn shipper.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/vendor/orders/" + orderId;
+    }
+    
+    /**
+     * Hiển thị trang nhập lý do từ chối
+     */
+    @GetMapping("/orders/{orderId}/reject")
+    public String showRejectForm(@PathVariable Integer orderId, Model model, RedirectAttributes redirectAttributes) {
+        Optional<Shop> shopOpt = vendorService.getCurrentVendorShop();
+        if (shopOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần có cửa hàng.");
+            return "redirect:/vendor/register";
+        }
+        
+        Optional<OrderDTO> orderDTO = orderService.getOrderDetails(orderId);
+        if (orderDTO.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy đơn hàng.");
+            return "redirect:/vendor/order-status";
+        }
+        
+        model.addAttribute("order", orderDTO.get());
+        return "vendor/order-reject-reason";
+    }
+    
+    /**
+     * Xử lý từ chối đơn hàng
+     */
+    @PostMapping("/orders/{orderId}/reject")
+    public String rejectOrder(@PathVariable Integer orderId,
+                             @RequestParam String reason,
+                             RedirectAttributes redirectAttributes) {
+        Optional<Shop> shopOpt = vendorService.getCurrentVendorShop();
+        if (shopOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần có cửa hàng để từ chối đơn hàng.");
+            return "redirect:/vendor/register";
+        }
+        
+        if (reason == null || reason.trim().isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Vui lòng nhập lý do từ chối.");
+            return "redirect:/vendor/orders/" + orderId + "/reject";
+        }
+        
+        try {
+            orderManagementService.vendorRejectOrder(orderId, shopOpt.get().getId(), reason);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã từ chối đơn hàng.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/vendor/order-status";
     }
 }
