@@ -34,27 +34,53 @@ public class DailyAnalyticsServiceImpl implements DailyAnalyticsService {
     @Override
     @Transactional
     public void updateDailyAnalyticsForOrder(Order order) {
-        if (order == null || order.getShop() == null || order.getOrderDate() == null) {
-            return;
-        }
+        logger.info("🔵 STEP 1 [DailyAnalytics] updateDailyAnalyticsForOrder called");
         
-        // Only update for completed orders
-        if (!"Delivered".equalsIgnoreCase(order.getOrderStatus()) && 
-            !"Hoàn thành".equalsIgnoreCase(order.getOrderStatus())) {
+        if (order == null || order.getShop() == null || order.getOrderDate() == null) {
+            logger.warn("🔴 STEP 1 FAIL: order={}, shop={}, orderDate={}", 
+                order, order != null ? order.getShop() : null, order != null ? order.getOrderDate() : null);
             return;
         }
+        logger.info("✅ STEP 1: order, shop, orderDate all NOT NULL");
+        
+        // Only update for completed orders - check against OrderStatus enum
+        String orderStatus = order.getOrderStatus();
+        logger.info("🔵 STEP 2: Checking orderStatus = {}", orderStatus);
+        
+        boolean isDelivered = orderStatus != null && 
+            (orderStatus.equalsIgnoreCase("Delivered") || 
+             orderStatus.equalsIgnoreCase("Hoàn thành"));
+        
+        logger.info("   isDelivered = {}", isDelivered);
+        
+        if (!isDelivered) {
+            logger.warn("🔴 STEP 2 FAIL: Order status is NOT DELIVERED: {}", orderStatus);
+            return;
+        }
+        logger.info("✅ STEP 2: Order status IS DELIVERED");
         
         LocalDate orderDate = order.getOrderDate().toLocalDate();
         Integer shopId = order.getShop().getId();
+        logger.info("🔵 STEP 3: orderDate={}, shopId={}", orderDate, shopId);
         
         // Update ShopAnalytics
+        logger.info("🔵 STEP 4: Calling updateShopAnalytics...");
         updateShopAnalytics(shopId, orderDate, order);
+        logger.info("✅ STEP 4: updateShopAnalytics completed");
         
         // Update CategorySales for each category in order
+        logger.info("🔵 STEP 5: Calling updateCategorySales...");
         updateCategorySales(shopId, orderDate, order);
+        logger.info("✅ STEP 5: updateCategorySales completed");
         
         // Update ConversionAnalytics completed count
+        logger.info("🔵 STEP 6: Calling updateConversionCompletedCount...");
         updateConversionCompletedCount(shopId, orderDate);
+        logger.info("✅ STEP 6: updateConversionCompletedCount completed");
+        
+        logger.info("═══════════════════════════════════════════════════════════");
+        logger.info("✅ [DailyAnalytics] updateDailyAnalyticsForOrder COMPLETED");
+        logger.info("═══════════════════════════════════════════════════════════");
     }
 
     @Override
@@ -65,8 +91,12 @@ public class DailyAnalyticsServiceImpl implements DailyAnalyticsService {
             .filter(o -> o.getShop() != null && o.getShop().getId().equals(shopId))
             .filter(o -> o.getOrderDate() != null)
             .filter(o -> o.getOrderDate().toLocalDate().equals(date))
-            .filter(o -> "Delivered".equalsIgnoreCase(o.getOrderStatus()) || 
-                        "Hoàn thành".equalsIgnoreCase(o.getOrderStatus()))
+            .filter(o -> {
+                String status = o.getOrderStatus();
+                return status != null && 
+                    (status.equalsIgnoreCase("Delivered") || 
+                     status.equalsIgnoreCase("Hoàn thành"));
+            })
             .collect(Collectors.toList());
         
         // Recalculate ShopAnalytics
@@ -79,43 +109,156 @@ public class DailyAnalyticsServiceImpl implements DailyAnalyticsService {
         updateConversionCompletedCount(shopId, date);
     }
 
+    /**
+     * 🔥 HỎA CHIẾT KHẤU KHI ĐƠN HÀNG BỊ HOÀN TRẢ/HỦY
+     * Loại bỏ chiết khấu từ ShopAnalytics khi order status chuyển sang RETURNED/REFUNDED
+     */
+    @Override
+    @Transactional
+    public void refundCommissionForOrder(Order order) {
+        logger.info("═══════════════════════════════════════════════════════════");
+        logger.info("🔴 [REFUND] ORDER RETURNED - Commission Refund Started");
+        logger.info("   OrderID: {}, Shop: {}, TotalAmount: {}", 
+            order.getId(),
+            order.getShop() != null ? order.getShop().getShopName() : "Unknown",
+            order.getTotalAmount());
+        
+        if (order == null || order.getShop() == null) {
+            logger.warn("⚠️ [REFUND] Order or Shop is NULL - skipping refund");
+            return;
+        }
+        
+        LocalDate orderDate = order.getOrderDate().toLocalDate();
+        Integer shopId = order.getShop().getId();
+        
+        try {
+            ShopAnalytics analytics = shopAnalyticsRepository.findAll().stream()
+                .filter(a -> a.getShop() != null && a.getShop().getId().equals(shopId))
+                .filter(a -> "DAY".equals(a.getPeriodType()))
+                .filter(a -> orderDate.equals(a.getPeriodStart()))
+                .findFirst()
+                .orElse(null);
+            
+            if (analytics == null) {
+                logger.warn("⚠️ [REFUND] No ShopAnalytics found for this order");
+                return;
+            }
+            
+            // Tính lại chiết khấu cần hoàn
+            Shop shop = order.getShop();
+            if (shop != null && shop.getCommissionPercentage() != null) {
+                BigDecimal commissionPercentage = shop.getCommissionPercentage();
+                
+                // Tính chiết khấu cần hoàn cho đơn này
+                BigDecimal commissionToRefund = order.getTotalAmount()
+                    .multiply(commissionPercentage)
+                    .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+                
+                // Tính lại tiền shop nhận
+                BigDecimal shopNetRevenueToRefund = order.getTotalAmount()
+                    .subtract(commissionToRefund);
+                
+                logger.info("📍 [REFUND] Calculating refund amounts");
+                logger.info("   Commission to refund: {}", commissionToRefund);
+                logger.info("   Shop net revenue to refund: {}", shopNetRevenueToRefund);
+                
+                // Trừ đi từ ShopAnalytics (hoàn lại tiền)
+                analytics.setCommissionAmount(
+                    analytics.getCommissionAmount() != null ? 
+                    analytics.getCommissionAmount() : BigDecimal.ZERO
+                );
+                analytics.setCommissionAmount(
+                    analytics.getCommissionAmount().subtract(commissionToRefund)
+                );
+                
+                analytics.setShopNetRevenue(
+                    analytics.getShopNetRevenue() != null ? 
+                    analytics.getShopNetRevenue() : BigDecimal.ZERO
+                );
+                analytics.setShopNetRevenue(
+                    analytics.getShopNetRevenue().subtract(shopNetRevenueToRefund)
+                );
+                
+                // Giảm số lượng đơn hàng
+                analytics.setTotalOrders(Math.max(0, analytics.getTotalOrders() - 1));
+                
+                // Giảm doanh thu tổng
+                analytics.setTotalRevenue(
+                    analytics.getTotalRevenue().subtract(order.getTotalAmount())
+                );
+                
+                logger.info("📍 [REFUND] Updating ShopAnalytics");
+                logger.info("   New commission amount: {}", analytics.getCommissionAmount());
+                logger.info("   New shop net revenue: {}", analytics.getShopNetRevenue());
+                logger.info("   New total orders: {}", analytics.getTotalOrders());
+                logger.info("   New total revenue: {}", analytics.getTotalRevenue());
+                
+                shopAnalyticsRepository.save(analytics);
+                
+                logger.info("✅ [REFUND] Commission refund completed successfully");
+                logger.info("═══════════════════════════════════════════════════════════");
+            }
+        } catch (Exception e) {
+            logger.error("❌ [REFUND] Error refunding commission: {}", e.getMessage());
+            logger.error("═══════════════════════════════════════════════════════════");
+            throw new RuntimeException("Error refunding commission", e);
+        }
+    }
+
     private void updateShopAnalytics(Integer shopId, LocalDate date, Order order) {
         logger.info("🔵 [DailyAnalytics] updateShopAnalytics - START");
         logger.info("   shopId: {}, orderDate: {}, orderId: {}", shopId, date, order.getId());
         logger.info("   totalAmount: {}", order.getTotalAmount());
         
-        ShopAnalytics analytics = shopAnalyticsRepository.findAll().stream()
-            .filter(a -> a.getShop() != null && a.getShop().getId().equals(shopId))
-            .filter(a -> "DAY".equals(a.getPeriodType()))
-            .filter(a -> date.equals(a.getPeriodStart()))
-            .findFirst()
-            .orElseGet(() -> {
-                logger.info("📍 [DailyAnalytics] Creating new ShopAnalytics record for date: {}", date);
-                ShopAnalytics newAnalytics = new ShopAnalytics();
-                newAnalytics.setShop(order.getShop());
-                newAnalytics.setPeriodType("DAY");
-                newAnalytics.setPeriodStart(date);
-                newAnalytics.setPeriodEnd(date);
-                newAnalytics.setTotalRevenue(BigDecimal.ZERO);
-                newAnalytics.setTotalOrders(0);
-                newAnalytics.setTotalViews(0);
-                newAnalytics.setCommissionPercentage(BigDecimal.ZERO);
-                newAnalytics.setCommissionAmount(BigDecimal.ZERO);
-                newAnalytics.setShopNetRevenue(BigDecimal.ZERO);
-                return newAnalytics;
-            });
-        
-        // Add order revenue and increment order count
-        logger.info("📍 [DailyAnalytics] Adding order revenue and order count");
-        analytics.setTotalRevenue(analytics.getTotalRevenue().add(order.getTotalAmount()));
-        analytics.setTotalOrders(analytics.getTotalOrders() + 1);
-        
-        // 🆕 TÍNH CHIẾT KHẤU
-        Shop shop = order.getShop();
-        if (shop != null && shop.getCommissionPercentage() != null) {
-            BigDecimal commissionPercentage = shop.getCommissionPercentage();
+        try {
+            ShopAnalytics analytics = shopAnalyticsRepository.findAll().stream()
+                .filter(a -> a.getShop() != null && a.getShop().getId().equals(shopId))
+                .filter(a -> "DAY".equals(a.getPeriodType()))
+                .filter(a -> date.equals(a.getPeriodStart()))
+                .findFirst()
+                .orElseGet(() -> {
+                    logger.info("📍 [DailyAnalytics] Creating new ShopAnalytics record for date: {}", date);
+                    ShopAnalytics newAnalytics = new ShopAnalytics();
+                    newAnalytics.setShop(order.getShop());
+                    newAnalytics.setPeriodType("DAY");
+                    newAnalytics.setPeriodStart(date);
+                    newAnalytics.setPeriodEnd(date);
+                    newAnalytics.setTotalRevenue(BigDecimal.ZERO);
+                    newAnalytics.setTotalOrders(0);
+                    newAnalytics.setTotalViews(0);
+                    newAnalytics.setCommissionPercentage(BigDecimal.ZERO);
+                    newAnalytics.setCommissionAmount(BigDecimal.ZERO);
+                    newAnalytics.setShopNetRevenue(BigDecimal.ZERO);
+                    return newAnalytics;
+                });
+            
+            // Add order revenue and increment order count
+            logger.info("📍 [DailyAnalytics] Adding order revenue and order count");
+            analytics.setTotalRevenue(analytics.getTotalRevenue().add(order.getTotalAmount()));
+            analytics.setTotalOrders(analytics.getTotalOrders() + 1);
+            
+            // 🆕 TÍNH CHIẾT KHẤU
+            Shop shop = order.getShop();
+            if (shop == null) {
+                logger.warn("⚠️  [DailyAnalytics] Shop is NULL - cannot calculate commission");
+                return;
+            }
+            
+            logger.info("📍 [DailyAnalytics] Shop found: {} (ID: {})", shop.getShopName(), shop.getId());
+            
+            BigDecimal commissionPercentage = (shop.getCommissionPercentage() != null) 
+                ? shop.getCommissionPercentage() 
+                : BigDecimal.ZERO;
+            
             logger.info("📍 [DailyAnalytics] Calculating commission");
-            logger.info("   Commission %: {}", commissionPercentage);
+            logger.info("   Shop commission percentage value: {}", commissionPercentage);
+            logger.info("   shop.getCommissionPercentage() raw value: {}", shop.getCommissionPercentage());
+            
+            if (commissionPercentage.compareTo(BigDecimal.ZERO) == 0) {
+                logger.info("ℹ️  [DailyAnalytics] Commission percentage is 0% - no commission charged");
+                logger.warn("   ⚠️ If this is unexpected, check if admin set commission for this shop!");
+                logger.warn("   → Go to /admin/shops/{}/commission and set it", shopId);
+            }
             
             // Tính tiền chiết khấu cho đơn hàng này
             BigDecimal commissionAmount = order.getTotalAmount()
@@ -143,16 +286,47 @@ public class DailyAnalyticsServiceImpl implements DailyAnalyticsService {
                 .add(shopNetRevenue)
             );
             
-            logger.info("✅ [DailyAnalytics] ShopAnalytics updated");
+            logger.info("✅ [DailyAnalytics] ShopAnalytics object prepared for save");
             logger.info("   Cumulative commission: {}", analytics.getCommissionAmount());
             logger.info("   Cumulative shop net revenue: {}", analytics.getShopNetRevenue());
-        } else {
-            logger.warn("⚠️ [DailyAnalytics] Shop or commission percentage is NULL");
+            logger.info("   Total revenue: {}", analytics.getTotalRevenue());
+            logger.info("   Total orders: {}", analytics.getTotalOrders());
+            
+            logger.info("📍 [DailyAnalytics] SAVING ShopAnalytics to database...");
+            logger.info("   Analytics ID: {}, Shop ID: {}, Period: {} to {}", 
+                       analytics.getId(), shopId, analytics.getPeriodStart(), analytics.getPeriodEnd());
+            
+            ShopAnalytics savedAnalytics = shopAnalyticsRepository.save(analytics);
+            
+            logger.info("✅ [DailyAnalytics] ShopAnalytics SAVED successfully!");
+            logger.info("   Saved analytics ID: {}", savedAnalytics.getId());
+            logger.info("✅ [DailyAnalytics] updateShopAnalytics - SUCCESS");
+            
+        } catch (Exception e) {
+            logger.error("═════════════════════════════════════════════════════════════");
+            logger.error("❌ [DailyAnalytics] ERROR SAVING SHOPANALYTICS");
+            logger.error("═════════════════════════════════════════════════════════════");
+            logger.error("🔴 Exception Type: {}", e.getClass().getName());
+            logger.error("🔴 Exception Message: {}", e.getMessage());
+            logger.error("🔴 Root Cause: ");
+            
+            Throwable cause = e.getCause();
+            int depth = 0;
+            while (cause != null && depth < 5) {
+                logger.error("   [{} levels deep] {}: {}", depth, cause.getClass().getName(), cause.getMessage());
+                cause = cause.getCause();
+                depth++;
+            }
+            
+            logger.error("🔴 Full Stack Trace:");
+            logger.error("", e);
+            logger.error("═════════════════════════════════════════════════════════════");
+            
+            // ⚠️ DO NOT RE-THROW - we don't want to rollback the entire transaction
+            // Just log the error for debugging
+            logger.error("ℹ️  IMPORTANT: This error means commission data was NOT saved!");
+            logger.error("ℹ️  Check the above error message to understand why");
         }
-        
-        logger.info("📍 [DailyAnalytics] Saving ShopAnalytics");
-        shopAnalyticsRepository.save(analytics);
-        logger.info("✅ [DailyAnalytics] updateShopAnalytics - SUCCESS");
     }
 
     private void updateCategorySales(Integer shopId, LocalDate date, Order order) {

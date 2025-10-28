@@ -54,6 +54,11 @@ public class RevenueReportDTO {
     // High stock products
     private List<HighStockProductDTO> highStockProducts;
     
+    // 🆕 Commission fields
+    private BigDecimal commissionPercentage; // Tỷ lệ chiết khấu (%)
+    private BigDecimal commissionAmount;    // Tiền chiết khấu kỳ này
+    private BigDecimal shopNetRevenue;       // Tiền shop thực nhận (sau trừ chiết khấu)
+    
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
