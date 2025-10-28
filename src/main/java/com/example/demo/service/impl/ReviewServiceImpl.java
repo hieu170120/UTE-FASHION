@@ -43,38 +43,57 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional
     public ReviewDTO createReview(ReviewCreationRequest request, Integer userId) {
-        boolean isVerifiedPurchase = false;
         Order order = null;
+        boolean isVerifiedPurchase = false;
         
-        // 1. If orderId is provided, validate purchase
+        // 1. Nếu có orderId, validate order đó
         if (request.getOrderId() != null) {
-            boolean hasPurchased = orderRepository.hasUserPurchasedProduct(userId, request.getProductId(), "Delivered");
-            if (!hasPurchased) {
-                throw new AccessDeniedException("You can only review products you have purchased.");
-            }
-            
-            // Check for duplicate review for the specific product in the specific order
-            if (reviewRepository.existsByUser_UserIdAndOrder_IdAndProduct_Id(userId, request.getOrderId(), request.getProductId())) {
-                throw new IllegalStateException("You have already reviewed this product for this order.");
-            }
-            
             order = orderRepository.findById(request.getOrderId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
+            
+            // Validate order belongs to user
+            if (!order.getUser().getUserId().equals(userId)) {
+                throw new AccessDeniedException("Đơn hàng này không thuộc về bạn.");
+            }
+            
+            // Validate order status
+            if (!"Delivered".equalsIgnoreCase(order.getOrderStatus())) {
+                throw new AccessDeniedException("Chỉ có thể đánh giá sản phẩm từ đơn hàng đã giao thành công. Trạng thái: " + order.getOrderStatus());
+            }
+            
+            // Validate product is in order
+            boolean productInOrder = order.getOrderItems().stream()
+                    .anyMatch(item -> item.getProduct().getId().equals(request.getProductId()));
+            if (!productInOrder) {
+                throw new AccessDeniedException("Sản phẩm này không có trong đơn hàng.");
+            }
+            
+            // Check duplicate review cho order này
+            if (reviewRepository.existsByUser_UserIdAndOrder_IdAndProduct_Id(userId, request.getOrderId(), request.getProductId())) {
+                throw new IllegalStateException("Bạn đã đánh giá sản phẩm này cho đơn hàng này rồi.");
+            }
+            
             isVerifiedPurchase = true;
         } else {
-            // Check if user has already reviewed this product without order
-            if (reviewRepository.existsByUser_UserIdAndProduct_IdAndOrderIsNull(userId, request.getProductId())) {
-                throw new IllegalStateException("You have already reviewed this product.");
+            // 2. Nếu KHÔNG có orderId, tự động tìm đơn hàng đã giao của user với sản phẩm này
+            List<Order> eligibleOrders = orderRepository.findEligibleOrdersForReview(userId, request.getProductId());
+            
+            if (eligibleOrders.isEmpty()) {
+                throw new AccessDeniedException("Bạn chỉ có thể đánh giá sản phẩm đã mua và nhận hàng thành công.");
             }
+            
+            // Lấy đơn hàng gần nhất
+            order = eligibleOrders.get(0);
+            isVerifiedPurchase = true;
         }
 
-        // 2. Fetch entities
+        // 5. Fetch entities
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
         Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm"));
 
-        // 3. Create and save review
+        // 6. Create and save review
         Review review = Review.builder()
                 .user(user)
                 .product(product)
