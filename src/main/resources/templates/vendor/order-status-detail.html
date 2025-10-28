@@ -106,20 +106,26 @@
                             </p>
                         </div>
                         <span class="status-badge"
-                              th:classappend="${order.orderStatus == 'Processing' || order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'bg-warning text-dark' :
+                              th:classappend="${order.orderStatus == 'Processing' ? 'bg-warning text-dark' :
+                                              order.orderStatus == 'Vendor_Confirmed' ? 'bg-info text-white' :
+                                              order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'bg-warning text-dark' :
                                               order.orderStatus == 'Shipping' ? 'bg-primary text-white' :
                                               order.orderStatus == 'Delivered' ? 'bg-success text-white' :
                                               order.orderStatus == 'Return_Requested' ? 'bg-warning text-white' :
                                               order.orderStatus == 'Returned' ? 'bg-secondary text-white' :
                                               order.orderStatus == 'Cancelled' ? 'bg-danger text-white' : 'bg-secondary text-white'}">
                             <i class="fas"
-                               th:classappend="${order.orderStatus == 'Processing' || order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'fa-hourglass-half' :
+                               th:classappend="${order.orderStatus == 'Processing' ? 'fa-clock' :
+                                                order.orderStatus == 'Vendor_Confirmed' ? 'fa-check' :
+                                                order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'fa-hourglass-half' :
                                                 order.orderStatus == 'Shipping' ? 'fa-truck' :
                                                 order.orderStatus == 'Delivered' ? 'fa-check-double' :
                                                 order.orderStatus == 'Return_Requested' ? 'fa-undo' :
                                                 order.orderStatus == 'Returned' ? 'fa-box-open' :
                                                 order.orderStatus == 'Cancelled' ? 'fa-times-circle' : 'fa-question-circle'}"></i>
-                            <span th:text="${order.orderStatus == 'Processing' || order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'Đang xử lý' :
+                            <span th:text="${order.orderStatus == 'Processing' ? 'Chờ xác nhận' :
+                                            order.orderStatus == 'Vendor_Confirmed' ? 'Đã xác nhận' :
+                                            order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'Đang xử lý' :
                                             order.orderStatus == 'Shipping' ? 'Đang giao' :
                                             order.orderStatus == 'Delivered' ? 'Đã giao' :
                                             order.orderStatus == 'Return_Requested' ? 'Yêu cầu trả hàng' :
@@ -176,10 +182,37 @@
                         <i class="fas fa-cog text-primary me-2"></i>Hành động
                     </h5>
                     
+                    <!-- Vendor xác nhận/từ chối đơn (chỉ hiện khi Processing) -->
+                    <div th:if="${order.orderStatus == 'Processing'}" class="card border-warning mb-3">
+                        <div class="card-body">
+                            <h6 class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>Đơn hàng mới - Chờ xác nhận</h6>
+                            <p class="text-muted mb-3">Vui lòng xác nhận có hàng hoặc từ chối đơn này.</p>
+                            <div class="d-flex gap-2">
+                                <form th:action="@{/vendor/orders/{id}/confirm(id=${order.id})}" method="post" style="flex: 1;"
+                                      onsubmit="return confirm('Xác nhận có hàng và gửi đơn cho admin chọn shipper?');">
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="fas fa-check-circle me-2"></i>Xác nhận có hàng
+                                    </button>
+                                </form>
+                                <a th:href="@{/vendor/orders/{id}/reject(id=${order.id})}" 
+                                   class="btn btn-danger w-100" style="flex: 1;">
+                                    <i class="fas fa-times-circle me-2"></i>Từ chối đơn
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Thông báo vendor đã xác nhận -->
+                    <div th:if="${order.orderStatus == 'Vendor_Confirmed'}" class="alert alert-success mb-0">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Bạn đã xác nhận đơn hàng.</strong>
+                        <p class="mb-0 mt-2 small">Đơn hàng đang chờ admin chọn shipper để giao.</p>
+                    </div>
+                    
                     <!-- Thông báo nếu đơn đang chờ xử lý -->
-                    <div th:if="${order.orderStatus == 'Processing' || order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled'}" class="alert alert-info mb-0">
+                    <div th:if="${order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled'}" class="alert alert-info mb-0">
                         <i class="fas fa-info-circle me-2"></i>
-                        Đơn hàng đang chờ xử lý.
+                        Đơn hàng đang chờ admin chọn shipper.
                     </div>
                     
                     <div th:if="${order.orderStatus == 'Shipping'}" class="alert alert-primary mb-0">

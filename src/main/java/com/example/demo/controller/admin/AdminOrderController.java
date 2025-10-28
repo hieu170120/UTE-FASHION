@@ -80,8 +80,8 @@ public class AdminOrderController {
             List<ShipperCancelHistoryDTO> cancelHistory = orderManagementService.getOrderCancelHistory(id);
             model.addAttribute("cancelHistory", cancelHistory);
             
-            // Nếu đơn đang chờ xử lý hoặc shipper hủy, load danh sách shipper đang hoạt động theo carrier
-            if (("Processing".equals(order.getOrderStatus()) || "Shipper_Cancelled".equals(order.getOrderStatus())) 
+            // Nếu đơn đã được vendor xác nhận hoặc shipper hủy, load danh sách shipper đang hoạt động theo carrier
+            if (("Vendor_Confirmed".equals(order.getOrderStatus()) || "Shipper_Cancelled".equals(order.getOrderStatus())) 
                 && order.getCarrierId() != null) {
                 List<ShipperDTO> shippers = shipperService.getActiveShippersByCarrier(order.getCarrierId());
                 model.addAttribute("shippers", shippers);

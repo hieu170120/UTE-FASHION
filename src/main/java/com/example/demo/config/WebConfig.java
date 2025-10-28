@@ -1,20 +1,19 @@
 package com.example.demo.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
+
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.format.FormatterRegistry;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.StringHttpMessageConverter;
+
+
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
-import org.springframework.web.filter.CharacterEncodingFilter;
+
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import java.nio.charset.StandardCharsets;
-import java.util.List;
+
 
 import com.example.demo.dto.ColorDTO;
 import com.example.demo.dto.SizeDTO;
@@ -41,26 +40,7 @@ public class WebConfig implements WebMvcConfigurer {
 		registry.addResourceHandler("/static/**").addResourceLocations("classpath:/static/");
 	}
 	
-	/**
-	 * Configure UTF-8 encoding for HTTP message converters
-	 */
-	@Override
-	public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
-		StringHttpMessageConverter stringConverter = new StringHttpMessageConverter(StandardCharsets.UTF_8);
-		stringConverter.setWriteAcceptCharset(false);
-		converters.add(stringConverter);
-	}
 	
-	/**
-	 * Character encoding filter for UTF-8
-	 */
-	@Bean
-	public CharacterEncodingFilter characterEncodingFilter() {
-		CharacterEncodingFilter filter = new CharacterEncodingFilter();
-		filter.setEncoding("UTF-8");
-		filter.setForceEncoding(true);
-		return filter;
-	}
 
 	@Component
 	public static class StringToColorDTOConverter implements Converter<String, ColorDTO> {
