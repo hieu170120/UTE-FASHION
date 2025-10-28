@@ -7,6 +7,7 @@ import com.example.demo.entity.*;
 import com.example.demo.enums.OrderStatus;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.*;
+import com.example.demo.service.DailyAnalyticsService;
 import com.example.demo.service.NotificationService;
 import com.example.demo.service.OrderManagementService;
 import org.modelmapper.ModelMapper;
@@ -18,9 +19,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class OrderManagementServiceImpl implements OrderManagementService {
+
+    private static final Logger logger = LoggerFactory.getLogger(OrderManagementServiceImpl.class);
 
     @Autowired
     private OrderRepository orderRepository;
@@ -42,6 +47,9 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     
     @Autowired
     private PaymentRepository paymentRepository;
+    
+    @Autowired
+    private DailyAnalyticsService dailyAnalyticsService;
     
     private static final int MAX_SHIPPER_CANCEL_COUNT = 3;
     private static final Random random = new Random();
@@ -267,13 +275,49 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     @Override
     @Transactional
     public void markOrderAsDelivered(Integer orderId) {
+        logger.info("═══════════════════════════════════════════════════════════");
+        logger.info("🔔 [SHIPPER DELIVERY] Marking order as delivered - OrderID: {}", orderId);
+        
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
+        
+        logger.info("   Shop: {}, TotalAmount: {}", 
+            order.getShop() != null ? order.getShop().getShopName() : "Unknown",
+            order.getTotalAmount());
         
         order.setOrderStatus(OrderStatus.DELIVERED.getValue());
         order.setDeliveredAt(LocalDateTime.now());
         
         orderRepository.save(order);
+        logger.info("✅ Order status saved to database");
+        
+        // 🔥 TRIGGER COMMISSION CALCULATION
+        logger.info("📍 Calling updateDailyAnalyticsForOrder for commission calculation...");
+        try {
+            dailyAnalyticsService.updateDailyAnalyticsForOrder(order);
+            logger.info("✅ Commission calculation completed successfully");
+        } catch (RuntimeException e) {
+            logger.error("═════════════════════════════════════════════════════════════");
+            logger.error("❌ [SHIPPER DELIVERY] COMMISSION CALCULATION FAILED");
+            logger.error("═════════════════════════════════════════════════════════════");
+            logger.error("🔴 Error: {}", e.getMessage());
+            logger.error("🔴 Cause: {}", e.getCause());
+            logger.error("═════════════════════════════════════════════════════════════");
+            
+            // ⚠️ Re-throw error so it's visible to the caller
+            throw e;
+        } catch (Exception e) {
+            logger.error("═════════════════════════════════════════════════════════════");
+            logger.error("❌ [SHIPPER DELIVERY] UNEXPECTED ERROR IN COMMISSION CALCULATION");
+            logger.error("═════════════════════════════════════════════════════════════");
+            logger.error("🔴 Exception Type: {}", e.getClass().getName());
+            logger.error("🔴 Exception Message: {}", e.getMessage());
+            logger.error("", e);
+            logger.error("═════════════════════════════════════════════════════════════");
+            
+            throw new RuntimeException("Lỗi tính chiết khấu - " + e.getMessage(), e);
+        }
+        logger.info("═══════════════════════════════════════════════════════════");
     }
     
     @Override
@@ -307,6 +351,40 @@ public class OrderManagementServiceImpl implements OrderManagementService {
                 paymentRepository.save(payment);
             }
         });
+        
+        // 🔥 TRIGGER COMMISSION CALCULATION
+        logger.info("═══════════════════════════════════════════════════════════");
+        logger.info("🔔 [COD PAYMENT CONFIRMED] Calculating commission - OrderID: {}", orderId);
+        logger.info("   Shop: {}, TotalAmount: {}", 
+            order.getShop() != null ? order.getShop().getShopName() : "Unknown",
+            order.getTotalAmount());
+        
+        try {
+            logger.info("📍 Calling updateDailyAnalyticsForOrder for commission calculation...");
+            dailyAnalyticsService.updateDailyAnalyticsForOrder(order);
+            logger.info("✅ Commission calculation completed successfully");
+            logger.info("═══════════════════════════════════════════════════════════");
+        } catch (RuntimeException e) {
+            logger.error("═════════════════════════════════════════════════════════════");
+            logger.error("❌ [COD PAYMENT COMMISSION] CALCULATION FAILED");
+            logger.error("═════════════════════════════════════════════════════════════");
+            logger.error("🔴 Error: {}", e.getMessage());
+            logger.error("🔴 Cause: {}", e.getCause());
+            logger.error("═════════════════════════════════════════════════════════════");
+            
+            // ⚠️ Re-throw error so it's visible to the caller
+            throw e;
+        } catch (Exception e) {
+            logger.error("═════════════════════════════════════════════════════════════");
+            logger.error("❌ [COD PAYMENT COMMISSION] UNEXPECTED ERROR");
+            logger.error("═════════════════════════════════════════════════════════════");
+            logger.error("🔴 Exception Type: {}", e.getClass().getName());
+            logger.error("🔴 Exception: {}", e.getMessage());
+            logger.error("", e);
+            logger.error("═════════════════════════════════════════════════════════════");
+            
+            throw new RuntimeException("Lỗi tính chiết khấu COD payment - " + e.getMessage(), e);
+        }
     }
     
     @Override
