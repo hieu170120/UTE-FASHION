@@ -31,6 +31,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Controller
@@ -290,5 +291,183 @@ public class VendorController {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
         }
         return "redirect:/vendor/order-status";
+    }
+    
+    // ===== XỚ LÝ TRẢ HÀNG =====
+    
+    /**
+     * Danh sách yêu cầu trả hàng
+     */
+    @GetMapping("/orders/returns")
+    public String returnRequests(Model model, RedirectAttributes redirectAttributes) {
+        Optional<Shop> shopOpt = vendorService.getCurrentVendorShop();
+        if (shopOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần có cửa hàng.");
+            return "redirect:/vendor/register";
+        }
+        
+        List<com.example.demo.dto.OrderReturnRequestDTO> returnRequests = 
+                orderManagementService.getPendingReturnRequestsByShop(shopOpt.get().getId());
+        model.addAttribute("returnRequests", returnRequests);
+        return "vendor/order/returns";
+    }
+    
+    /**
+     * Phê duyệt trả hàng
+     */
+    @PostMapping("/orders/returns/{id}/approve")
+    public String approveReturn(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+        Optional<Shop> shopOpt = vendorService.getCurrentVendorShop();
+        if (shopOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần có cửa hàng.");
+            return "redirect:/vendor/register";
+        }
+        
+        try {
+            orderManagementService.vendorApproveReturnRequest(id, shopOpt.get().getId());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã chấp nhận trả hàng!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/vendor/orders/returns";
+    }
+    
+    /**
+     * Hiển thị trang nhập lý do từ chối
+     */
+    @GetMapping("/orders/returns/{id}/reject")
+    public String showRejectReturnReasonPage(@PathVariable Integer id, Model model, RedirectAttributes redirectAttributes) {
+        Optional<Shop> shopOpt = vendorService.getCurrentVendorShop();
+        if (shopOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần có cửa hàng.");
+            return "redirect:/vendor/register";
+        }
+        
+        try {
+            // Lấy thông tin return request
+            List<com.example.demo.dto.OrderReturnRequestDTO> allRequests = 
+                    orderManagementService.getPendingReturnRequestsByShop(shopOpt.get().getId());
+            com.example.demo.dto.OrderReturnRequestDTO returnRequest = allRequests.stream()
+                .filter(req -> req.getId().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new com.example.demo.exception.ResourceNotFoundException("Không tìm thấy yêu cầu"));
+            
+            model.addAttribute("returnRequest", returnRequest);
+            return "vendor/order/reject-return-reason";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+            return "redirect:/vendor/orders/returns";
+        }
+    }
+    
+    /**
+     * Xử lý từ chối trả hàng
+     */
+    @PostMapping("/orders/returns/{id}/reject")
+    public String rejectReturn(@PathVariable Integer id, 
+                              @RequestParam String rejectionReason,
+                              RedirectAttributes redirectAttributes) {
+        Optional<Shop> shopOpt = vendorService.getCurrentVendorShop();
+        if (shopOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần có cửa hàng.");
+            return "redirect:/vendor/register";
+        }
+        
+        try {
+            orderManagementService.vendorRejectReturnRequest(id, shopOpt.get().getId(), rejectionReason);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã từ chối yêu cầu trả hàng!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/vendor/orders/returns";
+    }
+    
+    // ===== XỚ LÝ TRẢ HÀNG TỪ ORDER DETAIL PAGE =====
+    
+    /**
+     * Chấp nhận trả hàng từ order detail page
+     */
+    @PostMapping("/orders/{orderId}/returns/approve")
+    public String approveReturnFromDetail(@PathVariable Integer orderId, RedirectAttributes redirectAttributes) {
+        Optional<Shop> shopOpt = vendorService.getCurrentVendorShop();
+        if (shopOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần có cửa hàng.");
+            return "redirect:/vendor/register";
+        }
+        
+        try {
+            // Tìm return request theo orderId
+            List<com.example.demo.dto.OrderReturnRequestDTO> allRequests = 
+                    orderManagementService.getPendingReturnRequestsByShop(shopOpt.get().getId());
+            com.example.demo.dto.OrderReturnRequestDTO returnRequest = allRequests.stream()
+                .filter(req -> req.getOrderId().equals(orderId))
+                .findFirst()
+                .orElseThrow(() -> new com.example.demo.exception.ResourceNotFoundException("Không tìm thấy yêu cầu trả hàng"));
+            
+            orderManagementService.vendorApproveReturnRequest(returnRequest.getId(), shopOpt.get().getId());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã chấp nhận trả hàng!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/vendor/orders/" + orderId;
+    }
+    
+    /**
+     * Hiển thị trang từ chối trả hàng từ order detail page
+     */
+    @GetMapping("/orders/{orderId}/returns/reject")
+    public String showRejectReturnReasonFromDetail(@PathVariable Integer orderId, Model model, RedirectAttributes redirectAttributes) {
+        Optional<Shop> shopOpt = vendorService.getCurrentVendorShop();
+        if (shopOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần có cửa hàng.");
+            return "redirect:/vendor/register";
+        }
+        
+        try {
+            // Lấy thông tin return request theo orderId
+            List<com.example.demo.dto.OrderReturnRequestDTO> allRequests = 
+                    orderManagementService.getPendingReturnRequestsByShop(shopOpt.get().getId());
+            com.example.demo.dto.OrderReturnRequestDTO returnRequest = allRequests.stream()
+                .filter(req -> req.getOrderId().equals(orderId))
+                .findFirst()
+                .orElseThrow(() -> new com.example.demo.exception.ResourceNotFoundException("Không tìm thấy yêu cầu trả hàng"));
+            
+            model.addAttribute("returnRequest", returnRequest);
+            model.addAttribute("fromDetailPage", true); // Flag để biết redirect về đâu
+            return "vendor/order/reject-return-reason";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+            return "redirect:/vendor/orders/" + orderId;
+        }
+    }
+    
+    /**
+     * Xử lý từ chối trả hàng từ order detail page
+     */
+    @PostMapping("/orders/{orderId}/returns/reject")
+    public String rejectReturnFromDetail(@PathVariable Integer orderId,
+                                         @RequestParam String rejectionReason,
+                                         RedirectAttributes redirectAttributes) {
+        Optional<Shop> shopOpt = vendorService.getCurrentVendorShop();
+        if (shopOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần có cửa hàng.");
+            return "redirect:/vendor/register";
+        }
+        
+        try {
+            // Tìm return request theo orderId
+            List<com.example.demo.dto.OrderReturnRequestDTO> allRequests = 
+                    orderManagementService.getPendingReturnRequestsByShop(shopOpt.get().getId());
+            com.example.demo.dto.OrderReturnRequestDTO returnRequest = allRequests.stream()
+                .filter(req -> req.getOrderId().equals(orderId))
+                .findFirst()
+                .orElseThrow(() -> new com.example.demo.exception.ResourceNotFoundException("Không tìm thấy yêu cầu trả hàng"));
+            
+            orderManagementService.vendorRejectReturnRequest(returnRequest.getId(), shopOpt.get().getId(), rejectionReason);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã từ chối yêu cầu trả hàng!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/vendor/orders/" + orderId;
     }
 }

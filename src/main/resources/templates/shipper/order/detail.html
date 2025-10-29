@@ -228,7 +228,7 @@
                         <div th:if="${order.orderStatus == 'Return_Requested'}" class="alert alert-warning mb-0">
                             <i class="fas fa-undo me-2"></i>
                             <strong>Yêu Cầu Trả Hàng</strong>
-                            <p class="mb-0 mt-2 small">Đơn hàng này đang chờ admin xử lý yêu cầu trả hàng.</p>
+                            <p class="mb-0 mt-2 small">Đơn hàng này đang chờ vendor (cửa hàng) xử lý yêu cầu trả hàng.</p>
                             <div th:if="${order.returnReason != null && !#strings.isEmpty(order.returnReason)}" class="mt-2 pt-2 border-top">
                                 <strong>Lý do trả hàng của khách:</strong><br/>
                                 <span th:text="${order.returnReason}"></span>
@@ -239,7 +239,7 @@
                         <div th:if="${order.orderStatus == 'Returned'}" class="alert alert-secondary mb-0">
                             <i class="fas fa-check-circle me-2"></i>
                             <strong>Đơn Hàng Đã Trả Lại</strong>
-                            <p class="mb-0 mt-2 small">Đơn hàng này đã được admin chấp nhận trả hàng.</p>
+                            <p class="mb-0 mt-2 small">Đơn hàng này đã được vendor (cửa hàng) chấp nhận trả hàng.</p>
                             <div th:if="${order.returnReason != null && !#strings.isEmpty(order.returnReason)}" class="mt-2 pt-2 border-top">
                                 <strong>Lý do trả hàng của khách:</strong><br/>
                                 <span th:text="${order.returnReason != null ? order.returnReason : 'Không có lý do'}"></span>
@@ -283,13 +283,13 @@
                         <div th:if="${order.orderStatus == 'Delivered' && order.adminNotes != null && #strings.contains(order.adminNotes, 'Lý do từ chối trả hàng')}" class="alert alert-danger mb-0">
                             <i class="fas fa-info-circle me-2"></i>
                             <strong>Thông Tin Từ Chối Trả Hàng</strong>
-                            <p class="mb-0 mt-2 small">Admin đã từ chối yêu cầu trả hàng.</p>
+                            <p class="mb-0 mt-2 small">Vendor (cửa hàng) đã từ chối yêu cầu trả hàng.</p>
                             <div th:if="${order.returnReason != null}" class="mt-2 pt-2 border-top">
                                 <strong>Lý do trả hàng của khách hàng:</strong><br/>
                                 <span th:text="${order.returnReason}"></span>
                             </div>
                             <div class="mt-2 pt-2 border-top">
-                                <strong>Lý do admin từ chối:</strong><br/>
+                                <strong>Lý do vendor từ chối:</strong><br/>
                                 <span th:text="${order.adminNotes}"></span>
                             </div>
                             <p class="text-muted small mt-2">
