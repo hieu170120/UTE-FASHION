@@ -50,6 +50,9 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     private PaymentRepository paymentRepository;
     
     @Autowired
+    private UserRepository userRepository;
+    
+    @Autowired
     private DailyAnalyticsService dailyAnalyticsService;
     
     private static final int MAX_SHIPPER_CANCEL_COUNT = 3;
@@ -181,6 +184,10 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         
         // Cập nhật trạng thái đơn hàng
         Order order = request.getOrder();
+        
+        // ✅ HOÀN XU nếu đã thanh toán bằng QR hoặc COIN
+        refundCoinsIfEligible(order);
+        
         order.setOrderStatus(OrderStatus.RETURNED.getValue());
         
         returnRequestRepository.save(request);
@@ -504,12 +511,54 @@ public class OrderManagementServiceImpl implements OrderManagementService {
             throw new IllegalStateException("Không thể hủy đơn ở trạng thái này");
         }
         
+        // ✅ HOÀN XU nếu đã thanh toán bằng QR và vendor chưa xác nhận
+        refundCoinsIfEligible(order);
+        
         order.setOrderStatus(OrderStatus.CANCELLED.getValue());
         order.setCancelledAt(LocalDateTime.now());
         order.setCancelReason(cancelReason);
         order.setCancelledBy("CUSTOMER");
         
         orderRepository.save(order);
+    }
+    
+    /**
+     * Hoàn xu nếu đủ điều kiện:
+     * - Đã thanh toán bằng QR hoặc COIN
+     * - Vendor chưa xác nhận (trạng thái PROCESSING)
+     */
+    private void refundCoinsIfEligible(Order order) {
+        try {
+            // Lấy payment của order
+            Payment payment = paymentRepository.findByOrderIdWithPaymentMethod(order.getId())
+                    .orElse(null);
+            
+            if (payment == null) {
+                logger.info("No payment found for order {}, skip coin refund", order.getId());
+                return;
+            }
+            
+            String methodCode = payment.getPaymentMethod().getMethodCode();
+            boolean isQRorCoin = "SEPAY_QR".equals(methodCode) || "COIN".equals(methodCode);
+            
+            // Chỉ hoàn xu nếu:
+            // 1. Thanh toán bằng QR hoặc COIN
+            // 2. Đã thanh toán thành công (payment_status = Success)
+            if (isQRorCoin && "Success".equals(payment.getPaymentStatus())) {
+                User user = order.getUser();
+                java.math.BigDecimal refundAmount = order.getTotalAmount();
+                
+                // Hoàn xu
+                user.setCoins(user.getCoins().add(refundAmount));
+                userRepository.save(user);
+                
+                logger.info("✅ Refunded {} coins to user {} for cancelled order {}", 
+                    refundAmount, user.getUserId(), order.getId());
+            }
+        } catch (Exception e) {
+            logger.error("❌ Error refunding coins for order {}: {}", order.getId(), e.getMessage());
+            // Không throw exception - vẫn cho phép hủy đơn
+        }
     }
 
     @Override

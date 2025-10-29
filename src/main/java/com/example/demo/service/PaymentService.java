@@ -2,7 +2,6 @@ package com.example.demo.service;
 
 import com.example.demo.dto.PaymentDTO;
 import com.example.demo.entity.PaymentMethod;
-import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -41,6 +40,16 @@ public interface PaymentService {
      * @return PaymentDTO
      */
     PaymentDTO createSePayPayment(Integer orderId, String transactionId, String gatewayResponse);
+    
+    /**
+     * Tạo payment cho COIN (thanh toán bằng xu)
+     * Status: Success
+     * Trừ xu từ tài khoản user
+     * @param orderId - Order ID
+     * @param userId - User ID
+     * @return PaymentDTO
+     */
+    PaymentDTO createCoinPayment(Integer orderId, Integer userId);
     
     /**
      * Lấy payment theo order ID

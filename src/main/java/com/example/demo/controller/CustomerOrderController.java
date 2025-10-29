@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.OrderDTO;
 import com.example.demo.entity.User;
+import com.example.demo.repository.UserRepository;
 import com.example.demo.service.OrderManagementService;
 import com.example.demo.service.OrderService;
 import jakarta.servlet.http.HttpSession;
@@ -26,6 +27,9 @@ public class CustomerOrderController {
     
     @Autowired
     private OrderService orderService;
+    
+    @Autowired
+    private UserRepository userRepository;
 
     /**
      * Trang lịch sử đơn hàng của khách hàng (có phân trang)
@@ -201,6 +205,13 @@ public class CustomerOrderController {
         
         try {
             orderManagementService.customerCancelOrder(orderId, currentUser.getUserId(), cancelReason);
+            
+            // ✅ CẬP NHẬT SESSION USER (refresh coins nếu có hoàn xu)
+            User updatedUser = userRepository.findById(currentUser.getUserId()).orElse(null);
+            if (updatedUser != null) {
+                session.setAttribute("currentUser", updatedUser);
+            }
+            
             redirectAttributes.addFlashAttribute("successMessage", 
                     "Đã hủy đơn hàng thành công!");
         } catch (IllegalStateException e) {
