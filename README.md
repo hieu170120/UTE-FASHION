@@ -63,7 +63,7 @@ Hệ thống hỗ trợ 5 vai trò người dùng khác nhau, mỗi vai trò có
 *   **Ngôn ngữ:** Java 17
 *   **Framework:** Spring Boot 3
 *   **Quản lý phụ thuộc:** Apache Maven
-*   **Cơ sở dữ liệu:** MySQL
+*   **Cơ sở dữ liệu:** SQL Server 20
 *   **Truy vấn CSDL:** Spring Data JPA (Hibernate)
 *   **Bảo mật:** Spring Security (Xác thực session-based, phân quyền theo vai trò)
 *   **View Engine:** Thymeleaf
@@ -85,7 +85,7 @@ Dự án được xây dựng theo kiến trúc phân lớp (Layered Architectur
 
 *   **JDK:** Phiên bản 17 hoặc mới hơn.
 *   **Maven:** Phiên bản 3.8 hoặc mới hơn.
-*   **Cơ sở dữ liệu:** MySQL Server 8.0 hoặc mới hơn.
+*   **Cơ sở dữ liệu:** SQL Server 20.
 
 ## **Hướng dẫn cài đặt và khởi chạy**
 
@@ -93,12 +93,12 @@ Vui lòng thực hiện các bước sau để thiết lập và chạy dự án
 
 **Bước 1: Tải mã nguồn**
 ```bash
-git clone <URL_repository_cua_ban>
-cd <ten_thu_muc_du_an>
+git clone https://github.com/hieu170120/UTE-FASHION
+cd UTE_Fashion
 ```
 
 **Bước 2: Thiết lập cơ sở dữ liệu**
-1. Mở trình quản lý MySQL (ví dụ: MySQL Workbench, DBeaver).
+1. Mở trình quản lý CSDL.
 2. Tạo một schema mới với tên `UTE_Fashion`.
    ```sql
    CREATE DATABASE UTE_Fashion;
@@ -108,12 +108,7 @@ cd <ten_thu_muc_du_an>
 
 **Bước 3: Cấu hình kết nối**
 1. Mở file `src/main/resources/application.properties`.
-2. Cập nhật các thông tin sau để khớp với cấu hình MySQL của bạn:
-   ```properties
-   spring.datasource.url=jdbc:mysql://localhost:3306/UTE_Fashion
-   spring.datasource.username=<ten_dang_nhap_mysql_cua_ban>
-   spring.datasource.password=<mat_khau_mysql_cua_ban>
-   ```
+2. Cập nhật các thông tin sau để khớp với cấu hình CSDL của bạn
 
 **Bước 4: Khởi chạy ứng dụng**
 1. Mở Terminal hoặc Command Prompt tại thư mục gốc của dự án.
