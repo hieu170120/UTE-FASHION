@@ -540,8 +540,10 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     
     /**
      * Hoàn xu nếu đủ điều kiện:
-     * - Đã thanh toán bằng QR hoặc COIN
-     * - Vendor chưa xác nhận (trạng thái PROCESSING)
+     * - ĐÃ THANH TOÁN THÀNH CÔNG (Payment Status = Success)
+     * - Bất kể phương thức thanh toán nào (COD, QR, COIN)
+     * 
+     * Logic: Nếu khách đã trả tiền → hoàn xu khi hủy/trả hàng
      */
     private void refundCoinsIfEligible(Order order) {
         try {
@@ -554,13 +556,12 @@ public class OrderManagementServiceImpl implements OrderManagementService {
                 return;
             }
             
-            String methodCode = payment.getPaymentMethod().getMethodCode();
-            boolean isQRorCoin = "SEPAY_QR".equals(methodCode) || "COIN".equals(methodCode);
-            
-            // Chỉ hoàn xu nếu:
-            // 1. Thanh toán bằng QR hoặc COIN
-            // 2. Đã thanh toán thành công (payment_status = Success)
-            if (isQRorCoin && "Success".equals(payment.getPaymentStatus())) {
+            // ✅ HOÀN XU CHO TẤT CẢ ĐơN ĐÃ THANH TOÁN THÀNH CÔNG
+            // - COD đã giao hàng và thanh toán → Success → hoàn xu
+            // - QR đã thanh toán → Success → hoàn xu  
+            // - COIN đã thanh toán → Success → hoàn xu
+            // - COD chưa thanh toán → Pending → KHÔNG hoàn xu
+            if ("Success".equals(payment.getPaymentStatus())) {
                 User user = order.getUser();
                 java.math.BigDecimal refundAmount = order.getTotalAmount();
                 
@@ -568,12 +569,16 @@ public class OrderManagementServiceImpl implements OrderManagementService {
                 user.setCoins(user.getCoins().add(refundAmount));
                 userRepository.save(user);
                 
-                logger.info("✅ Refunded {} coins to user {} for cancelled order {}", 
-                    refundAmount, user.getUserId(), order.getId());
+                String methodName = payment.getPaymentMethod().getMethodName();
+                logger.info("✅ Refunded {} coins to user {} for order {} (Payment method: {})", 
+                    refundAmount, user.getUserId(), order.getId(), methodName);
+            } else {
+                logger.info("Payment status is '{}', not 'Success'. Skip coin refund for order {}", 
+                    payment.getPaymentStatus(), order.getId());
             }
         } catch (Exception e) {
             logger.error("❌ Error refunding coins for order {}: {}", order.getId(), e.getMessage());
-            // Không throw exception - vẫn cho phép hủy đơn
+            // Không throw exception - vẫn cho phép hủy đơn/trả hàng
         }
     }
 
