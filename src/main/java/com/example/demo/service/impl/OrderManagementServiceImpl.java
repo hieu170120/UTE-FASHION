@@ -1,6 +1,7 @@
 package com.example.demo.service.impl;
 
 import com.example.demo.dto.OrderDTO;
+import com.example.demo.dto.OrderItemDTO;
 import com.example.demo.dto.OrderReturnRequestDTO;
 import com.example.demo.dto.ShipperCancelHistoryDTO;
 import com.example.demo.entity.*;
@@ -115,7 +116,7 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         // Admin chỉ thấy đơn đã được vendor xác nhận (Vendor_Confirmed)
         List<Order> orders = orderRepository.findByOrderStatus(OrderStatus.VENDOR_CONFIRMED.getValue());
         return orders.stream()
-                .map(order -> modelMapper.map(order, OrderDTO.class))
+                .map(this::mapToOrderDTOWithImages)
                 .collect(Collectors.toList());
     }
 
@@ -205,7 +206,6 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     }
 
     // === SHIPPER FUNCTIONS ===
-
 
     @Override
     @Transactional
@@ -546,7 +546,7 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     public List<OrderDTO> getCustomerOrders(Integer userId) {
         List<Order> orders = orderRepository.findByUserUserIdWithDetails(userId);
         return orders.stream()
-                .map(order -> modelMapper.map(order, OrderDTO.class))
+                .map(this::mapToOrderDTOWithImages)
                 .collect(Collectors.toList());
     }
 
@@ -555,7 +555,7 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         List<Order> orders = orderRepository.findByShipperIdAndOrderStatus(
                 shipperId, OrderStatus.CONFIRMED.getValue());
         return orders.stream()
-                .map(order -> modelMapper.map(order, OrderDTO.class))
+                .map(this::mapToOrderDTOWithImages)
                 .collect(Collectors.toList());
     }
 
@@ -565,7 +565,7 @@ public class OrderManagementServiceImpl implements OrderManagementService {
                 shipperId, OrderStatus.SHIPPING.getValue());
         return orders.stream()
                 .map(order -> {
-                    OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+                    OrderDTO orderDTO = mapToOrderDTOWithImages(order);
                     // Lấy phương thức thanh toán
                     try {
                         paymentRepository.findByOrderIdWithPaymentMethod(order.getId()).ifPresent(payment -> {
@@ -588,7 +588,7 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         List<Order> orders = orderRepository.findByShipperId(shipperId);
         return orders.stream()
                 .map(order -> {
-                    OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+                    OrderDTO orderDTO = mapToOrderDTOWithImages(order);
                     
                     // Lấy phương thức thanh toán
                     try {
@@ -622,9 +622,9 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         Order order = orderRepository.findByIdWithDetails(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
         
-        OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+        OrderDTO orderDTO = mapToOrderDTOWithImages(order);
         
-        // Explicitly map shipperId (ModelMapper có thể không tỳ động map)
+        // Explicitly map shipperId (ModelMapper có thể không tự map)
         if (order.getShipper() != null) {
             orderDTO.setShipperId(order.getShipper().getId());
         }
@@ -649,6 +649,28 @@ public class OrderManagementServiceImpl implements OrderManagementService {
                 .stream()
                 .findFirst()
                 .ifPresent(returnRequest -> orderDTO.setReturnReason(returnRequest.getReason()));
+        }
+        
+        return orderDTO;
+    }
+    
+    // Helper method to map Order to OrderDTO with product images
+    private OrderDTO mapToOrderDTOWithImages(Order order) {
+        OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+        
+        // Map productImage for each OrderItemDTO
+        if (orderDTO.getOrderItems() != null && order.getOrderItems() != null) {
+            for (OrderItemDTO itemDTO : orderDTO.getOrderItems()) {
+                for (OrderItem item : order.getOrderItems()) {
+                    if (item.getId().equals(itemDTO.getId())) {
+                        if (item.getProduct() != null && item.getProduct().getImages() != null && !item.getProduct().getImages().isEmpty()) {
+                            // Assuming ProductImage has a getImageUrl() method; adjust if the actual getter is different (e.g., getUrl())
+                            itemDTO.setProductImage(item.getProduct().getImages().iterator().next().getImageUrl());
+                        }
+                        break;
+                    }
+                }
+            }
         }
         
         return orderDTO;
