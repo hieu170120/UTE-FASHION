@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -46,6 +45,11 @@ public class CustomerOrderController {
         if (currentUser == null) {
             return "redirect:/login";
         }
+        
+        // ✅ REFRESH SESSION USER - Cập nhật số xu từ database (sau khi vendor approve return)
+        User updatedUser = userRepository.findById(currentUser.getUserId()).orElse(currentUser);
+        session.setAttribute("currentUser", updatedUser);
+        currentUser = updatedUser;
         
         // Lấy tất cả đơn hàng của user (không phân trang trước)
         List<OrderDTO> allOrders = orderManagementService.getCustomerOrders(currentUser.getUserId());
@@ -125,6 +129,11 @@ public class CustomerOrderController {
         if (currentUser == null) {
             return "redirect:/login";
         }
+        
+        // ✅ REFRESH SESSION USER - Cập nhật số xu từ database (sau khi vendor approve return)
+        User updatedUser = userRepository.findById(currentUser.getUserId()).orElse(currentUser);
+        session.setAttribute("currentUser", updatedUser);
+        currentUser = updatedUser;
         
         try {
             OrderDTO order = orderService.getOrderById(orderId);

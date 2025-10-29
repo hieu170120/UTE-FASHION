@@ -3,10 +3,13 @@ package com.example.demo.controller;
 import com.example.demo.dto.ChangePasswordDTO;
 import com.example.demo.dto.ProfileDTO;
 import com.example.demo.dto.UpdateProfileDTO;
+import com.example.demo.entity.User;
+import com.example.demo.repository.UserRepository;
 import com.example.demo.service.ProfileService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -32,6 +35,9 @@ public class ProfileController {
     
     private final ProfileService profileService;
     
+    @Autowired
+    private UserRepository userRepository;
+    
     @Value("${app.upload.dir}")
     private String uploadDir;
     
@@ -52,6 +58,16 @@ public class ProfileController {
         String username = getCurrentUsername(request);
         if (username == null) {
             return "redirect:/login";
+        }
+        
+        // ✅ REFRESH SESSION USER - Cập nhật số xu từ database
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            User currentUser = (User) session.getAttribute("currentUser");
+            if (currentUser != null) {
+                User updatedUser = userRepository.findById(currentUser.getUserId()).orElse(currentUser);
+                session.setAttribute("currentUser", updatedUser);
+            }
         }
         
         try {
