@@ -547,14 +547,25 @@ public class OrderManagementServiceImpl implements OrderManagementService {
      */
     private void refundCoinsIfEligible(Order order) {
         try {
+            logger.info("═══════════════════════════════════════════════════════════════");
+            logger.info("🔍 [REFUND] Checking refund for Order ID: {}, Order Number: {}", 
+                order.getId(), order.getOrderNumber());
+            
             // Lấy payment của order
             Payment payment = paymentRepository.findByOrderIdWithPaymentMethod(order.getId())
                     .orElse(null);
             
             if (payment == null) {
-                logger.info("No payment found for order {}, skip coin refund", order.getId());
+                logger.warn("⚠️ No payment found for order {}, skip coin refund", order.getId());
+                logger.info("═══════════════════════════════════════════════════════════════\n");
                 return;
             }
+            
+            String methodName = payment.getPaymentMethod() != null ? 
+                payment.getPaymentMethod().getMethodName() : "NULL";
+            
+            logger.info("💳 Payment found - ID: {}, Status: '{}', Method: {}", 
+                payment.getId(), payment.getPaymentStatus(), methodName);
             
             // ✅ HOÀN XU CHO TẤT CẢ ĐơN ĐÃ THANH TOÁN THÀNH CÔNG
             // - COD đã giao hàng và thanh toán → Success → hoàn xu
@@ -563,21 +574,31 @@ public class OrderManagementServiceImpl implements OrderManagementService {
             // - COD chưa thanh toán → Pending → KHÔNG hoàn xu
             if ("Success".equals(payment.getPaymentStatus())) {
                 User user = order.getUser();
+                java.math.BigDecimal oldBalance = user.getCoins();
                 java.math.BigDecimal refundAmount = order.getTotalAmount();
+                java.math.BigDecimal newBalance = oldBalance.add(refundAmount);
+                
+                logger.info("💰 User ID: {}, Old Balance: {}, Refund Amount: {}, New Balance: {}",
+                    user.getUserId(), oldBalance, refundAmount, newBalance);
                 
                 // Hoàn xu
-                user.setCoins(user.getCoins().add(refundAmount));
+                user.setCoins(newBalance);
                 userRepository.save(user);
                 
-                String methodName = payment.getPaymentMethod().getMethodName();
-                logger.info("✅ Refunded {} coins to user {} for order {} (Payment method: {})", 
+                logger.info("✅ Successfully refunded {} coins to user {} for order {} (Payment method: {})", 
                     refundAmount, user.getUserId(), order.getId(), methodName);
             } else {
-                logger.info("Payment status is '{}', not 'Success'. Skip coin refund for order {}", 
+                logger.warn("⚠️ Payment status is '{}', NOT 'Success'. Skip coin refund for order {}", 
                     payment.getPaymentStatus(), order.getId());
             }
+            logger.info("═══════════════════════════════════════════════════════════════\n");
         } catch (Exception e) {
-            logger.error("❌ Error refunding coins for order {}: {}", order.getId(), e.getMessage());
+            logger.error("═══════════════════════════════════════════════════════════════");
+            logger.error("❌ [REFUND ERROR] Failed to refund coins for order {}", order.getId());
+            logger.error("🔴 Exception Type: {}", e.getClass().getName());
+            logger.error("🔴 Exception Message: {}", e.getMessage());
+            logger.error("🔴 Stack Trace:", e);
+            logger.error("═══════════════════════════════════════════════════════════════\n");
             // Không throw exception - vẫn cho phép hủy đơn/trả hàng
         }
     }
