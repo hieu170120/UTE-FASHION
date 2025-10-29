@@ -8,10 +8,27 @@ import java.util.List;
 
 public interface OrderManagementService {
     
+    // === VENDOR FUNCTIONS ===
+    
+    /**
+     * Vendor xác nhận có hàng và chuyển đơn sang trạng thái Vendor_Confirmed
+     * @param orderId ID đơn hàng
+     * @param shopId ID cửa hàng vendor
+     */
+    void vendorConfirmOrder(Integer orderId, Integer shopId);
+    
+    /**
+     * Vendor từ chối đơn (không còn hàng hoặc lý do khác)
+     * @param orderId ID đơn hàng
+     * @param shopId ID cửa hàng vendor
+     * @param reason Lý do từ chối
+     */
+    void vendorRejectOrder(Integer orderId, Integer shopId, String reason);
+    
     // === ADMIN FUNCTIONS ===
     
     /**
-     * Lấy danh sách đơn hàng đang chờ xử lý (DON_DANG_XU_LY)
+     * Lấy danh sách đơn hàng đang chờ xử lý (Vendor_Confirmed - chờ admin chọn shipper)
      */
     List<OrderDTO> getPendingOrders();
     

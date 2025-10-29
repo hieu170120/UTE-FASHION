@@ -1,13 +1,19 @@
 package com.example.demo.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.format.FormatterRegistry;
+
+
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
+
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+
 
 import com.example.demo.dto.ColorDTO;
 import com.example.demo.dto.SizeDTO;
@@ -33,6 +39,8 @@ public class WebConfig implements WebMvcConfigurer {
 	public void addResourceHandlers(ResourceHandlerRegistry registry) {
 		registry.addResourceHandler("/static/**").addResourceLocations("classpath:/static/");
 	}
+	
+	
 
 	@Component
 	public static class StringToColorDTOConverter implements Converter<String, ColorDTO> {

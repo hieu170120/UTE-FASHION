@@ -57,6 +57,9 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private ModelMapper modelMapper;
     
+    @Autowired
+    private ProductImageRepository productImageRepository;
+    
     // Add logger
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(OrderServiceImpl.class);
 
@@ -120,8 +123,12 @@ public class OrderServiceImpl implements OrderService {
             orderItem.setVariant(cartItem.getVariant());
             orderItem.setProductName(cartItem.getProduct().getProductName());
             orderItem.setProductSku(cartItem.getProduct().getSku());
-            // Note: productImageUrl left null to avoid lazy loading issues
-            // Images can be fetched separately if needed in the future
+            
+            // Lấy ảnh đầu tiên của sản phẩm để lưu vào order
+            List<ProductImage> productImages = productImageRepository.findAllByProductId(cartItem.getProduct().getId());
+            if (!productImages.isEmpty()) {
+                orderItem.setProductImageUrl(productImages.get(0).getImageUrl());
+            }
 
             if (cartItem.getVariant() != null) {
                 orderItem.setSize(cartItem.getVariant().getSize().getSizeName());
@@ -485,7 +492,28 @@ public class OrderServiceImpl implements OrderService {
                         itemDTO.setProductSku(item.getProductSku());
                         itemDTO.setSize(item.getSize());
                         itemDTO.setColor(item.getColor());
-                        itemDTO.setProductImage(item.getProductImageUrl()); // Saved image URL
+                        
+                        // Lấy ảnh sản phẩm - ưu tiên từ productImageUrl đã lưu, nếu không có thì lấy từ database
+                        String imageUrl = item.getProductImageUrl();
+                        if (imageUrl == null || imageUrl.isEmpty()) {
+                            // Lấy ảnh đầu tiên từ database cho sản phẩm này
+                            try {
+                                if (item.getProduct() != null) {
+                                    Integer productId = item.getProduct().getId();
+                                    if (productId != null) {
+                                        List<ProductImage> productImages = productImageRepository.findAllByProductId(productId);
+                                        if (!productImages.isEmpty()) {
+                                            imageUrl = productImages.get(0).getImageUrl();
+                                        }
+                                    }
+                                }
+                            } catch (Exception e) {
+                                // Xử lý lazy loading exception hoặc các lỗi khác
+                                logger.warn("Could not load product image for order item {}: {}", item.getId(), e.getMessage());
+                            }
+                        }
+                        itemDTO.setProductImage(imageUrl);
+                        
                         return itemDTO;
                     })
                     .collect(Collectors.toList()));

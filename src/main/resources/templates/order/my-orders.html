@@ -3,7 +3,7 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout/default}">
 <head>
-    <title>Đơn Hàng Của Tôi - UTE Fashion</title>
+    <title>Đơn Hàng Của Tôi - NOVA Fashion</title>
     <th:block layout:fragment="styles">
         <style>
             /* Status badges */
@@ -18,8 +18,12 @@
                 background: #ffc107;
                 color: #000;
             }
-            .status-confirmed { 
+            .status-vendor-confirmed { 
                 background: #17a2b8;
+                color: #fff;
+            }
+            .status-confirmed { 
+                background: #0d6efd;
                 color: #fff;
             }
             .status-shipping { 
@@ -69,8 +73,9 @@
                     <label class="form-label">Trạng thái</label>
                     <select name="status" class="form-select">
                         <option value="">-- Tất cả --</option>
-                        <option value="Processing" th:selected="${selectedStatus == 'Processing'}">Đang Xử Lý</option>
-                        <option value="Confirmed" th:selected="${selectedStatus == 'Confirmed'}">Đã Xác Nhận</option>
+                        <option value="Processing" th:selected="${selectedStatus == 'Processing'}">Chờ Xác Nhận</option>
+                        <option value="Vendor_Confirmed" th:selected="${selectedStatus == 'Vendor_Confirmed'}">Đã Xác Nhận</option>
+                        <option value="Confirmed" th:selected="${selectedStatus == 'Confirmed'}">Đã Xử Lý</option>
                         <option value="Shipping" th:selected="${selectedStatus == 'Shipping'}">Đang Giao</option>
                         <option value="Delivered" th:selected="${selectedStatus == 'Delivered'}">Đã Giao</option>
                         <option value="Return_Requested" th:selected="${selectedStatus == 'Return_Requested'}">Yêu Cầu Trả Hàng</option>
@@ -142,16 +147,20 @@
                             <td><span class="text-danger fw-bold" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span></td>
                             <td>
                                 <span class="status-badge"
-                                      th:classappend="${order.orderStatus == 'Processing' || order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'status-processing' :
+                                      th:classappend="${order.orderStatus == 'Processing' ? 'status-processing' :
+                                                       (order.orderStatus == 'Vendor_Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'status-vendor-confirmed' :
+                                                       (order.orderStatus == 'Confirmed' ? 'status-confirmed' :
                                                        (order.orderStatus == 'Shipping' ? 'status-shipping' :
                                                        (order.orderStatus == 'Delivered' ? 'status-delivered' :
                                                        (order.orderStatus == 'Return_Requested' ? 'status-return_requested' :
-                                                       (order.orderStatus == 'Returned' ? 'status-returned' : 'status-cancelled'))))}"
-                                      th:text="${order.orderStatus == 'Processing' || order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'Đang Xử Lý' :
+                                                       (order.orderStatus == 'Returned' ? 'status-returned' : 'status-cancelled'))))))}"
+                                      th:text="${order.orderStatus == 'Processing' ? 'Chờ Xác Nhận' :
+                                                (order.orderStatus == 'Vendor_Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'Đã Xác Nhận' :
+                                                (order.orderStatus == 'Confirmed' ? 'Đã Xử Lý' :
                                                 (order.orderStatus == 'Shipping' ? 'Đang Giao' :
                                                 (order.orderStatus == 'Delivered' ? 'Đã Giao' :
                                                 (order.orderStatus == 'Return_Requested' ? 'Yêu Cầu Trả Hàng' :
-                                                (order.orderStatus == 'Returned' ? 'Đã Trả Hàng' : 'Đã Hủy'))))}"></span>
+                                                (order.orderStatus == 'Returned' ? 'Đã Trả Hàng' : 'Đã Hủy'))))))}"></span>
                             </td>
                             <td th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
                             <td>

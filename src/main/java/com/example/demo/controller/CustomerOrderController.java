@@ -162,8 +162,9 @@ public class CustomerOrderController {
                 return "redirect:/orders/my-orders";
             }
             
-            // Kiểm tra trạng thái (cho phép hủy khi Processing, Confirmed hoặc Shipper_Cancelled)
+            // Kiểm tra trạng thái (cho phép hủy khi Processing, Vendor_Confirmed, Confirmed hoặc Shipper_Cancelled)
             if (!"Processing".equals(order.getOrderStatus()) 
+                && !"Vendor_Confirmed".equals(order.getOrderStatus())
                 && !"Confirmed".equals(order.getOrderStatus())
                 && !"Shipper_Cancelled".equals(order.getOrderStatus())) {
                 redirectAttributes.addFlashAttribute("errorMessage", "Không thể hủy đơn ở trạng thái này");

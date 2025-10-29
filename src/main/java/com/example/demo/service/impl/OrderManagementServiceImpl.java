@@ -1,6 +1,7 @@
 package com.example.demo.service.impl;
 
 import com.example.demo.dto.OrderDTO;
+import com.example.demo.dto.OrderItemDTO;
 import com.example.demo.dto.OrderReturnRequestDTO;
 import com.example.demo.dto.ShipperCancelHistoryDTO;
 import com.example.demo.entity.*;
@@ -54,13 +55,68 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     private static final int MAX_SHIPPER_CANCEL_COUNT = 3;
     private static final Random random = new Random();
 
+    // === VENDOR FUNCTIONS ===
+
+    @Override
+    @Transactional
+    public void vendorConfirmOrder(Integer orderId, Integer shopId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng không tồn tại"));
+        
+        // Kiểm tra đơn hàng có thuộc shop này không
+        if (order.getShop() == null || !order.getShop().getId().equals(shopId)) {
+            throw new IllegalStateException("Bạn không có quyền xử lý đơn hàng này");
+        }
+        
+        // Kiểm tra trạng thái - chỉ cho phép xác nhận khi đang Processing
+        if (!OrderStatus.PROCESSING.getValue().equals(order.getOrderStatus())) {
+            throw new IllegalStateException("Đơn hàng không ở trạng thái chờ xác nhận");
+        }
+        
+        // Cập nhật trạng thái sang Vendor_Confirmed
+        order.setOrderStatus(OrderStatus.VENDOR_CONFIRMED.getValue());
+        order.setConfirmedAt(LocalDateTime.now());
+        
+        orderRepository.save(order);
+        
+        logger.info("✅ Vendor (Shop ID: {}) đã xác nhận đơn hàng #{}", shopId, order.getOrderNumber());
+    }
+
+    @Override
+    @Transactional
+    public void vendorRejectOrder(Integer orderId, Integer shopId, String reason) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng không tồn tại"));
+        
+        // Kiểm tra đơn hàng có thuộc shop này không
+        if (order.getShop() == null || !order.getShop().getId().equals(shopId)) {
+            throw new IllegalStateException("Bạn không có quyền xử lý đơn hàng này");
+        }
+        
+        // Kiểm tra trạng thái - chỉ cho phép từ chối khi đang Processing
+        if (!OrderStatus.PROCESSING.getValue().equals(order.getOrderStatus())) {
+            throw new IllegalStateException("Đơn hàng không ở trạng thái chờ xác nhận");
+        }
+        
+        // Cập nhật trạng thái sang Cancelled và lưu lý do
+        order.setOrderStatus(OrderStatus.CANCELLED.getValue());
+        order.setCancelReason("Vendor từ chối: " + reason);
+        order.setCancelledAt(LocalDateTime.now());
+        order.setCancelledBy("VENDOR");
+        
+        orderRepository.save(order);
+        
+        logger.info("❌ Vendor (Shop ID: {}) đã từ chối đơn hàng #{} - Lý do: {}", shopId, order.getOrderNumber(), reason);
+    }
+
     // === ADMIN FUNCTIONS ===
 
     @Override
     public List<OrderDTO> getPendingOrders() {
-        List<Order> orders = orderRepository.findByOrderStatus(OrderStatus.PROCESSING.getValue());
+        // Admin chỉ thấy đơn đã được vendor xác nhận (Vendor_Confirmed)
+        List<Order> orders = orderRepository.findByOrderStatus(OrderStatus.VENDOR_CONFIRMED.getValue());
         return orders.stream()
-                .map(order -> modelMapper.map(order, OrderDTO.class))
+                .map(this::mapToOrderDTOWithImages)
                 .collect(Collectors.toList());
     }
 
@@ -73,10 +129,10 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         Shipper shipper = shipperRepository.findById(shipperId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy shipper"));
         
-        // Kiểm tra trạng thái đơn hàng (cho phép Processing hoặc Shipper_Cancelled)
-        if (!OrderStatus.PROCESSING.getValue().equals(order.getOrderStatus()) 
+        // Kiểm tra trạng thái đơn hàng (cho phép Vendor_Confirmed hoặc Shipper_Cancelled)
+        if (!OrderStatus.VENDOR_CONFIRMED.getValue().equals(order.getOrderStatus()) 
             && !OrderStatus.SHIPPER_CANCELLED.getValue().equals(order.getOrderStatus())) {
-            throw new IllegalStateException("Đơn hàng không ở trạng thái chờ xử lý hoặc shipper hủy");
+            throw new IllegalStateException("Đơn hàng không ở trạng thái chờ xử lý (vendor đã xác nhận) hoặc shipper hủy");
         }
         
         // KHÔNG xóa thông tin hủy cũ - giữ lại để admin xem lịch sử
@@ -150,7 +206,6 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     }
 
     // === SHIPPER FUNCTIONS ===
-
 
     @Override
     @Transactional
@@ -440,9 +495,10 @@ public class OrderManagementServiceImpl implements OrderManagementService {
             throw new IllegalStateException("Bạn không có quyền hủy đơn này");
         }
         
-        // Chỉ cho phép hủy khi đơn đang xử lý, đã xử lý hoặc shipper hủy (chưa giao)
+        // Chỉ cho phép hủy khi đơn đang xử lý, vendor đã xác nhận, đã xử lý hoặc shipper hủy (chưa giao)
         String status = order.getOrderStatus();
         if (!OrderStatus.PROCESSING.getValue().equals(status) && 
+            !OrderStatus.VENDOR_CONFIRMED.getValue().equals(status) &&
             !OrderStatus.CONFIRMED.getValue().equals(status) &&
             !OrderStatus.SHIPPER_CANCELLED.getValue().equals(status)) {
             throw new IllegalStateException("Không thể hủy đơn ở trạng thái này");
@@ -490,7 +546,7 @@ public class OrderManagementServiceImpl implements OrderManagementService {
     public List<OrderDTO> getCustomerOrders(Integer userId) {
         List<Order> orders = orderRepository.findByUserUserIdWithDetails(userId);
         return orders.stream()
-                .map(order -> modelMapper.map(order, OrderDTO.class))
+                .map(this::mapToOrderDTOWithImages)
                 .collect(Collectors.toList());
     }
 
@@ -499,7 +555,7 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         List<Order> orders = orderRepository.findByShipperIdAndOrderStatus(
                 shipperId, OrderStatus.CONFIRMED.getValue());
         return orders.stream()
-                .map(order -> modelMapper.map(order, OrderDTO.class))
+                .map(this::mapToOrderDTOWithImages)
                 .collect(Collectors.toList());
     }
 
@@ -509,7 +565,7 @@ public class OrderManagementServiceImpl implements OrderManagementService {
                 shipperId, OrderStatus.SHIPPING.getValue());
         return orders.stream()
                 .map(order -> {
-                    OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+                    OrderDTO orderDTO = mapToOrderDTOWithImages(order);
                     // Lấy phương thức thanh toán
                     try {
                         paymentRepository.findByOrderIdWithPaymentMethod(order.getId()).ifPresent(payment -> {
@@ -532,7 +588,7 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         List<Order> orders = orderRepository.findByShipperId(shipperId);
         return orders.stream()
                 .map(order -> {
-                    OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+                    OrderDTO orderDTO = mapToOrderDTOWithImages(order);
                     
                     // Lấy phương thức thanh toán
                     try {
@@ -566,9 +622,9 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         Order order = orderRepository.findByIdWithDetails(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
         
-        OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+        OrderDTO orderDTO = mapToOrderDTOWithImages(order);
         
-        // Explicitly map shipperId (ModelMapper có thể không tỳ động map)
+        // Explicitly map shipperId (ModelMapper có thể không tự map)
         if (order.getShipper() != null) {
             orderDTO.setShipperId(order.getShipper().getId());
         }
@@ -593,6 +649,28 @@ public class OrderManagementServiceImpl implements OrderManagementService {
                 .stream()
                 .findFirst()
                 .ifPresent(returnRequest -> orderDTO.setReturnReason(returnRequest.getReason()));
+        }
+        
+        return orderDTO;
+    }
+    
+    // Helper method to map Order to OrderDTO with product images
+    private OrderDTO mapToOrderDTOWithImages(Order order) {
+        OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+        
+        // Map productImage for each OrderItemDTO
+        if (orderDTO.getOrderItems() != null && order.getOrderItems() != null) {
+            for (OrderItemDTO itemDTO : orderDTO.getOrderItems()) {
+                for (OrderItem item : order.getOrderItems()) {
+                    if (item.getId().equals(itemDTO.getId())) {
+                        if (item.getProduct() != null && item.getProduct().getImages() != null && !item.getProduct().getImages().isEmpty()) {
+                            // Assuming ProductImage has a getImageUrl() method; adjust if the actual getter is different (e.g., getUrl())
+                            itemDTO.setProductImage(item.getProduct().getImages().iterator().next().getImageUrl());
+                        }
+                        break;
+                    }
+                }
+            }
         }
         
         return orderDTO;
