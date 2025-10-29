@@ -219,9 +219,9 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Lý do từ chối của admin -->
+                                <!-- Lý do từ chối của cửa hàng -->
                                 <div class="mb-3">
-                                    <p class="mb-1"><strong>Lý do admin từ chối:</strong></p>
+                                    <p class="mb-1"><strong>Lý do cửa hàng từ chối:</strong></p>
                                     <div class="alert alert-light mb-0">
                                         <p class="mb-0" th:text="${order.adminNotes}"></p>
                                     </div>
@@ -237,7 +237,7 @@
                     
                     <div th:if="${order.orderStatus == 'Return_Requested'}" class="alert alert-warning mb-0">
                         <i class="fas fa-clock me-2"></i>
-                        <strong>Yêu cầu trả hàng đang chờ admin xử lý.</strong>
+                        <strong>Yêu cầu trả hàng đang chờ cửa hàng xử lý.</strong>
                         <div th:if="${order.returnReason != null && !#strings.isEmpty(order.returnReason)}" class="mt-2 pt-2 border-top">
                             <strong>Lý do trả hàng:</strong><br/>
                             <span th:text="${order.returnReason}"></span>
@@ -248,7 +248,7 @@
                         <i class="fas fa-box-open me-2"></i>
                         <strong>Đơn hàng đã được trả lại thành công.</strong>
                         <p class="mb-0 mt-2">
-                            <small class="text-muted">Admin đã chấp nhận yêu cầu trả hàng của bạn.</small>
+                            <small class="text-muted">Cửa hàng đã chấp nhận yêu cầu trả hàng của bạn.</small>
                         </p>
                         <div th:if="${order.returnReason != null && !#strings.isEmpty(order.returnReason)}" class="mt-3 p-3 bg-light rounded">
                             <p class="mb-1"><strong><i class="fas fa-comment-alt me-1"></i> Lý do trả hàng của bạn:</strong></p>
