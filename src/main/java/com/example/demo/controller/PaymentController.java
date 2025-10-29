@@ -100,6 +100,10 @@ public class PaymentController {
         // Lấy cart để hiển thị
         CartDTO cart = cartService.getCartByUserId(userId);
         
+        // Lấy user để lấy số xu
+        User user = userRepository.findById(userId).orElse(null);
+        BigDecimal userCoins = (user != null) ? user.getCoins() : BigDecimal.ZERO;
+        
         // Lấy payment methods
         List<PaymentMethod> paymentMethods = paymentService.getAllPaymentMethods();
         
@@ -142,6 +146,7 @@ public class PaymentController {
         model.addAttribute("cart", cart);
         model.addAttribute("checkoutData", checkoutData);
         model.addAttribute("paymentMethods", paymentMethods);
+        model.addAttribute("userCoins", userCoins);
         model.addAttribute("carriers", carriers);
         model.addAttribute("availableCoupons", availableCoupons);
         model.addAttribute("availablePromotions", availablePromotions);
@@ -326,6 +331,75 @@ public class PaymentController {
             session.removeAttribute("appliedPromotionId");
             
             redirectAttributes.addFlashAttribute("successMessage", "Đặt hàng thành công! Thanh toán khi nhận hàng.");
+            return "redirect:/checkout/order-success?orderId=" + createdOrder.getId();
+            
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/payment/method-selection";
+        }
+    }
+
+    /**
+     * COIN - Thanh toán bằng xu
+     * POST /payment/confirm-coin
+     */
+    @PostMapping("/confirm-coin")
+    public String confirmCoin(HttpSession session, RedirectAttributes redirectAttributes) {
+        try {
+            OrderDTO checkoutData = (OrderDTO) session.getAttribute("checkoutData");
+            Integer userId = (Integer) session.getAttribute("checkoutUserId");
+            Integer selectedCarrierId = (Integer) session.getAttribute("selectedCarrierId");
+            
+            if (checkoutData == null) {
+                return "redirect:/cart";
+            }
+            
+            // ✅ VALIDATE: Phải chọn carrier trước
+            if (selectedCarrierId == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Vui lòng chọn nhà vận chuyển trước khi thanh toán!");
+                return "redirect:/payment/method-selection";
+            }
+            
+            // Set carrier vào checkoutData
+            checkoutData.setCarrierId(selectedCarrierId);
+            
+            // ✅ LẤY VÀ SET DISCOUNT TỪ SESSION
+            BigDecimal couponDiscount = (BigDecimal) session.getAttribute("couponDiscount");
+            BigDecimal promotionDiscount = (BigDecimal) session.getAttribute("promotionDiscount");
+            
+            // Tính tổng discount
+            BigDecimal totalDiscount = BigDecimal.ZERO;
+            if (couponDiscount != null) {
+                totalDiscount = totalDiscount.add(couponDiscount);
+            }
+            if (promotionDiscount != null) {
+                totalDiscount = totalDiscount.add(promotionDiscount);
+            }
+            
+            // Set discount vào checkoutData để truyền vào order
+            checkoutData.setDiscountAmount(totalDiscount);
+            
+            // ✅ TẠO ORDER (với discount)
+            OrderDTO createdOrder = orderService.createOrderFromCart(userId, session.getId(), checkoutData);
+            
+            // ✅ TẠO PAYMENT (COIN - Success) và trừ xu
+            paymentService.createCoinPayment(createdOrder.getId(), userId);
+            
+            // ✅ CẬP NHẬT SESSION USER (refresh coins)
+            User updatedUser = userRepository.findById(userId).orElse(null);
+            if (updatedUser != null) {
+                session.setAttribute("currentUser", updatedUser);
+            }
+            
+            // Xóa session
+            session.removeAttribute("checkoutData");
+            session.removeAttribute("checkoutUserId");
+            session.removeAttribute("couponDiscount");
+            session.removeAttribute("promotionDiscount");
+            session.removeAttribute("appliedCouponCode");
+            session.removeAttribute("appliedPromotionId");
+            
+            redirectAttributes.addFlashAttribute("successMessage", "Đặt hàng và thanh toán bằng xu thành công!");
             return "redirect:/checkout/order-success?orderId=" + createdOrder.getId();
             
         } catch (Exception e) {

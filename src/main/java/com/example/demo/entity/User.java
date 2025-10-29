@@ -47,6 +47,9 @@ public class User {
     @Column(name = "is_email_verified")
     private Boolean isEmailVerified = false;
     
+    @Column(name = "coins", precision = 18, scale = 2)
+    private java.math.BigDecimal coins = java.math.BigDecimal.ZERO;
+    
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
     
@@ -103,6 +106,9 @@ public class User {
     
     public Boolean getIsEmailVerified() { return isEmailVerified; }
     public void setIsEmailVerified(Boolean isEmailVerified) { this.isEmailVerified = isEmailVerified; }
+    
+    public java.math.BigDecimal getCoins() { return coins; }
+    public void setCoins(java.math.BigDecimal coins) { this.coins = coins; }
     
     public LocalDateTime getLastLogin() { return lastLogin; }
     public void setLastLogin(LocalDateTime lastLogin) { this.lastLogin = lastLogin; }

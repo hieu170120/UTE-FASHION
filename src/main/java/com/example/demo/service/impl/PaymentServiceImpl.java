@@ -4,14 +4,17 @@ import com.example.demo.dto.PaymentDTO;
 import com.example.demo.entity.Order;
 import com.example.demo.entity.Payment;
 import com.example.demo.entity.PaymentMethod;
+import com.example.demo.entity.User;
 import com.example.demo.repository.OrderRepository;
 import com.example.demo.repository.PaymentMethodRepository;
 import com.example.demo.repository.PaymentRepository;
+import com.example.demo.repository.UserRepository;
 import com.example.demo.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -31,6 +34,9 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Autowired
     private OrderRepository orderRepository;
+    
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
     public List<PaymentMethod> getAllPaymentMethods() {
@@ -100,6 +106,48 @@ public class PaymentServiceImpl implements PaymentService {
         return convertToDTO(savedPayment);
     }
 
+    @Override
+    @Transactional
+    public PaymentDTO createCoinPayment(Integer orderId, Integer userId) {
+        // Lấy order
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+        
+        // Lấy user
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        
+        // Kiểm tra số xu đủ không
+        BigDecimal totalAmount = order.getTotalAmount();
+        if (user.getCoins().compareTo(totalAmount) < 0) {
+            throw new RuntimeException("Số xu không đủ. Bạn có " + user.getCoins() + " xu, cần " + totalAmount + " xu");
+        }
+        
+        // Trừ xu
+        user.setCoins(user.getCoins().subtract(totalAmount));
+        userRepository.save(user);
+        
+        // Lấy COIN payment method
+        PaymentMethod coinMethod = getPaymentMethodByCode("COIN");
+        
+        // Tạo payment record
+        Payment payment = new Payment();
+        payment.setOrder(order);
+        payment.setPaymentMethod(coinMethod);
+        payment.setAmount(totalAmount);
+        payment.setPaymentStatus("Success"); // COIN payment is instant
+        payment.setTransactionId("COIN-" + order.getOrderNumber());
+        payment.setPaidAt(LocalDateTime.now());
+        
+        Payment savedPayment = paymentRepository.save(payment);
+        
+        // Update order payment status
+        order.setPaymentStatus("Paid");
+        orderRepository.save(order);
+        
+        return convertToDTO(savedPayment);
+    }
+    
     @Override
     public PaymentDTO getPaymentByOrderId(Integer orderId) {
         Payment payment = paymentRepository.findByOrder_Id(orderId)
