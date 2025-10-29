@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yêu Cầu Trả Hàng - NOVA Fashion Admin</title>
+    <title>Yêu Cầu Trả Hàng - NOVA Fashion Vendor</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -26,21 +26,18 @@
 <body>
     <nav class="navbar navbar-custom navbar-dark mb-4">
         <div class="container-fluid">
-            <a class="navbar-brand" th:href="@{/admin/dashboard}">
-                <i class="fas fa-shopping-bag"></i> NOVA Fashion Admin
+            <a class="navbar-brand" th:href="@{/vendor/dashboard}">
+                <i class="fas fa-shopping-bag"></i> NOVA Fashion Vendor
             </a>
             <div class="d-flex align-items-center gap-2">
-                <a th:href="@{/admin/orders}" class="btn btn-light btn-sm me-2">
-                    <i class="fas fa-list"></i> Tất Cả Đơn
-                </a>
-                <a th:href="@{/admin/orders/pending}" class="btn btn-warning btn-sm me-2">
-                    <i class="fas fa-clock"></i> Đơn Chờ Xử Lý
+                <a th:href="@{/vendor/order-status}" class="btn btn-light btn-sm me-2">
+                    <i class="fas fa-list"></i> Quản Lý Đơn Hàng
                 </a>
                 
                 <!-- User Avatar Dropdown -->
                 <div class="dropdown">
                     <a class="dropdown-toggle" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <img src="https://ui-avatars.com/api/?name=Admin&background=667eea&color=fff&size=128" 
+                        <img src="https://ui-avatars.com/api/?name=Vendor&background=667eea&color=fff&size=128" 
                              alt="User Avatar" 
                              class="user-avatar" />
                     </a>
@@ -66,6 +63,7 @@
         <div class="card">
             <div class="card-body">
                 <h2><i class="fas fa-undo text-info"></i> Yêu Cầu Trả Hàng</h2>
+                <p class="text-muted mb-0">Quản lý yêu cầu trả hàng từ khách hàng của shop bạn</p>
             </div>
         </div>
 
@@ -102,12 +100,12 @@
                 <div class="col-md-4 text-end">
                     <span class="badge bg-warning text-dark mb-3" style="font-size: 16px;">Chờ Xử Lý</span>
                     <div class="d-grid gap-2">
-                        <form th:action="@{/admin/orders/returns/{id}/approve(id=${request.id})}" method="post" class="d-inline">
-                            <button type="submit" class="btn btn-success w-100">
+                        <form th:action="@{/vendor/orders/returns/{id}/approve(id=${request.id})}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-success w-100" onclick="return confirm('Bạn có chắc chắn muốn chấp nhận yêu cầu trả hàng này?');">
                                 <i class="fas fa-check"></i> Chấp Nhận
                             </button>
                         </form>
-                        <a th:href="@{/admin/orders/returns/{id}/reject(id=${request.id})}" class="btn btn-danger w-100">
+                        <a th:href="@{/vendor/orders/returns/{id}/reject(id=${request.id})}" class="btn btn-danger w-100">
                             <i class="fas fa-times"></i> Từ Chối
                         </a>
                     </div>

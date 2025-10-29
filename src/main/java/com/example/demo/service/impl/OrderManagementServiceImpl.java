@@ -111,6 +111,81 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         
         logger.info("❌ Vendor (Shop ID: {}) đã từ chối đơn hàng #{} - Lý do: {}", shopId, order.getOrderNumber(), reason);
     }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderReturnRequestDTO> getPendingReturnRequestsByShop(Integer shopId) {
+        List<OrderReturnRequest> requests = returnRequestRepository.findByStatus("Pending");
+        return requests.stream()
+                .filter(req -> req.getOrder().getShop() != null && req.getOrder().getShop().getId().equals(shopId))
+                .map(req -> {
+                    OrderReturnRequestDTO dto = new OrderReturnRequestDTO();
+                    dto.setId(req.getId());
+                    dto.setOrderId(req.getOrder().getId());
+                    dto.setOrderCode(req.getOrder().getOrderNumber());
+                    dto.setUserId(req.getUser().getUserId());
+                    dto.setUserName(req.getUser().getFullName());
+                    dto.setUserEmail(req.getUser().getEmail());
+                    dto.setReason(req.getReason());
+                    dto.setStatus(req.getStatus());
+                    dto.setRequestDate(req.getRequestedAt());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    @Transactional
+    public void vendorApproveReturnRequest(Integer requestId, Integer shopId) {
+        OrderReturnRequest request = returnRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu"));
+        
+        // Kiểm tra quyền - yêu cầu phải thuộc về shop này
+        if (request.getOrder().getShop() == null || !request.getOrder().getShop().getId().equals(shopId)) {
+            throw new IllegalStateException("Bạn không có quyền xử lý yêu cầu này");
+        }
+        
+        request.setStatus("Approved");
+        request.setApprovedAt(LocalDateTime.now());
+        
+        // Cập nhật trạng thái đơn hàng
+        Order order = request.getOrder();
+        
+        // ✅ HOÀN XU nếu đã thanh toán bằng QR hoặc COIN
+        refundCoinsIfEligible(order);
+        
+        order.setOrderStatus(OrderStatus.RETURNED.getValue());
+        
+        returnRequestRepository.save(request);
+        orderRepository.save(order);
+        
+        logger.info("✅ Vendor (Shop ID: {}) đã chấp nhận trả hàng - Order: {}", shopId, order.getOrderNumber());
+    }
+    
+    @Override
+    @Transactional
+    public void vendorRejectReturnRequest(Integer requestId, Integer shopId, String rejectionReason) {
+        OrderReturnRequest request = returnRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu"));
+        
+        // Kiểm tra quyền - yêu cầu phải thuộc về shop này
+        if (request.getOrder().getShop() == null || !request.getOrder().getShop().getId().equals(shopId)) {
+            throw new IllegalStateException("Bạn không có quyền xử lý yêu cầu này");
+        }
+        
+        request.setStatus("Rejected");
+        request.setRejectedAt(LocalDateTime.now());
+        
+        // Khôi phục trạng thái đơn hàng về Đã giao và lưu lý do từ chối
+        Order order = request.getOrder();
+        order.setOrderStatus(OrderStatus.DELIVERED.getValue());
+        order.setAdminNotes("Lý do từ chối trả hàng (Vendor): " + rejectionReason);
+        
+        returnRequestRepository.save(request);
+        orderRepository.save(order);
+        
+        logger.info("❌ Vendor (Shop ID: {}) đã từ chối trả hàng - Order: {} - Lý do: {}", shopId, order.getOrderNumber(), rejectionReason);
+    }
 
     // === ADMIN FUNCTIONS ===
 
@@ -152,65 +227,6 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         notificationService.notifyShipperNewOrder(shipper, order);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<OrderReturnRequestDTO> getPendingReturnRequests() {
-        List<OrderReturnRequest> requests = returnRequestRepository.findByStatus("Pending");
-        return requests.stream()
-                .map(req -> {
-                    OrderReturnRequestDTO dto = new OrderReturnRequestDTO();
-                    dto.setId(req.getId());
-                    dto.setOrderId(req.getOrder().getId());
-                    dto.setOrderCode(req.getOrder().getOrderNumber());
-                    dto.setUserId(req.getUser().getUserId());
-                    dto.setUserName(req.getUser().getFullName());
-                    dto.setUserEmail(req.getUser().getEmail());
-                    dto.setReason(req.getReason());
-                    dto.setStatus(req.getStatus());
-                    dto.setRequestDate(req.getRequestedAt());
-                    return dto;
-                })
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional
-    public void approveReturnRequest(Integer requestId) {
-        OrderReturnRequest request = returnRequestRepository.findById(requestId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu"));
-        
-        request.setStatus("Approved");
-        request.setApprovedAt(LocalDateTime.now());
-        
-        // Cập nhật trạng thái đơn hàng
-        Order order = request.getOrder();
-        
-        // ✅ HOÀN XU nếu đã thanh toán bằng QR hoặc COIN
-        refundCoinsIfEligible(order);
-        
-        order.setOrderStatus(OrderStatus.RETURNED.getValue());
-        
-        returnRequestRepository.save(request);
-        orderRepository.save(order);
-    }
-
-    @Override
-    @Transactional
-    public void rejectReturnRequest(Integer requestId, String rejectionReason) {
-        OrderReturnRequest request = returnRequestRepository.findById(requestId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu"));
-        
-        request.setStatus("Rejected");
-        request.setRejectedAt(LocalDateTime.now());
-        
-        // Khôi phục trạng thái đơn hàng về Đã giao và lưu lý do từ chối
-        Order order = request.getOrder();
-        order.setOrderStatus(OrderStatus.DELIVERED.getValue());
-        order.setAdminNotes("Lý do từ chối trả hàng: " + rejectionReason);
-        
-        returnRequestRepository.save(request);
-        orderRepository.save(order);
-    }
 
     // === SHIPPER FUNCTIONS ===
 

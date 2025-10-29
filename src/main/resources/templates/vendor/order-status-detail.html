@@ -125,7 +125,7 @@
                                                 order.orderStatus == 'Cancelled' ? 'fa-times-circle' : 'fa-question-circle'}"></i>
                             <span th:text="${order.orderStatus == 'Processing' ? 'Chờ xác nhận' :
                                             order.orderStatus == 'Vendor_Confirmed' ? 'Đã xác nhận' :
-                                            order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'Đang xử lý' :
+                                            order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'Đang xử lý – Chờ giao' :
                                             order.orderStatus == 'Shipping' ? 'Đang giao' :
                                             order.orderStatus == 'Delivered' ? 'Đã giao' :
                                             order.orderStatus == 'Return_Requested' ? 'Yêu cầu trả hàng' :
@@ -237,9 +237,9 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Lý do từ chối của admin -->
+                                <!-- Lý do từ chối của vendor -->
                                 <div class="mb-3">
-                                    <p class="mb-1"><strong>Lý do admin từ chối:</strong></p>
+                                    <p class="mb-1"><strong>Lý do bạn từ chối:</strong></p>
                                     <div class="alert alert-light mb-0">
                                         <p class="mb-0" th:text="${order.adminNotes}"></p>
                                     </div>
@@ -253,12 +253,31 @@
                         </div>
                     </div>
                     
-                    <div th:if="${order.orderStatus == 'Return_Requested'}" class="alert alert-warning mb-0">
-                        <i class="fas fa-clock me-2"></i>
-                        <strong>Yêu cầu trả hàng đang chờ admin xử lý.</strong>
-                        <div th:if="${order.returnReason != null && !#strings.isEmpty(order.returnReason)}" class="mt-2 pt-2 border-top">
-                            <strong>Lý do trả hàng:</strong><br/>
-                            <span th:text="${order.returnReason}"></span>
+                    <!-- Yêu cầu trả hàng - Vendor xử lý tại đây -->
+                    <div th:if="${order.orderStatus == 'Return_Requested'}" class="card border-warning mb-3">
+                        <div class="card-body">
+                            <h6 class="text-warning"><i class="fas fa-undo me-2"></i>Yêu Cầu Trả Hàng</h6>
+                            <p class="text-muted mb-3">Khách hàng yêu cầu trả hàng. Vui lòng kiểm tra và quyết định.</p>
+                            
+                            <!-- Lý do trả hàng của khách -->
+                            <div th:if="${order.returnReason != null && !#strings.isEmpty(order.returnReason)}" class="alert alert-light mb-3">
+                                <strong><i class="fas fa-comment me-2"></i>Lý do trả hàng của khách:</strong><br/>
+                                <span th:text="${order.returnReason}"></span>
+                            </div>
+                            
+                            <!-- Nút xử lý -->
+                            <div class="d-flex gap-2">
+                                <form th:action="@{/vendor/orders/{id}/returns/approve(id=${order.id})}" method="post" style="flex: 1;"
+                                      onsubmit="return confirm('X\u00e1c nh\u1eadn ch\u1ea5p nh\u1eadn tr\u1ea3 h\u00e0ng?\n\n\u0110\u01a1n h\u00e0ng s\u1ebd chuy\u1ec3n sang tr\u1ea1ng th\u00e1i TR\u1ea2 H\u00c0NG v\u00e0 ho\u00e0n ti\u1ec1n cho kh\u00e1ch.');">
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="fas fa-check-circle me-2"></i>Chấp Nhận Trả Hàng
+                                    </button>
+                                </form>
+                                <a th:href="@{/vendor/orders/{id}/returns/reject(id=${order.id})}" 
+                                   class="btn btn-danger w-100" style="flex: 1;">
+                                    <i class="fas fa-times-circle me-2"></i>Từ Chối Trả Hàng
+                                </a>
+                            </div>
                         </div>
                     </div>
                     
@@ -266,10 +285,10 @@
                         <i class="fas fa-box-open me-2"></i>
                         <strong>Đơn hàng đã được trả lại thành công.</strong>
                         <p class="mb-0 mt-2">
-                            <small class="text-muted">Admin đã chấp nhận yêu cầu trả hàng của bạn.</small>
+                            <small class="text-muted">Bạn đã chấp nhận yêu cầu trả hàng.</small>
                         </p>
                         <div th:if="${order.returnReason != null && !#strings.isEmpty(order.returnReason)}" class="mt-3 p-3 bg-light rounded">
-                            <p class="mb-1"><strong><i class="fas fa-comment-alt me-1"></i> Lý do trả hàng của bạn:</strong></p>
+                            <p class="mb-1"><strong><i class="fas fa-comment-alt me-1"></i> Lý do trả hàng của khách:</strong></p>
                             <p class="mb-0" th:text="${order.returnReason}"></p>
                         </div>
                     </div>

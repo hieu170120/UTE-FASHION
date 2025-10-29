@@ -25,6 +25,27 @@ public interface OrderManagementService {
      */
     void vendorRejectOrder(Integer orderId, Integer shopId, String reason);
     
+    /**
+     * Lấy danh sách yêu cầu trả hàng chờ xử lý của shop
+     * @param shopId ID cửa hàng vendor
+     */
+    List<OrderReturnRequestDTO> getPendingReturnRequestsByShop(Integer shopId);
+    
+    /**
+     * Vendor phê duyệt yêu cầu trả hàng
+     * @param requestId ID yêu cầu trả hàng
+     * @param shopId ID cửa hàng vendor
+     */
+    void vendorApproveReturnRequest(Integer requestId, Integer shopId);
+    
+    /**
+     * Vendor từ chối yêu cầu trả hàng
+     * @param requestId ID yêu cầu trả hàng
+     * @param shopId ID cửa hàng vendor
+     * @param rejectionReason Lý do từ chối
+     */
+    void vendorRejectReturnRequest(Integer requestId, Integer shopId, String rejectionReason);
+    
     // === ADMIN FUNCTIONS ===
     
     /**
@@ -39,20 +60,6 @@ public interface OrderManagementService {
      */
     void adminConfirmOrderAndAssignShipper(Integer orderId, Integer shipperId);
     
-    /**
-     * Lấy danh sách yêu cầu trả hàng chờ xử lý
-     */
-    List<OrderReturnRequestDTO> getPendingReturnRequests();
-    
-    /**
-     * Admin phê duyệt yêu cầu trả hàng
-     */
-    void approveReturnRequest(Integer requestId);
-    
-    /**
-     * Admin từ chối yêu cầu trả hàng
-     */
-    void rejectReturnRequest(Integer requestId, String rejectionReason);
     
     
     // === SHIPPER FUNCTIONS ===
