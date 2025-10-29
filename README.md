@@ -94,7 +94,7 @@ Vui lòng thực hiện các bước sau để thiết lập và chạy dự án
 **Bước 1: Tải mã nguồn**
 ```bash
 git clone https://github.com/hieu170120/UTE-FASHION
-cd UTE_Fashion
+cd UTE-Fashion
 ```
 
 **Bước 2: Thiết lập cơ sở dữ liệu**
