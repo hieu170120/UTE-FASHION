@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.dto.CartDTO;
 import com.example.demo.dto.CartItemDTO;
 import com.example.demo.entity.User;
+import com.example.demo.repository.UserRepository;
 import com.example.demo.service.CartService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,10 +20,21 @@ public class CartController {
 
     @Autowired
     private CartService cartService;
+    
+    @Autowired
+    private UserRepository userRepository;
 
     @GetMapping
     public String viewCart(Model model, HttpSession session) {
         User currentUser = (User) session.getAttribute("currentUser");
+        
+        // ✅ REFRESH SESSION USER - Cập nhật số xu từ database
+        if (currentUser != null) {
+            User updatedUser = userRepository.findById(currentUser.getUserId()).orElse(currentUser);
+            session.setAttribute("currentUser", updatedUser);
+            currentUser = updatedUser;
+        }
+        
         String sessionId = session.getId();
         CartDTO cart;
 

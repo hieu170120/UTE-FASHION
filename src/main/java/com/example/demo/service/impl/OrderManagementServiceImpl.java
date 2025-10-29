@@ -101,6 +101,9 @@ public class OrderManagementServiceImpl implements OrderManagementService {
             throw new IllegalStateException("Đơn hàng không ở trạng thái chờ xác nhận");
         }
         
+        // ✅ HOÀN XU nếu đã thanh toán (QR/Coin/COD đã thanh toán)
+        refundCoinsIfEligible(order);
+        
         // Cập nhật trạng thái sang Cancelled và lưu lý do
         order.setOrderStatus(OrderStatus.CANCELLED.getValue());
         order.setCancelReason("Vendor từ chối: " + reason);

@@ -13,7 +13,7 @@ public class CouponDTO {
     
     @NotBlank(message = "Mã coupon không được để trống")
     @Size(max = 50, message = "Mã coupon không quá 50 ký tự")
-    @Pattern(regexp = "^[A-Z0-9_-]+$", message = "Mã coupon chỉ chứa chữ in hoa, số, gạch ngang và gạch dưới")
+    @Pattern(regexp = "^[A-Za-z0-9_-]+$", message = "Mã coupon chỉ chứa chữ cái, số, gạch ngang và gạch dưới")
     private String couponCode;
     
     @Size(max = 500, message = "Mô tả không quá 500 ký tự")

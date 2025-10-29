@@ -1,10 +1,8 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.CartDTO;
-import com.example.demo.dto.CarrierDTO;
 import com.example.demo.dto.OrderDTO;
 import com.example.demo.entity.User;
-import com.example.demo.entity.Product;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.ProductRepository;
 import com.example.demo.service.CartService;
@@ -80,6 +78,11 @@ public class CheckoutController {
         if (currentUser == null) {
             return "checkout/login-required";
         }
+        
+        // ✅ REFRESH SESSION USER - Cập nhật số xu từ database
+        User updatedUser = userRepository.findById(currentUser.getUserId()).orElse(currentUser);
+        session.setAttribute("currentUser", updatedUser);
+        currentUser = updatedUser;
 
         // Đã đăng nhập -> lấy cart từ database
         try {
