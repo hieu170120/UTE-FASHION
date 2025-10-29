@@ -125,7 +125,7 @@
                                                 order.orderStatus == 'Cancelled' ? 'fa-times-circle' : 'fa-question-circle'}"></i>
                             <span th:text="${order.orderStatus == 'Processing' ? 'Chờ xác nhận' :
                                             order.orderStatus == 'Vendor_Confirmed' ? 'Đã xác nhận' :
-                                            order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'Đang xử lý' :
+                                            order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'Đang xử lý – Chờ giao' :
                                             order.orderStatus == 'Shipping' ? 'Đang giao' :
                                             order.orderStatus == 'Delivered' ? 'Đã giao' :
                                             order.orderStatus == 'Return_Requested' ? 'Yêu cầu trả hàng' :

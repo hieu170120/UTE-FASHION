@@ -149,11 +149,11 @@
                                                        (order.orderStatus == 'Returned' ? 'status-returned' : 'status-cancelled'))))))}"
                                       th:text="${order.orderStatus == 'Processing' ? 'Chờ Xác Nhận' :
                                                 (order.orderStatus == 'Vendor_Confirmed' ? 'Đã Xác Nhận - Chờ Admin' :
-                                                (order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'Đang Xử Lý' :
+                                                (order.orderStatus == 'Confirmed' || order.orderStatus == 'Shipper_Cancelled' ? 'Đang xử lý – Chờ giao' :
                                                 (order.orderStatus == 'Shipping' ? 'Đang Giao' :
                                                 (order.orderStatus == 'Delivered' ? 'Đã Giao' :
                                                 (order.orderStatus == 'Return_Requested' ? 'Yêu Cầu Trả Hàng' :
-                                                (order.orderStatus == 'Returned' ? 'Đã Trả Hàng' : 'Đã Hủy'))))))}"></span>
+                                                (order.orderStatus == 'Returned' ? 'Đã Trả Hàng' : 'Đã Hủy'))))))}"
                             </td>
                             <td th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
                             <td>
