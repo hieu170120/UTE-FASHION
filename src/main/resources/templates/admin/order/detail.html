@@ -148,6 +148,13 @@
                             <span class="info-label">Nhà vận chuyển:</span> 
                             <span class="badge bg-info" th:text="${order.carrierName}"></span>
                         </p>
+                        <p th:if="${order.paymentStatus}">
+                            <span class="info-label">Trạng thái thanh toán:</span> 
+                            <span class="status-badge" 
+                                  th:classappend="${(order.orderStatus == 'Cancelled' || order.orderStatus == 'Returned' || order.orderStatus == 'Shipper_Cancelled') && order.paymentStatus == 'Paid' ? 'bg-info text-white' : (order.paymentStatus == 'Paid' ? 'bg-success text-white' : 'bg-warning text-dark')}">
+                                <span th:text="${(order.orderStatus == 'Cancelled' || order.orderStatus == 'Returned' || order.orderStatus == 'Shipper_Cancelled') && order.paymentStatus == 'Paid' ? 'Đã hoàn xu' : (order.paymentStatus == 'Paid' ? 'Đã thanh toán' : 'Chưa thanh toán')}"></span>
+                            </span>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -376,19 +383,32 @@
                         <tfoot>
                             <tr>
                                 <td colspan="6" class="text-end"><strong>Tạm tính:</strong></td>
-                                <td class="fw-bold" th:text="${#numbers.formatDecimal(order.subtotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                                <td class="fw-bold" th:text="${#numbers.formatDecimal(order.totalAmount - (order.shippingFee != null ? order.shippingFee : 0) + (order.discountAmount != null ? order.discountAmount : 0), 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
                             </tr>
                             <tr>
                                 <td colspan="6" class="text-end"><strong>Phí vận chuyển:</strong></td>
                                 <td class="fw-bold" th:text="${#numbers.formatDecimal(order.shippingFee != null ? order.shippingFee : 0, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
                             </tr>
                             <tr th:if="${order.discountAmount != null && order.discountAmount > 0}">
-                                <td colspan="6" class="text-end"><strong>Giảm giá:</strong></td>
+                                <td colspan="6" class="text-end"><strong><i class="fas fa-tag"></i> Giảm giá:</strong></td>
                                 <td class="text-success fw-bold" th:text="'-' + ${#numbers.formatDecimal(order.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
                             </tr>
-                            <tr class="table-light">
+                            <tr th:if="${order.discountAmount != null && order.discountAmount > 0}" style="border-top: 2px solid #E5E7EB;">
+                                <td colspan="6" class="text-end"><strong><i class="fas fa-calculator"></i> Tổng giảm:</strong></td>
+                                <td class="text-success fw-bold" th:text="'-' + ${#numbers.formatDecimal(order.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                            </tr>
+                            <tr class="table-light" style="border-top: 2px solid #E5E7EB;">
                                 <td colspan="6" class="text-end"><strong>TỔNG CỘNG:</strong></td>
                                 <td class="text-danger fw-bold fs-5" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                            </tr>
+                            <tr th:if="${order.paymentStatus}" style="border-top: 2px solid #E5E7EB;">
+                                <td colspan="6" class="text-end"><strong>Trạng thái thanh toán:</strong></td>
+                                <td>
+                                    <span class="badge" 
+                                          th:classappend="${(order.orderStatus == 'Cancelled' || order.orderStatus == 'Returned' || order.orderStatus == 'Shipper_Cancelled') && order.paymentStatus == 'Paid' ? 'bg-info text-white' : (order.paymentStatus == 'Paid' ? 'bg-success text-white' : 'bg-warning text-dark')}">
+                                        <span th:text="${(order.orderStatus == 'Cancelled' || order.orderStatus == 'Returned' || order.orderStatus == 'Shipper_Cancelled') && order.paymentStatus == 'Paid' ? 'Đã hoàn xu' : (order.paymentStatus == 'Paid' ? 'Đã thanh toán' : 'Chưa thanh toán')}"></span>
+                                    </span>
+                                </td>
                             </tr>
                         </tfoot>
                     </table>
