@@ -344,31 +344,32 @@
                     </h5>
                     <div class="info-row">
                         <span class="info-label">Tạm tính:</span>
-                        <span class="info-value" th:text="${#numbers.formatDecimal(order.totalAmount - (order.shippingFee ?: 0), 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                        <span class="info-value" th:text="${#numbers.formatDecimal(order.totalAmount - (order.shippingFee ?: 0) + (order.discountAmount ?: 0), 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
                     </div>
                     <div class="info-row" th:if="${order.shippingFee}">
                         <span class="info-label">Phí vận chuyển:</span>
                         <span class="info-value" th:text="${#numbers.formatDecimal(order.shippingFee, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
                     </div>
                     <div class="info-row" th:if="${order.discountAmount}">
-                        <span class="info-label text-success">Giảm giá:</span>
-                        <span class="info-value text-success">-<span th:text="${#numbers.formatDecimal(order.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span></span>
+                        <span class="info-label" th:classappend="${order.discountAmount > 0 ? 'text-success' : ''}">
+                            <i class="fas fa-tag" th:if="${order.discountAmount > 0}"></i> Giảm giá:
+                        </span>
+                        <span class="info-value text-success" th:text="'-' + ${#numbers.formatDecimal(order.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
                     </div>
-                    <hr>
-                    <div class="info-row">
-                        <span class="info-label fs-5 fw-bold">Tổng cộng:</span>
+                    <div class="info-row" style="border-bottom: 2px solid #E5E7EB; padding-bottom: 15px;">
+                        <span class="info-label fw-bold" style="color: #1F2937;"><i class="fas fa-calculator"></i> Tổng giảm:</span>
+                        <span class="info-value fw-bold text-success" th:text="'-' + ${#numbers.formatDecimal(order.discountAmount ?: 0, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                    </div>
+                    <div class="info-row" style="padding-top: 15px;">
+                        <span class="info-label fs-5 fw-bold" style="color: #1F2937;">Tổng cộng:</span>
                         <span class="info-value fs-4 fw-bold text-danger" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
                     </div>
-                    <hr>
-                    <div class="info-row" th:if="${order.paymentMethod}">
-                        <span class="info-label">Phương thức:</span>
-                        <span class="info-value" th:text="${order.paymentMethod}"></span>
-                    </div>
+                    <hr style="margin: 20px 0; border-top: 2px solid #E5E7EB;">
                     <div class="info-row" th:if="${order.paymentStatus}">
-                        <span class="info-label">Trạng thái:</span>
+                        <span class="info-label">Trạng thái thanh toán:</span>
                         <span class="badge" 
-                              th:classappend="${order.paymentStatus == 'Paid' ? 'bg-success' : 'bg-warning text-dark'}">
-                            <span th:text="${order.paymentStatus == 'Paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}"></span>
+                              th:classappend="${(order.orderStatus == 'Cancelled' || order.orderStatus == 'Returned') && order.paymentStatus == 'Paid' ? 'bg-info text-white' : (order.paymentStatus == 'Paid' ? 'bg-success' : 'bg-warning text-dark')}">
+                            <span th:text="${(order.orderStatus == 'Cancelled' || order.orderStatus == 'Returned') && order.paymentStatus == 'Paid' ? 'Đã hoàn xu' : (order.paymentStatus == 'Paid' ? 'Đã thanh toán' : 'Chưa thanh toán')}"></span>
                         </span>
                     </div>
                 </div>
