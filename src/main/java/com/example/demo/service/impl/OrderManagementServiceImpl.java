@@ -660,17 +660,6 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         return orders.stream()
                 .map(order -> {
                     OrderDTO orderDTO = mapToOrderDTOWithImages(order);
-                    // Lấy phương thức thanh toán
-                    try {
-                        paymentRepository.findByOrderIdWithPaymentMethod(order.getId()).ifPresent(payment -> {
-                            if (payment.getPaymentMethod() != null) {
-                                orderDTO.setPaymentMethod(payment.getPaymentMethod().getMethodCode());
-                            }
-                        });
-                    } catch (Exception e) {
-                        // Nếu không tìm thấy payment hoặc lỗi, đặt mặc định là COD
-                        orderDTO.setPaymentMethod("COD");
-                    }
                     return orderDTO;
                 })
                 .collect(Collectors.toList());
@@ -683,18 +672,6 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         return orders.stream()
                 .map(order -> {
                     OrderDTO orderDTO = mapToOrderDTOWithImages(order);
-                    
-                    // Lấy phương thức thanh toán
-                    try {
-                        paymentRepository.findByOrderIdWithPaymentMethod(order.getId()).ifPresent(payment -> {
-                            if (payment.getPaymentMethod() != null) {
-                                orderDTO.setPaymentMethod(payment.getPaymentMethod().getMethodCode());
-                            }
-                        });
-                    } catch (Exception e) {
-                        // Nếu không tìm thấy payment hoặc lỗi, đặt mặc định là COD
-                        orderDTO.setPaymentMethod("COD");
-                    }
                     
                     // Lấy lý do trả hàng nếu có (bao gồm cả trường hợp đã reject)
                     if ("Return_Requested".equals(order.getOrderStatus()) || 
@@ -727,12 +704,12 @@ public class OrderManagementServiceImpl implements OrderManagementService {
         try {
             paymentRepository.findByOrderIdWithPaymentMethod(orderId).ifPresent(payment -> {
                 if (payment.getPaymentMethod() != null) {
-                    orderDTO.setPaymentMethod(payment.getPaymentMethod().getMethodCode());
+                    orderDTO.setPaymentMethod(payment.getPaymentMethod().getMethodName());
                 }
             });
         } catch (Exception e) {
             // Nếu không tìm thấy payment hoặc lỗi, đặt mặc định là COD
-            orderDTO.setPaymentMethod("COD");
+            orderDTO.setPaymentMethod("Thanh toán khi nhận hàng (COD)");
         }
         
         // Lấy lý do trả hàng nếu có (bao gồm cả trường hợp đã reject)
@@ -765,6 +742,18 @@ public class OrderManagementServiceImpl implements OrderManagementService {
                     }
                 }
             }
+        }
+        
+        // Lấy phương thức thanh toán
+        try {
+            paymentRepository.findByOrderIdWithPaymentMethod(order.getId()).ifPresent(payment -> {
+                if (payment.getPaymentMethod() != null) {
+                    orderDTO.setPaymentMethod(payment.getPaymentMethod().getMethodName());
+                }
+            });
+        } catch (Exception e) {
+            // Nếu không tìm thấy payment hoặc lỗi, đặt mặc định là COD
+            orderDTO.setPaymentMethod("Thanh toán khi nhận hàng (COD)");
         }
         
         return orderDTO;
