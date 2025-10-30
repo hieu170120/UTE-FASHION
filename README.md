@@ -13,7 +13,6 @@ UTE Fashion là một ứng dụng web thương mại điện tử đa chức n�
 5.  [Hướng dẫn cài đặt và khởi chạy](#huong-dan-cai-dat-va-khoi-chay)
 6.  [Thông tin tài khoản mặc định](#thong-tin-tai-khoan-mac-dinh)
 7.  [Cấu trúc dự án](#cau-truc-du-an)
-8.  [Tác giả](#tac-gia)
 
 ## **Tính năng chính**
 
@@ -65,7 +64,7 @@ Hệ thống hỗ trợ 5 vai trò người dùng khác nhau, mỗi vai trò có
 *   **Quản lý phụ thuộc:** Apache Maven
 *   **Cơ sở dữ liệu:** SQL Server 20
 *   **Truy vấn CSDL:** Spring Data JPA (Hibernate)
-*   **Bảo mật:** Spring Security (Xác thực session-based, phân quyền theo vai trò)
+*   **Bảo mật:** Spring Security (Xác thực phi trạng thái bằng JWT, phân quyền theo vai trò)
 *   **View Engine:** Thymeleaf
 *   **Giao tiếp Real-time:** Spring WebSocket (cho tính năng Chat)
 *   **Lưu trữ file:** Cloudinary (dùng để lưu trữ hình ảnh sản phẩm, avatar)
@@ -108,7 +107,7 @@ cd UTE-Fashion
 
 **Bước 3: Cấu hình kết nối**
 1. Mở file `src/main/resources/application.properties`.
-2. Cập nhật các thông tin sau để khớp với cấu hình CSDL của bạn
+2. Cập nhật các thông tin để khớp với cấu hình CSDL của bạn
 
 **Bước 4: Khởi chạy ứng dụng**
 1. Mở Terminal hoặc Command Prompt tại thư mục gốc của dự án.
