@@ -123,7 +123,16 @@ public class PaymentController {
         BigDecimal shippingFee = (BigDecimal) session.getAttribute("shippingFee");
         
         // Tính tổng tiền
-        BigDecimal subtotal = cart.getTotalAmount();
+        BigDecimal subtotal;
+        if (cart != null && cart.getTotalAmount() != null && cart.getTotalAmount().compareTo(BigDecimal.ZERO) > 0) {
+            // Cart còn dữ liệu, lưu vào session để dùng lại sau
+            subtotal = cart.getTotalAmount();
+            session.setAttribute("originalSubtotal", subtotal);
+        } else {
+            // Cart đã bị xóa (sau khi thanh toán xu thất bại), lấy từ session
+            BigDecimal originalSubtotal = (BigDecimal) session.getAttribute("originalSubtotal");
+            subtotal = (originalSubtotal != null) ? originalSubtotal : BigDecimal.ZERO;
+        }
         BigDecimal total = subtotal;
         
         if (shippingFee != null) {
@@ -329,6 +338,9 @@ public class PaymentController {
             session.removeAttribute("promotionDiscount");
             session.removeAttribute("appliedCouponCode");
             session.removeAttribute("appliedPromotionId");
+            session.removeAttribute("originalSubtotal");
+            session.removeAttribute("selectedCarrierId");
+            session.removeAttribute("shippingFee");
             
             redirectAttributes.addFlashAttribute("successMessage", "Đặt hàng thành công! Thanh toán khi nhận hàng.");
             return "redirect:/checkout/order-success?orderId=" + createdOrder.getId();
@@ -379,6 +391,24 @@ public class PaymentController {
             // Set discount vào checkoutData để truyền vào order
             checkoutData.setDiscountAmount(totalDiscount);
             
+            // ✅ KIỂM TRA SỐ XU TRƯỜC KHI TẠO ORDER
+            CartDTO cart = cartService.getCartByUserId(userId);
+            BigDecimal shippingFee = (BigDecimal) session.getAttribute("shippingFee");
+            BigDecimal finalAmount = cart.getTotalAmount();
+            if (shippingFee != null) {
+                finalAmount = finalAmount.add(shippingFee);
+            }
+            if (totalDiscount.compareTo(BigDecimal.ZERO) > 0) {
+                finalAmount = finalAmount.subtract(totalDiscount);
+            }
+            
+            User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+            if (user.getCoins().compareTo(finalAmount) < 0) {
+                redirectAttributes.addFlashAttribute("errorMessage", 
+                    "Số xu không đủ. Bạn có " + user.getCoins().intValue() + " xu, cần " + finalAmount.intValue() + " xu. Vui lòng chọn phương thức thanh toán khác.");
+                return "redirect:/payment/method-selection";
+            }
+            
             // ✅ TẠO ORDER (với discount)
             OrderDTO createdOrder = orderService.createOrderFromCart(userId, session.getId(), checkoutData);
             
@@ -398,6 +428,9 @@ public class PaymentController {
             session.removeAttribute("promotionDiscount");
             session.removeAttribute("appliedCouponCode");
             session.removeAttribute("appliedPromotionId");
+            session.removeAttribute("originalSubtotal");
+            session.removeAttribute("selectedCarrierId");
+            session.removeAttribute("shippingFee");
             
             redirectAttributes.addFlashAttribute("successMessage", "Đặt hàng và thanh toán bằng xu thành công!");
             return "redirect:/checkout/order-success?orderId=" + createdOrder.getId();

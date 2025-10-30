@@ -39,8 +39,8 @@
                         <i class="fas fa-truck"></i> <span th:text="${order.orderNumber}"></span>
                     </div>
                     <div style="display: flex; gap: 8px; align-items: center;">
-                        <span th:if="${order.paymentMethod == 'COD'}" style="background: #FEF3C7; color: #92400E; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">COD</span>
-                        <span th:if="${order.paymentMethod == 'SEPAY_QR'}" style="background: #D1FAE5; color: #065F46; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">Đã thanh toán</span>
+                        <span th:if="${order.paymentStatus == 'Unpaid'}" style="background: #FEF3C7; color: #92400E; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">Chưa thanh toán</span>
+                        <span th:if="${order.paymentStatus == 'Paid'}" style="background: #D1FAE5; color: #065F46; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">Đã thanh toán</span>
                         <span style="background: #DBEAFE; color: #1E40AF; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">Đang giao</span>
                     </div>
                 </div>
@@ -59,12 +59,12 @@
                               class="countdown-timer">--:--</span>
                     </div>
                     
-                    <!-- Buttons cho COD -->
-                    <div th:if="${order.paymentMethod == 'COD'}" style="margin-top: 16px; display: flex; gap: 8px;">
+                    <!-- Buttons cho đơn chưa thanh toán (COD Pending) -->
+                    <div th:if="${order.paymentStatus == 'Unpaid'}" style="margin-top: 16px; display: flex; gap: 8px;">
                         <button class="btn btn-success btn-sm" 
                                 th:onclick="'confirmCODPayment(' + ${order.id} + ')'"
                                 style="flex: 1;">
-                            <i class="fas fa-check-circle"></i> Đã nhận tiền
+                            <i class="fas fa-money-bill-wave"></i> Đã nhận tiền
                         </button>
                         <a th:href="@{/shipper/orders/{id}/failed-delivery(id=${order.id})}" 
                            class="btn btn-danger btn-sm" style="flex: 1;">
@@ -72,8 +72,8 @@
                         </a>
                     </div>
                     
-                    <!-- Buttons cho QR payment (đã thanh toán) -->
-                    <div th:if="${order.paymentMethod != 'COD'}" style="margin-top: 16px; display: flex; gap: 8px;">
+                    <!-- Buttons cho đơn đã thanh toán (QR/COIN) -->
+                    <div th:if="${order.paymentStatus == 'Paid'}" style="margin-top: 16px; display: flex; gap: 8px;">
                         <button class="btn btn-success btn-sm" 
                                 th:onclick="'confirmDelivery(' + ${order.id} + ')'"
                                 style="flex: 1;">
